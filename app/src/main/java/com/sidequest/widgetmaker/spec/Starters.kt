@@ -11,8 +11,9 @@ object Starters {
         SOURCES.map { (title, about, json) -> Starter(title, about, DesignParser.parse(json)) }
     }
 
+    /** One forecast hour; hours 4 and 5 only fit on wide widgets. */
     private fun hour(n: Int) = """
-        {"type":"column","align":"center","grow":true,"children":[
+        {"type":"column","align":"center","grow":true,${if (n > 3) "\"show\":{\"minWidth\":250}," else ""}"children":[
          {"type":"text","text":"{weather.h$n.time}","size":11,"color":"#99FFFFFF","align":"center"},
          {"type":"icon","name":"sun","live":"{weather.h$n.icon}","size":20,"color":"#FFFFD27A"},
          {"type":"text","text":"{weather.h$n.temp}","size":13,"color":"#FFFFFFFF","align":"center"}]}"""
@@ -49,8 +50,10 @@ object Starters {
             """{"name":"Big clock","background":"#E6141B2D","cornerRadius":28,"padding":16,"root":
             {"type":"column","align":"center","verticalAlign":"center","children":[
              {"type":"text","text":"{greeting}","size":14,"color":"#B3FFFFFF","weight":"medium","show":{"minHeight":200}},
-             {"type":"clock","format":"h:mm","size":56,"color":"#FFFFFFFF","weight":"light"},
-             {"type":"clock","format":"EEEE, MMMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120}},
+             {"type":"clock","format":"h:mm","size":40,"color":"#FFFFFFFF","weight":"light","show":{"maxHeight":119}},
+             {"type":"clock","format":"h:mm","size":56,"color":"#FFFFFFFF","weight":"light","show":{"minHeight":120}},
+             {"type":"clock","format":"EEE, MMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120,"maxWidth":249}},
+             {"type":"clock","format":"EEEE, MMMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120,"minWidth":250}},
              {"type":"spacer","size":12,"show":{"minHeight":200}},
              {"type":"row","show":{"minHeight":200},"children":[
               {"type":"icon","name":"battery","size":14,"color":"#FF7CF29C"},
@@ -143,12 +146,13 @@ object Starters {
         Triple(
             "Nearby events", "What's on near you: concerts, games, shows. Set up Events in Settings.",
             """{"name":"Nearby events","background":"#E62A1440","cornerRadius":24,"padding":16,"root":
-            {"type":"column","children":[
-             {"type":"row","children":[
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","show":{"minHeight":120},"children":[
               {"type":"icon","name":"ticket","size":16,"color":"#FFFF7AC6"},
               {"type":"text","text":"  What's on","size":13,"color":"#FFFF7AC6","weight":"bold","grow":true}]},
-             {"type":"spacer","size":6},
-             {"type":"text","text":"{events.1}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":2},
+             {"type":"spacer","size":6,"show":{"minHeight":120}},
+             {"type":"text","text":"{events.1}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"show":{"maxHeight":119}},
+             {"type":"text","text":"{events.1}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":2,"show":{"minHeight":120}},
              {"type":"text","text":"{events.1.when} · {events.1.venue}","size":12,"color":"#B3FFFFFF","maxLines":1},
              ${event(2, 180)},
              ${event(3, 240)},

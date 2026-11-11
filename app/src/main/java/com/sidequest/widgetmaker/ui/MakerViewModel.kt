@@ -16,6 +16,7 @@ import com.sidequest.widgetmaker.feeds.Feeds
 import com.sidequest.widgetmaker.feeds.Place
 import com.sidequest.widgetmaker.spec.SavedDesign
 import com.sidequest.widgetmaker.spec.WidgetDesign
+import com.sidequest.widgetmaker.spec.WidgetTheme
 import com.sidequest.widgetmaker.widget.AiWidget
 import com.sidequest.widgetmaker.widget.AiWidgetReceiver
 import com.sidequest.widgetmaker.widget.PinnedReceiver
@@ -41,6 +42,7 @@ data class MakerState(
     val message: String? = null,
     val saved: List<SavedDesign> = emptyList(),
     val hasApiKey: Boolean = false,
+    val theme: WidgetTheme = WidgetTheme.glass,
     val sources: FeedSettings = FeedSettings(),
     val snapshot: FeedSnapshot = FeedSnapshot(),
     val sourcesBusy: Boolean = false,
@@ -92,12 +94,22 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
             val sources = feeds.settings
             val snapshot = withContext(Dispatchers.IO) { feeds.snapshot() }
             _state.update {
-                it.copy(saved = saved, hasApiKey = store.apiKey.isNotBlank(), sources = sources, snapshot = snapshot)
+                it.copy(
+                    saved = saved, hasApiKey = store.apiKey.isNotBlank(), theme = store.theme,
+                    sources = sources, snapshot = snapshot,
+                )
             }
         }
     }
 
     val apiKey: String get() = store.apiKey
+
+    /** Switches every widget's theme right away. */
+    fun setTheme(theme: WidgetTheme) {
+        store.theme = theme
+        _state.update { it.copy(theme = theme) }
+        viewModelScope.launch { AiWidget.refreshAll(getApplication()) }
+    }
 
     fun setApiKey(key: String) {
         store.apiKey = key

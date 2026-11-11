@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sidequest.widgetmaker.feeds.FeedWorker
 import com.sidequest.widgetmaker.spec.SavedDesign
+import com.sidequest.widgetmaker.spec.WidgetTheme
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MakerViewModel by viewModels()
@@ -153,6 +154,7 @@ private fun MakerScreen(viewModel: MakerViewModel) {
                     onSave = { viewModel.saveDraft(thenPin = false) },
                     onSaveAndAdd = { viewModel.saveDraft(thenPin = true) },
                     onDiscard = viewModel::discardDraft,
+                    theme = state.theme,
                 )
             }
 
@@ -169,6 +171,7 @@ private fun MakerScreen(viewModel: MakerViewModel) {
                         onAdd = { viewModel.pin(saved) },
                         onEdit = { viewModel.edit(saved) },
                         onDelete = { viewModel.delete(saved) },
+                        theme = state.theme,
                     )
                 }
             }
@@ -214,6 +217,7 @@ private fun DraftCard(
     onSave: () -> Unit,
     onSaveAndAdd: () -> Unit,
     onDiscard: () -> Unit,
+    theme: WidgetTheme,
 ) {
     var change by remember(draft) { mutableStateOf("") }
     var size by rememberSaveable { mutableStateOf(PreviewSize.Wide) }
@@ -226,7 +230,7 @@ private fun DraftCard(
                 }
             }
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                DesignPreview(draft.design, size)
+                DesignPreview(draft.design, size, theme)
             }
             OutlinedTextField(
                 value = change,
@@ -246,13 +250,19 @@ private fun DraftCard(
 }
 
 @Composable
-private fun SavedCard(saved: SavedDesign, onAdd: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun SavedCard(
+    saved: SavedDesign,
+    onAdd: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    theme: WidgetTheme,
+) {
     var confirmDelete by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(saved.design.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                DesignPreview(saved.design, PreviewSize.Wide)
+                DesignPreview(saved.design, PreviewSize.Wide, theme)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onAdd) { Text("Add to home screen") }

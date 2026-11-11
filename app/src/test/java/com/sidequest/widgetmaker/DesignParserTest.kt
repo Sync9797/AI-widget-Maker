@@ -80,3 +80,37 @@ class DesignParserTest {
         assertEquals(1f, tokens.progress("250"), 0.001f)
     }
 }
+
+class WidgetThemeTest {
+    private val glass = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.glass)
+    private val material = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.material)
+    private val original = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.original)
+    private val m3 = com.sidequest.widgetmaker.spec.Material3Colors.BASELINE
+
+    @Test
+    fun originalKeepsTheDesignsColors() {
+        assertEquals(0xFF00FF66.toInt(), original.argb(com.sidequest.widgetmaker.spec.Role.Text, "#FF00FF66", dark = false))
+    }
+
+    @Test
+    fun glassMakesTextWhiteButKeepsItsFade() {
+        val role = com.sidequest.widgetmaker.spec.Role.Text
+        assertEquals(0xFFFFFFFF.toInt(), glass.argb(role, "#FF00FF66", dark = false))
+        assertEquals(0xB3FFFFFF.toInt(), glass.argb(role, "#B3123456", dark = false))
+        // Very faint text is raised so it stays readable on glass.
+        assertEquals(0x99FFFFFF.toInt(), glass.argb(role, "#33FFFFFF", dark = false))
+        // Accents keep their color.
+        assertEquals(0xFF7CF29C.toInt(), glass.argb(com.sidequest.widgetmaker.spec.Role.Accent, "#FF7CF29C", dark = false))
+    }
+
+    @Test
+    fun materialFollowsDarkMode() {
+        val bg = com.sidequest.widgetmaker.spec.Role.Background
+        assertEquals(m3.surfaceDay, material.argb(bg, "#E61E1E2E", dark = false))
+        assertEquals(m3.surfaceNight, material.argb(bg, "#E61E1E2E", dark = true))
+        assertEquals(m3.primaryNight, material.argb(com.sidequest.widgetmaker.spec.Role.Accent, "#FFFF0000", dark = true))
+        assertEquals(m3.onSurfaceDay, material.argb(com.sidequest.widgetmaker.spec.Role.Text, "#FFFFFFFF", dark = false))
+        assertTrue(material.followsDarkMode)
+        assertTrue(!glass.followsDarkMode)
+    }
+}

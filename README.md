@@ -14,6 +14,17 @@ Download `AIWidgetMaker.apk` on your phone and open it.
 The first time, open **Settings** in the app and paste an Anthropic API key
 (from console.anthropic.com). It's stored only on the phone.
 
+## Widget style
+
+In **Settings → Widget style**, pick how all your widgets are colored. The
+layout always stays as designed:
+
+- **Glass** (default): smoky see-through glass with a bright edge and white
+  text. Icons and bars keep their colors.
+- **Material 3**: colors from your wallpaper (Android 12+), switching between
+  light and dark with your phone.
+- **Original colors**: the palette Claude chose for each design.
+
 ## Live data
 
 Widgets can show live data, refreshed about every 30 minutes in the

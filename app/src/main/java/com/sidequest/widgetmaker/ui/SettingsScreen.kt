@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sidequest.widgetmaker.feeds.FeedSnapshot
+import com.sidequest.widgetmaker.spec.WidgetTheme
 
 /** Settings: the Claude key, and the data sources widgets can show. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +63,22 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Section("Widget style", "Restyles the colors of all your widgets. Layouts stay as designed.") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WidgetTheme.entries.forEach { theme ->
+                        FilterChip(state.theme == theme, { viewModel.setTheme(theme) }, { Text(theme.label) })
+                    }
+                }
+                Text(
+                    when (state.theme) {
+                        WidgetTheme.glass -> "Smoky see-through glass with white text. Icons and bars keep their colors."
+                        WidgetTheme.material -> "Colors from your wallpaper (Android 12+), light or dark with your phone."
+                        WidgetTheme.original -> "The colors Claude chose for each design."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
             Section("Claude", "Your Anthropic API key, from console.anthropic.com. Stored only on this phone.") {
                 Secret("API key", apiKey, "sk-ant-…") { apiKey = it }
             }

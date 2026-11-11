@@ -68,7 +68,7 @@ class ChooseDesignActivity : ComponentActivity() {
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Text(saved.design.name, style = MaterialTheme.typography.titleMedium)
-                                DesignPreview(saved.design, PreviewSize.Square)
+                                DesignPreview(saved.design, PreviewSize.Square, store.theme)
                             }
                         }
                     }

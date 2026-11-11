@@ -19,6 +19,7 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
@@ -68,6 +69,8 @@ import com.sidequest.widgetmaker.spec.WidgetTheme
 import com.sidequest.widgetmaker.spec.visible
 import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.ui.MainActivity
+import com.sidequest.widgetmaker.ui.TapIntents
+import com.sidequest.widgetmaker.spec.Taps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,8 +88,15 @@ class AiWidget : GlanceAppWidget() {
         val tokens = currentTokens(context)
         val styler = styler(context, store.themeFor(appWidgetId))
         provideContent {
-            val open = GlanceModifier.clickable(actionStartActivity<MainActivity>())
-            if (saved == null) EmptyWidget(open) else DesignWidget(saved.design, tokens, styler, open)
+            val openApp = GlanceModifier.clickable(actionStartActivity<MainActivity>())
+            if (saved == null) {
+                EmptyWidget(openApp)
+            } else {
+                // The widget as a whole opens the app for what it shows (or this app, if nothing fits).
+                val whole = Taps.forWidget(saved.design)?.let { Taps.resolve(it, tokens) }
+                val open = whole?.let { GlanceModifier.clickable(actionStartActivity(TapIntents.intent(context, it))) } ?: openApp
+                DesignWidget(saved.design, tokens, styler, open)
+            }
         }
     }
 
@@ -213,7 +223,11 @@ private class Paint(val styler: Styler) {
 }
 
 @Composable
-private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, modifier: GlanceModifier = GlanceModifier) {
+private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base: GlanceModifier = GlanceModifier) {
+    // Its own tap, if it has one: a headline's article, a calendar entry, the clock app...
+    val context = androidx.glance.LocalContext.current
+    val tap = Taps.forNode(node)?.let { Taps.resolve(it, tokens) }
+    val modifier = tap?.let { base.clickable(actionStartActivity(TapIntents.intent(context, it))) } ?: base
     when (node) {
         is ColumnNode -> Column(
             modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),

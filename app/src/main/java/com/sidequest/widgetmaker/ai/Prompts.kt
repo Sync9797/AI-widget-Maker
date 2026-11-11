@@ -41,6 +41,12 @@ Colors are "#RRGGBB" or "#AARRGGBB" (the AA part is opacity; "#CC000000" is 80% 
 Sizes are in dp (text sizes in sp). Every element may set "grow": true to take the leftover
 space in its row or column.
 
+Taps: any element may set "tap" to what tapping it opens: an app kind (weather, crypto, news,
+events, calendar, clock, commute, battery) or a link value ("{news.2.link}", "{events.1.link}",
+"{calendar.1.link}"). Usually leave it out: headlines, events and calendar entries open their own
+link, a time opens the clock, a date the calendar, and the rest of the widget the app for what it
+mostly shows. Set it only to change that, for example "tap":"weather" on a clock-and-weather root.
+
 Widgets are responsive: people resize them, and a bigger widget should show more. Every element
 may set "show": {"minWidth":dp,"minHeight":dp,"maxWidth":dp,"maxHeight":dp} (leave out any
 limit) so it only appears when the whole widget is that size; an element without "show" always

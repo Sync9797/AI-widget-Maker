@@ -213,7 +213,7 @@ object FeedParsers {
     // ---- News (Google News RSS) ----
 
     /** A Google News RSS item. */
-    data class Headline(val title: String, val source: String, val published: LocalDate?)
+    data class Headline(val title: String, val source: String, val published: LocalDate?, val link: String = "")
 
     fun headlines(body: String): List<Headline> {
         val factory = DocumentBuilderFactory.newInstance().apply {
@@ -232,7 +232,7 @@ object FeedParsers {
             val published = runCatching {
                 java.time.ZonedDateTime.parse(text("pubDate"), DateTimeFormatter.RFC_1123_DATE_TIME).toLocalDate()
             }.getOrNull()
-            Headline(title, source, published)
+            Headline(title, source, published, text("link"))
         }
     }
 
@@ -241,6 +241,7 @@ object FeedParsers {
         headlines(body).take(count).forEachIndexed { i, h ->
             out["news.${i + 1}"] = h.title
             out["news.${i + 1}.source"] = h.source
+            out["news.${i + 1}.link"] = h.link
         }
         return out
     }
@@ -264,6 +265,7 @@ object FeedParsers {
             out["events.${i + 1}.when"] = headlineWhen(h.title, today)
                 ?: if (h.published == today) "New today" else "Posted ${whenText(h.published, null, today)}".trim()
             out["events.${i + 1}.venue"] = h.source
+            out["events.${i + 1}.link"] = h.link
         }
         return out
     }
@@ -320,6 +322,10 @@ object FeedParsers {
         val end: LocalDateTime,
         val allDay: Boolean,
         val location: String,
+        /** The calendar's event id and this occurrence's times, to open it on tap. */
+        val id: Long = 0,
+        val beginMs: Long = 0,
+        val endMs: Long = 0,
     )
 
     /**
@@ -339,6 +345,7 @@ object FeedParsers {
                 else -> whenText(e.start.toLocalDate(), e.start.toLocalTime(), today)
             }
             out["calendar.${i + 1}.where"] = e.location
+            if (e.id > 0) out["calendar.${i + 1}.link"] = "calendar-event:${e.id}:${e.beginMs}:${e.endMs}"
         }
         val leftToday = upcoming.count { it.start.toLocalDate() == today || (it.allDay && it.start.toLocalDate() == today) }
         out["calendar.today"] = when (leftToday) {
@@ -361,6 +368,7 @@ object FeedParsers {
             val time = start["localTime"].str()?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
             val venue = (event["_embedded"].obj()["venues"] as? JsonArray)?.firstOrNull().obj()["name"].str()
             out["events.${i + 1}"] = event["name"].str().orEmpty()
+            out["events.${i + 1}.link"] = event["url"].str().orEmpty()
             out["events.${i + 1}.when"] = whenText(date, time, today)
             out["events.${i + 1}.venue"] = venue.orEmpty()
         }

@@ -9,6 +9,11 @@
     <!-- Lets the app see whether the Claude app is installed, to hand it a widget request. -->
     <queries>
         <package android:name="com.anthropic.claude" />
+        <!-- To list your apps when you pick which one a widget tap opens. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application
@@ -38,6 +43,15 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+
+        <!-- Where widget taps land: opens the link, event or app, or asks which app. -->
+        <activity
+            android:name=".ui.TapActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Material.Dialog.NoActionBar" />
 
         <!-- The widget. Declared for the home screen and the lock screen ("keyguard"). -->
         <receiver

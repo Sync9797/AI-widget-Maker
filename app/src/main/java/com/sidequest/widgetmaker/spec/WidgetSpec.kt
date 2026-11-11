@@ -45,6 +45,8 @@ sealed interface Node {
     val grow: Boolean
     /** Sizes this element appears at; null means every size. */
     val show: Show?
+    /** What tapping it does: an app kind ("weather") or a link value ("{news.1.link}"). See [Taps]. */
+    val tap: String?
 }
 
 /**
@@ -77,6 +79,7 @@ data class ColumnNode(
     val padding: Int = 0,
     override val grow: Boolean = false,
     override val show: Show? = null,
+    override val tap: String? = null,
 ) : Node
 
 @Serializable
@@ -90,6 +93,7 @@ data class RowNode(
     val padding: Int = 0,
     override val grow: Boolean = false,
     override val show: Show? = null,
+    override val tap: String? = null,
 ) : Node
 
 /** Text. May contain tokens like {date} or {battery}; see [Tokens]. */
@@ -111,6 +115,7 @@ data class TextNode(
     val downColor: String = "#FFF87171",
     override val grow: Boolean = false,
     override val show: Show? = null,
+    override val tap: String? = null,
 ) : Node
 
 /**
@@ -126,6 +131,7 @@ data class ClockNode(
     val weight: Weight = Weight.light,
     override val grow: Boolean = false,
     override val show: Show? = null,
+    override val tap: String? = null,
 ) : Node
 
 @Serializable
@@ -138,6 +144,7 @@ data class IconNode(
     val color: String = "#FFFFFFFF",
     override val grow: Boolean = false,
     override val show: Show? = null,
+    override val tap: String? = null,
 ) : Node
 
 /** A bar from 0 to 100. [value] is a number or "{battery}". */
@@ -150,6 +157,7 @@ data class ProgressNode(
     val height: Int = 6,
     override val grow: Boolean = false,
     override val show: Show? = null,
+    override val tap: String? = null,
 ) : Node
 
 /** Empty space: [size] dp, or all the leftover space when [grow] is set. */
@@ -159,4 +167,5 @@ data class SpacerNode(
     val size: Int = 8,
     override val grow: Boolean = false,
     override val show: Show? = null,
+    override val tap: String? = null,
 ) : Node

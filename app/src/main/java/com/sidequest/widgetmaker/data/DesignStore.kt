@@ -3,6 +3,7 @@ package com.sidequest.widgetmaker.data
 import android.content.Context
 import com.sidequest.widgetmaker.spec.DesignParser
 import com.sidequest.widgetmaker.spec.SavedDesign
+import com.sidequest.widgetmaker.spec.TapKind
 import com.sidequest.widgetmaker.spec.WidgetTheme
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
@@ -67,6 +68,15 @@ class DesignStore(context: Context) {
     fun setThemeFor(appWidgetId: Int, theme: WidgetTheme?) {
         prefs.edit().apply {
             if (theme == null) remove("widget_theme_$appWidgetId") else putString("widget_theme_$appWidgetId", theme.name)
+        }.apply()
+    }
+
+    /** The app picked for a tap kind (a package name, or "web"); null means ask (or use the system default). */
+    fun tapApp(kind: TapKind): String? = prefs.getString("tap_app_${kind.name}", null)
+
+    fun setTapApp(kind: TapKind, choice: String?) {
+        prefs.edit().apply {
+            if (choice == null) remove("tap_app_${kind.name}") else putString("tap_app_${kind.name}", choice)
         }.apply()
     }
 

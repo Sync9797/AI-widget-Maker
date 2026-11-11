@@ -211,6 +211,7 @@ class Feeds(private val context: Context) {
             CalendarContract.Instances.END,
             CalendarContract.Instances.ALL_DAY,
             CalendarContract.Instances.EVENT_LOCATION,
+            CalendarContract.Instances.EVENT_ID,
         )
         val local = ZoneId.systemDefault()
         val events = mutableListOf<FeedParsers.CalendarEvent>()
@@ -228,6 +229,9 @@ class Feeds(private val context: Context) {
                     end = time(c.getLong(2)),
                     allDay = allDay,
                     location = c.getString(4).orEmpty(),
+                    id = c.getLong(5),
+                    beginMs = c.getLong(1),
+                    endMs = c.getLong(2),
                 )
             }
         }

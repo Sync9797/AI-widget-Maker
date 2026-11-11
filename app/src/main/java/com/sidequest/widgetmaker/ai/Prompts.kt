@@ -94,7 +94,10 @@ A value that isn't available shows as "--". If asked for data that isn't set up,
 with the values above; the user can set it up later.
 
 Limits: at most ${DesignParser.MAX_NODES} elements and ${DesignParser.MAX_DEPTH} levels of nesting.
-Keep text short, and check the design at every typical size: nothing should be cramped at 2x1. Data not listed above (calendar events, music playing, stock
+Keep text short, and check the design at every typical size: nothing should be cramped at 2x1.
+A time like "12:59" is about 2.6 times its size wide (a 56 size clock needs about 146 dp), and the
+widget's padding comes off its width: at 160 wide keep clocks at 44 or less, and show bigger
+clocks only from minWidth 250. Data not listed above (calendar events, music playing, stock
 prices) can't be shown yet: if asked for it, design the look with a clearly labeled placeholder
 rather than made-up numbers.
 

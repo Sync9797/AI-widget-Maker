@@ -51,7 +51,8 @@ object Starters {
             {"type":"column","align":"center","verticalAlign":"center","children":[
              {"type":"text","text":"{greeting}","size":14,"color":"#B3FFFFFF","weight":"medium","show":{"minHeight":200}},
              {"type":"clock","format":"h:mm","size":40,"color":"#FFFFFFFF","weight":"light","show":{"maxHeight":119}},
-             {"type":"clock","format":"h:mm","size":56,"color":"#FFFFFFFF","weight":"light","show":{"minHeight":120}},
+             {"type":"clock","format":"h:mm","size":44,"color":"#FFFFFFFF","weight":"light","show":{"minHeight":120,"maxWidth":249}},
+             {"type":"clock","format":"h:mm","size":56,"color":"#FFFFFFFF","weight":"light","show":{"minHeight":120,"minWidth":250}},
              {"type":"clock","format":"EEE, MMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120,"maxWidth":249}},
              {"type":"clock","format":"EEEE, MMMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120,"minWidth":250}},
              {"type":"spacer","size":12,"show":{"minHeight":200}},

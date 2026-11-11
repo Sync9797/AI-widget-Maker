@@ -26,7 +26,7 @@ data class FeedSettings(
     /** News search; blank means news about your town. */
     val newsTopic: String = "",
 
-    /** Free key from developer.ticketmaster.com. */
+    /** Optional free key from developer.ticketmaster.com, for exact listings; without it, events come from local news. */
     val ticketmasterKey: String = "",
     val eventsRadiusMiles: Int = 25,
 ) {
@@ -34,7 +34,7 @@ data class FeedSettings(
     val cryptoReady get() = coins.isNotEmpty()
     val trafficReady get() = tomtomKey.isNotBlank() && home != null && work != null
     val newsReady get() = place != null || newsTopic.isNotBlank()
-    val eventsReady get() = ticketmasterKey.isNotBlank() && place != null
+    val eventsReady get() = place != null
 
     /** One line per feed for Claude, so it knows what a design can show right now. */
     fun summary(): String = listOf(
@@ -42,7 +42,11 @@ data class FeedSettings(
         "crypto" to if (cryptoReady) "set up for ${coins.joinToString(", ")}" else "not set up",
         "traffic" to if (trafficReady) "set up (home to work)" else "not set up",
         "news" to if (newsReady) "set up (${newsTopic.ifBlank { place!!.name }})" else "not set up",
-        "events" to if (eventsReady) "set up near ${place!!.name}" else "not set up",
+        "events" to when {
+            !eventsReady -> "not set up"
+            ticketmasterKey.isNotBlank() -> "set up near ${place!!.name} (Ticketmaster listings)"
+            else -> "set up near ${place!!.name} (local articles about things to do: names may be long headlines, and {events.N.when} is when it was published)"
+        },
     ).joinToString("\n") { (k, v) -> "- $k: $v" }
 }
 

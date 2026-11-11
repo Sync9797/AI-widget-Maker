@@ -212,7 +212,10 @@ object FeedParsers {
 
     // ---- News (Google News RSS) ----
 
-    fun news(body: String, count: Int = 5): Map<String, String> {
+    /** A Google News RSS item. */
+    data class Headline(val title: String, val source: String, val published: LocalDate?)
+
+    fun headlines(body: String): List<Headline> {
         val factory = DocumentBuilderFactory.newInstance().apply {
             // External entities off: the feed is remote content.
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -220,16 +223,44 @@ object FeedParsers {
         }
         val doc = factory.newDocumentBuilder().parse(ByteArrayInputStream(body.toByteArray()))
         val items = doc.getElementsByTagName("item")
-        val out = mutableMapOf<String, String>()
-        for (i in 0 until minOf(count, items.length)) {
+        return (0 until items.length).map { i ->
             val item = items.item(i) as Element
-            val source = item.getElementsByTagName("source").item(0)?.textContent?.trim().orEmpty()
-            var title = item.getElementsByTagName("title").item(0)?.textContent?.trim().orEmpty()
+            fun text(tag: String) = item.getElementsByTagName(tag).item(0)?.textContent?.trim().orEmpty()
+            val source = text("source")
             // Google appends " - Source" to each title.
-            if (source.isNotEmpty()) title = title.removeSuffix(" - $source")
-            out["news.${i + 1}"] = title
-            out["news.${i + 1}.source"] = source
+            val title = if (source.isNotEmpty()) text("title").removeSuffix(" - $source") else text("title")
+            val published = runCatching {
+                java.time.ZonedDateTime.parse(text("pubDate"), DateTimeFormatter.RFC_1123_DATE_TIME).toLocalDate()
+            }.getOrNull()
+            Headline(title, source, published)
         }
+    }
+
+    fun news(body: String, count: Int = 5): Map<String, String> {
+        val out = mutableMapOf<String, String>()
+        headlines(body).take(count).forEachIndexed { i, h ->
+            out["news.${i + 1}"] = h.title
+            out["news.${i + 1}.source"] = h.source
+        }
+        return out
+    }
+
+    /**
+     * Events without an account: recent articles about things to do in town,
+     * from Google News. events.N is the headline, events.N.when when it was
+     * published ("Today", "Thu"), events.N.venue the publication. Articles
+     * older than two weeks are skipped.
+     */
+    fun eventArticles(body: String, today: LocalDate, count: Int = 5): Map<String, String> {
+        val out = mutableMapOf<String, String>()
+        headlines(body)
+            .filter { it.published == null || !it.published.isBefore(today.minusDays(14)) }
+            .take(count)
+            .forEachIndexed { i, h ->
+                out["events.${i + 1}"] = h.title
+                out["events.${i + 1}.when"] = whenText(h.published, null, today)
+                out["events.${i + 1}.venue"] = h.source
+            }
         return out
     }
 

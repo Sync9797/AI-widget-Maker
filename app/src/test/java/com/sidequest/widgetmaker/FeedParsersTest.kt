@@ -122,12 +122,13 @@ class FeedParsersTest {
     @Test
     fun news() {
         val body = """<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Austin - Google News</title>
-            <item><title>City council approves new park - KXAN</title><source url="https://kxan.com">KXAN</source></item>
+            <item><title>City council approves new park - KXAN</title><link>https://news.google.com/articles/abc</link><source url="https://kxan.com">KXAN</source></item>
             <item><title>Food truck festival returns &amp; grows - Austin Chronicle</title><source url="https://x">Austin Chronicle</source></item>
             </channel></rss>"""
         val v = FeedParsers.news(body)
         assertEquals("City council approves new park", v["news.1"])
         assertEquals("KXAN", v["news.1.source"])
+        assertEquals("https://news.google.com/articles/abc", v["news.1.link"])
         assertEquals("Food truck festival returns & grows", v["news.2"])
         assertNull(v["news.3"])
     }

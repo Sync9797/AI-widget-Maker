@@ -32,6 +32,21 @@ forecast as it grows taller; a news widget shows more headlines the taller it
 is. Claude designs every widget this way (each element can say which sizes it
 appears at), and the app previews each design at 2×1, 2×2, 2×4, 4×2 and 4×4.
 
+## Tap to open
+
+Tapping a widget opens the right thing:
+
+- A **headline** opens that article, an **event** its page, a **calendar entry**
+  that event in your calendar.
+- The **time** opens your Clock app and a **date** your calendar.
+- The rest of the widget opens an app for what it shows: weather, crypto, news,
+  events, commute (maps), battery.
+
+Clock, calendar, maps and battery use the phone's defaults. For weather, crypto
+and news, Android has no default, so the first tap asks which app (fitting apps
+first, or the web) with **Always use this app** ticked. Change any of them in
+**Settings → When you tap a widget**.
+
 ## Widget style
 
 In **Settings → Widget style**, pick how all your widgets are colored. The
@@ -46,7 +61,8 @@ layout always stays as designed:
 - **Original colors**: the palette Claude chose for each design.
 
 Each widget can also have its own style: long-press it, tap its settings, and
-pick one (or keep "App default").
+pick one (or keep "App default"). The same screen has **Refresh now**, which
+fetches fresh data right away and redraws your widgets.
 
 ## Live data
 

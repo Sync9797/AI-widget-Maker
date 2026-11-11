@@ -73,6 +73,7 @@ object DesignParser {
     private fun sanitize(node: Node): Node = when (node) {
         is ColumnNode -> node.copy(
             show = sanitize(node.show),
+            tap = node.tap?.take(80),
             children = node.children.map { sanitize(it) },
             background = node.background?.let { Colors.parseOrNull(it)?.let { _ -> it } },
             cornerRadius = node.cornerRadius.coerceIn(0, 40),
@@ -80,6 +81,7 @@ object DesignParser {
         )
         is RowNode -> node.copy(
             show = sanitize(node.show),
+            tap = node.tap?.take(80),
             children = node.children.map { sanitize(it) },
             background = node.background?.let { Colors.parseOrNull(it)?.let { _ -> it } },
             cornerRadius = node.cornerRadius.coerceIn(0, 40),
@@ -87,6 +89,7 @@ object DesignParser {
         )
         is TextNode -> node.copy(
             show = sanitize(node.show),
+            tap = node.tap?.take(80),
             text = node.text.take(200),
             size = node.size.coerceIn(8, 72),
             color = Colors.orDefault(node.color, "#FFFFFFFF"),
@@ -97,24 +100,28 @@ object DesignParser {
         )
         is ClockNode -> node.copy(
             show = sanitize(node.show),
+            tap = node.tap?.take(80),
             format = node.format.take(30).ifBlank { "h:mm" },
             size = node.size.coerceIn(10, 96),
             color = Colors.orDefault(node.color, "#FFFFFFFF"),
         )
         is IconNode -> node.copy(
             show = sanitize(node.show),
+            tap = node.tap?.take(80),
             live = node.live?.take(60),
             size = node.size.coerceIn(10, 64),
             color = Colors.orDefault(node.color, "#FFFFFFFF"),
         )
         is ProgressNode -> node.copy(
             show = sanitize(node.show),
+            tap = node.tap?.take(80),
             color = Colors.orDefault(node.color, "#FF7CF29C"),
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
             height = node.height.coerceIn(2, 24),
         )
         is SpacerNode -> node.copy(
-            show = sanitize(node.show),size = node.size.coerceIn(0, 64))
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),size = node.size.coerceIn(0, 64))
     }
 }
 

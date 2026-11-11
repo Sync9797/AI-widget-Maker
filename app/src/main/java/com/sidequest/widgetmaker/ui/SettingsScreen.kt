@@ -41,7 +41,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sidequest.widgetmaker.feeds.FeedSnapshot
+import com.sidequest.widgetmaker.data.DesignStore
 import com.sidequest.widgetmaker.spec.MaterialSlot
+import com.sidequest.widgetmaker.spec.TapKind
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Surface
+import androidx.compose.ui.window.Dialog
 import com.sidequest.widgetmaker.spec.WidgetTheme
 import com.sidequest.widgetmaker.widget.AiWidget
 import androidx.compose.foundation.background
@@ -94,6 +99,12 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                 )
                 if (state.theme == WidgetTheme.material) MaterialSwatches()
             }
+
+            Section(
+                "When you tap a widget",
+                "Headlines, events and calendar entries open themselves. The rest of a widget opens an app " +
+                    "for what it shows. Clock, calendar, maps and battery use your phone's defaults unless you pick one.",
+            ) { TapChoices() }
 
             Section(
                 "Claude",
@@ -270,6 +281,57 @@ private fun MaterialSwatches() {
                         .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
                 )
                 Text(label, style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+/** One row per kind of tap, showing which app it opens; tap a row to change it. */
+@Composable
+private fun TapChoices() {
+    val context = LocalContext.current
+    val store = remember { DesignStore(context) }
+    var version by remember { mutableStateOf(0) }
+    var editing by remember { mutableStateOf<TapKind?>(null) }
+    val labels = remember(version) {
+        val pm = context.packageManager
+        TapKind.entries.associateWith { kind ->
+            when (val choice = store.tapApp(kind)) {
+                null -> if (AppOpener.hasSystemDefault(kind)) "Phone's default" else "Ask every time"
+                AppOpener.WEB -> "On the web"
+                else -> runCatching { pm.getApplicationLabel(pm.getApplicationInfo(choice, 0)).toString() }.getOrDefault(choice)
+            }
+        }
+    }
+    Column {
+        TapKind.entries.forEach { kind ->
+            Row(
+                Modifier.fillMaxWidth().clickable { editing = kind }.padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(kind.label, modifier = Modifier.weight(1f))
+                Text(labels.getValue(kind), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+    editing?.let { kind ->
+        Dialog(onDismissRequest = { editing = null }) {
+            Surface(shape = MaterialTheme.shapes.extraLarge) {
+                AppPicker(
+                    kind = kind,
+                    offerAlways = false,
+                    onPicked = { choice, _ ->
+                        store.setTapApp(kind, choice)
+                        version++
+                        editing = null
+                    },
+                    onCancel = { editing = null },
+                    onAskEveryTime = {
+                        store.setTapApp(kind, null)
+                        version++
+                        editing = null
+                    },
+                )
             }
         }
     }

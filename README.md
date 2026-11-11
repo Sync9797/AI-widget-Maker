@@ -61,7 +61,8 @@ layout always stays as designed:
 - **Original colors**: the palette Claude chose for each design.
 
 Each widget can also have its own style: long-press it, tap its settings, and
-pick one (or keep "App default").
+pick one (or keep "App default"). The same screen has **Refresh now**, which
+fetches fresh data right away and redraws your widgets.
 
 ## Live data
 

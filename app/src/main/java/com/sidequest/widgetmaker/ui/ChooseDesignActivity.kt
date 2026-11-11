@@ -27,6 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.sidequest.widgetmaker.data.DesignStore
+import com.sidequest.widgetmaker.feeds.Feeds
+import com.sidequest.widgetmaker.widget.AiWidget
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.Alignment
 import com.sidequest.widgetmaker.spec.WidgetTheme
 import com.sidequest.widgetmaker.widget.updateWidget
 import kotlinx.coroutines.launch
@@ -56,6 +63,25 @@ class ChooseDesignActivity : ComponentActivity() {
             var picked by remember { mutableStateOf(store.designFor(appWidgetId)?.id) }
             val theme = own ?: store.theme
 
+            var refreshing by remember { mutableStateOf(false) }
+            var refreshNote by remember { mutableStateOf(lastUpdated(this@ChooseDesignActivity)) }
+
+            // Fetches every data source now and redraws all widgets (this one included).
+            fun refresh() = lifecycleScope.launch {
+                refreshing = true
+                refreshNote = "Refreshing…"
+                val snapshot = runCatching { Feeds(this@ChooseDesignActivity).refresh() }.getOrNull()
+                AiWidget.refreshAll(this@ChooseDesignActivity)
+                refreshing = false
+                refreshNote = when {
+                    snapshot == null -> "Couldn't refresh. Check your internet connection."
+                    snapshot.errors.isNotEmpty() ->
+                        "Updated ${snapshot.values["updated"].orEmpty()}, but: " +
+                            snapshot.errors.entries.joinToString("; ") { (k, v) -> "$k: $v" }
+                    else -> "Updated ${snapshot.values["updated"].orEmpty()}"
+                }
+            }
+
             fun apply(finishAfter: Boolean = false) = lifecycleScope.launch {
                 updateWidget(this@ChooseDesignActivity, appWidgetId)
                 if (finishAfter) finish()
@@ -68,6 +94,17 @@ class ChooseDesignActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         Text("Widget settings", style = MaterialTheme.typography.titleLarge)
+
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(onClick = { refresh() }, enabled = !refreshing) {
+                                if (refreshing) {
+                                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.size(8.dp))
+                                }
+                                Text("Refresh now")
+                            }
+                            Text(refreshNote, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        }
 
                         Text("Style", style = MaterialTheme.typography.titleMedium)
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -116,4 +153,10 @@ class ChooseDesignActivity : ComponentActivity() {
             }
         }
     }
+}
+
+/** "Last updated 3:12 PM", from the saved data, or a hint if nothing has been fetched yet. */
+private fun lastUpdated(context: android.content.Context): String {
+    val snapshot = Feeds(context).snapshot()
+    return snapshot.values["updated"]?.let { "Last updated $it" } ?: "Fetches weather, news and your other data now."
 }

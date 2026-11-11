@@ -14,6 +14,14 @@ Download `AIWidgetMaker.apk` on your phone and open it.
 The first time, open **Settings** in the app and paste an Anthropic API key
 (from console.anthropic.com). It's stored only on the phone.
 
+## Resize for more
+
+Widgets are responsive: stretch one wider or taller and it shows more. A small
+clock gains the battery when it's wider, then the weather, then an hourly
+forecast as it grows taller; a news widget shows more headlines the taller it
+is. Claude designs every widget this way (each element can say which sizes it
+appears at), and the app previews each design at 2×1, 2×2, 2×4, 4×2 and 4×4.
+
 ## Widget style
 
 In **Settings → Widget style**, pick how all your widgets are colored. The
@@ -33,11 +41,11 @@ check it works:
 
 | Data | From | Setup |
 |---|---|---|
-| Weather (temperature, high/low, rain chance, wind, a live weather icon) | Open-Meteo | Type your town. No account. |
+| Weather (now, the next 5 hours, the next 3 days, with live weather icons) | Open-Meteo | Type your town. No account. |
 | Crypto prices and 24 h change, green or red | CoinGecko | List your coins, like `BTC, ETH`. No account. |
-| Local news headlines | Google News | Your town, or a topic. No account. |
+| Local news (up to 5 headlines) | Google News | Your town, or a topic. No account. |
 | Commute time with live traffic | TomTom | Free key from [developer.tomtom.com](https://developer.tomtom.com), plus home and work addresses. |
-| Nearby events (concerts, games, shows) | Ticketmaster | Free key ("Consumer Key") from [developer.ticketmaster.com](https://developer.ticketmaster.com). |
+| Nearby events (up to 5: concerts, games, shows) | Ticketmaster | Free key ("Consumer Key") from [developer.ticketmaster.com](https://developer.ticketmaster.com). |
 
 Then just ask for it, for example "my commute time and today's weather" or
 "a crypto ticker for my coins".

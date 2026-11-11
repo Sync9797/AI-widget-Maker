@@ -32,6 +32,41 @@ class FeedParsersTest {
     }
 
     @Test
+    fun forecast() {
+        val body = """{"current":{"temperature_2m":60,"weather_code":0,"is_day":1},
+            "hourly":{"time":["2026-11-11T14:00","2026-11-11T15:00","2026-11-11T16:00","2026-11-11T17:00",
+              "2026-11-11T18:00","2026-11-11T19:00","2026-11-11T20:00"],
+              "temperature_2m":[60,61.4,62,59,55,52,50],"weather_code":[0,0,3,61,61,0,0],"is_day":[1,1,1,1,0,0,0]},
+            "daily":{"time":["2026-11-11","2026-11-12","2026-11-13","2026-11-14"],
+              "temperature_2m_max":[70,72.6,65,80],"temperature_2m_min":[50,51,48,60],
+              "precipitation_probability_max":[10,20,80,0],"weather_code":[0,3,63,95]}}"""
+        val v = FeedParsers.weather(body, austin, fahrenheit = true)
+        assertEquals("3 PM", v["weather.h1.time"])
+        assertEquals("61°", v["weather.h1.temp"])
+        assertEquals("sun", v["weather.h1.icon"])
+        assertEquals("rain", v["weather.h3.icon"])
+        assertEquals("moon", v["weather.h5.icon"])
+        assertEquals("Thu", v["weather.d1.day"])
+        assertEquals("73°", v["weather.d1.high"])
+        assertEquals("rain", v["weather.d2.icon"])
+        assertEquals("storm", v["weather.d3.icon"])
+    }
+
+    @Test
+    fun liveIconsFollowTheirValue() {
+        val tokens = Tokens(LocalDateTime.now(), null, false, feeds = mapOf("weather.icon" to "snow", "weather.h2.icon" to "rain"))
+        val live = com.sidequest.widgetmaker.spec.IconNode(name = com.sidequest.widgetmaker.spec.IconName.sun, live = "{weather.h2.icon}")
+        val current = com.sidequest.widgetmaker.spec.IconNode(name = com.sidequest.widgetmaker.spec.IconName.weather)
+        val plain = com.sidequest.widgetmaker.spec.IconNode(name = com.sidequest.widgetmaker.spec.IconName.heart)
+        val missing = com.sidequest.widgetmaker.spec.IconNode(name = com.sidequest.widgetmaker.spec.IconName.sun, live = "{weather.h9.icon}")
+        assertEquals(com.sidequest.widgetmaker.R.drawable.icon_rain, com.sidequest.widgetmaker.widget.iconRes(live, tokens))
+        assertEquals(com.sidequest.widgetmaker.R.drawable.icon_snow, com.sidequest.widgetmaker.widget.iconRes(current, tokens))
+        assertEquals(com.sidequest.widgetmaker.R.drawable.icon_heart, com.sidequest.widgetmaker.widget.iconRes(plain, tokens))
+        // No value yet: falls back to the current weather.
+        assertEquals(com.sidequest.widgetmaker.R.drawable.icon_snow, com.sidequest.widgetmaker.widget.iconRes(missing, tokens))
+    }
+
+    @Test
     fun weatherIconsFollowDayAndNight() {
         assertEquals("sun", FeedParsers.weatherIcon(0, isDay = true))
         assertEquals("moon", FeedParsers.weatherIcon(0, isDay = false))

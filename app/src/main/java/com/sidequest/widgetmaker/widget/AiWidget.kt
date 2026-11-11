@@ -18,6 +18,7 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.AndroidRemoteViews
@@ -65,6 +66,7 @@ import com.sidequest.widgetmaker.spec.Role
 import com.sidequest.widgetmaker.spec.Styler
 import com.sidequest.widgetmaker.spec.Weight
 import com.sidequest.widgetmaker.spec.WidgetTheme
+import com.sidequest.widgetmaker.spec.visible
 import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
@@ -189,7 +191,10 @@ private fun DesignWidget(design: WidgetDesign, tokens: Tokens, styler: Styler, m
             .cornerRadius(design.cornerRadius.dp)
             .padding(design.padding.dp),
     ) {
-        GlanceNode(design.root, tokens, paint, GlanceModifier.fillMaxSize())
+        // The widget's size right now: elements with size rules appear or hide as it's resized.
+        val size = LocalSize.current
+        val fit = Fit(size.width.value.toInt(), size.height.value.toInt())
+        if (fit.shows(design.root)) GlanceNode(design.root, tokens, paint, fit, GlanceModifier.fillMaxSize())
     }
 }
 
@@ -203,15 +208,15 @@ private class Paint(val styler: Styler) {
 }
 
 @Composable
-private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, modifier: GlanceModifier = GlanceModifier) {
+private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, modifier: GlanceModifier = GlanceModifier) {
     when (node) {
         is ColumnNode -> Column(
             modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
             horizontalAlignment = horizontal(node.align),
             verticalAlignment = vertical(node.verticalAlign),
         ) {
-            node.children.forEach { child ->
-                GlanceNode(child, tokens, paint, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
+            node.children.filter(fit::shows).forEach { child ->
+                GlanceNode(child, tokens, paint, fit, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
             }
         }
         is RowNode -> Row(
@@ -219,8 +224,8 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, modifier: Glanc
             horizontalAlignment = horizontal(node.align),
             verticalAlignment = vertical(node.verticalAlign),
         ) {
-            node.children.forEach { child ->
-                GlanceNode(child, tokens, paint, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
+            node.children.filter(fit::shows).forEach { child ->
+                GlanceNode(child, tokens, paint, fit, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
             }
         }
         is TextNode -> {
@@ -247,7 +252,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, modifier: Glanc
         }
         is ClockNode -> AndroidRemoteViews(remoteViews = clockViews(node, paint.styler), modifier = modifier)
         is IconNode -> Image(
-            provider = ImageProvider(iconRes(node.name, tokens)),
+            provider = ImageProvider(iconRes(node, tokens)),
             contentDescription = null,
             modifier = modifier.size(node.size.dp),
             colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)),
@@ -313,11 +318,21 @@ fun textColor(node: TextNode, tokens: Tokens): Pair<Role, String> = when (node.t
     null -> Role.Text to node.color
 }
 
-/** The drawable for an icon; the live "weather" icon follows the latest weather. */
-fun iconRes(name: IconName, tokens: Tokens): Int {
-    if (name != IconName.weather) return iconRes(name)
-    val live = tokens.feeds["weather.icon"]?.let { runCatching { IconName.valueOf(it) }.getOrNull() }
-    return iconRes(live ?: IconName.sun)
+/** A widget size, in dp. */
+data class Fit(val width: Int, val height: Int) {
+    fun shows(node: Node) = visible(node, width, height)
+}
+
+/**
+ * The drawable for an icon. A [IconNode.live] icon follows its value (like a
+ * forecast hour's weather), and "weather" follows the current weather.
+ */
+fun iconRes(node: IconNode, tokens: Tokens): Int {
+    fun parse(name: String?) = name?.trim()?.let { runCatching { IconName.valueOf(it) }.getOrNull() }
+    val live = node.live?.let { parse(tokens.fill(it)) }
+    if (live != null && live != IconName.weather) return iconRes(live)
+    if (node.name != IconName.weather && node.live == null) return iconRes(node.name)
+    return iconRes(parse(tokens.feeds["weather.icon"]) ?: if (node.name == IconName.weather) IconName.sun else node.name)
 }
 
 fun iconRes(name: IconName): Int = when (name) {

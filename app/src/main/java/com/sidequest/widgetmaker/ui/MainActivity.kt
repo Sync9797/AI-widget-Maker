@@ -224,7 +224,7 @@ private fun DraftCard(
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(draft.design.name, style = MaterialTheme.typography.titleLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PreviewSize.entries.forEach { s ->
                     FilterChip(selected = s == size, onClick = { size = s }, label = { Text(s.label) })
                 }

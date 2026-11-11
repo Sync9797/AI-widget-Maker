@@ -16,6 +16,16 @@ Colors are "#RRGGBB" or "#AARRGGBB" (the AA part is opacity; "#CC000000" is 80% 
 Sizes are in dp (text sizes in sp). Every element may set "grow": true to take the leftover
 space in its row or column.
 
+Widgets are responsive: people resize them, and a bigger widget should show more. Every element
+may set "show": {"minWidth":dp,"minHeight":dp,"maxWidth":dp,"maxHeight":dp} (leave out any
+limit) so it only appears when the whole widget is that size; an element without "show" always
+appears. Typical sizes: 2x1 is about 160x80, 2x2 160x160, 4x1 320x80, 4x2 320x160, 2x4 160x320,
+4x4 320x320. Design every widget this way: the essentials fit 2x1; more appear in steps as it
+grows wider (minWidth 250: things beside the main content) and taller (minHeight 150, 230, 300:
+more rows, more forecast hours or days, more headlines). Use maxWidth or maxHeight to swap a
+compact version for a fuller one, for example a short label up to 200 wide and a longer one
+from 201.
+
 Elements ("type" picks one; leave out any field to use its default):
 - {"type":"column","children":[...],"align":"start|center|end","verticalAlign":"top|center|bottom",
    "background":color,"cornerRadius":dp,"padding":dp}   stacks children top to bottom
@@ -28,7 +38,8 @@ Elements ("type" picks one; leave out any field to use its default):
    a live clock or date that updates every minute. "format" is an Android date pattern:
    "h:mm" (3:07), "HH:mm" (15:07), "h:mm a" (3:07 PM), "EEEE" (Tuesday), "EEE d MMM" (Tue 4 Mar),
    "MMMM d" (March 4). Use clock, not text, for anything showing the time.
-- {"type":"icon","name":one of ${IconName.entries.joinToString("|") { it.name }},"size":20,"color":color}
+- {"type":"icon","name":one of ${IconName.entries.joinToString("|") { it.name }},"size":20,"color":color,"live":null}
+   set "live" to a value holding an icon name, like "{weather.h1.icon}", to make the icon follow it
 - {"type":"progress","value":"{battery}" or a number 0-100,"color":color,"trackColor":color,"height":6}
 - {"type":"spacer","size":8}   empty space; with "grow":true it pushes things apart
 
@@ -41,21 +52,24 @@ Live data from the internet (refreshed about every 30 minutes; each request says
 - Weather: {weather.temp} "18°", {weather.feelsLike}, {weather.high}, {weather.low},
   {weather.condition} "Partly cloudy", {weather.rain} "40%" (chance today), {weather.wind} "9 mph",
   {weather.place} the town name. The icon "weather" shows the current conditions.
+  Next hours, N = 1 to 5: {weather.hN.time} "3 PM", {weather.hN.temp}, {weather.hN.icon}.
+  Next days, N = 1 to 3: {weather.dN.day} "Thu", {weather.dN.high}, {weather.dN.low}, {weather.dN.icon}.
+  Show forecasts as a row of small columns (time, live icon, temp), only at bigger sizes.
 - Crypto, for each coin the user tracks (SYMBOL is like BTC): {crypto.SYMBOL.price} "$97,412",
   {crypto.SYMBOL.change} "+2.4%" (24 hours). Use trendOf on the change (and the price) text.
 - Traffic: {traffic.commute} "24 min" (home to work in the morning, back home from noon),
   {traffic.delay} "+6 min" or "No delays", {traffic.distance} "12.3 mi", {traffic.to} "Work" or "Home".
-- Local news: {news.1}, {news.2}, {news.3} headlines, and {news.1.source} etc. Headlines are long:
+- Local news: {news.1} to {news.5} headlines, and {news.1.source} etc. Headlines are long:
   give each its own text element with maxLines 2 and a modest size.
-- Nearby events: {events.1}, {events.2}, {events.3} names, {events.1.when} "Sat 8 PM",
+- Nearby events: {events.1} to {events.5} names, {events.1.when} "Sat 8 PM",
   {events.1.venue}.
+  For lists, show more items the taller the widget is.
 - {updated}: when the data was last refreshed, like "8:42 AM".
 A value that isn't available shows as "--". If asked for data that isn't set up, design it anyway
 with the values above; the user can set it up later.
 
 Limits: at most ${DesignParser.MAX_NODES} elements and ${DesignParser.MAX_DEPTH} levels of nesting.
-The widget may be shown anywhere from 2x1 to 4x2 home-screen cells, so keep layouts that hold up
-when resized, and keep text short. Data not listed above (calendar events, music playing, stock
+Keep text short, and check the design at every typical size: nothing should be cramped at 2x1. Data not listed above (calendar events, music playing, stock
 prices) can't be shown yet: if asked for it, design the look with a clearly labeled placeholder
 rather than made-up numbers.
 
@@ -63,14 +77,32 @@ Make it look designed: a clear hierarchy (one large element, smaller supporting 
 consistent palette that fits the description, comfortable padding, and good contrast between
 text and background. When asked to change an existing design, keep what wasn't mentioned.
 
-Example (a calm clock widget):
+Example (a calm clock widget: time and date at every size, battery from 250 wide, a weather
+line from 150 tall and an hourly forecast from 230 tall):
 {"name":"Calm clock","background":"#E6141B2D","cornerRadius":28,"padding":16,"root":
  {"type":"column","verticalAlign":"center","children":[
-  {"type":"text","text":"{greeting}","size":13,"color":"#B3C9D6FF","weight":"medium"},
-  {"type":"clock","format":"h:mm","size":48,"color":"#FFFFFFFF","weight":"light"},
+  {"type":"text","text":"{greeting}","size":13,"color":"#B3C9D6FF","weight":"medium","show":{"minHeight":150}},
+  {"type":"clock","format":"h:mm","size":44,"color":"#FFFFFFFF","weight":"light"},
   {"type":"row","children":[
    {"type":"clock","format":"EEE d MMM","size":13,"color":"#CCFFFFFF","grow":true},
-   {"type":"icon","name":"battery","size":14,"color":"#FF7CF29C"},
-   {"type":"text","text":"{battery}%","size":13,"color":"#CCFFFFFF"}]}]}}
+   {"type":"icon","name":"battery","size":14,"color":"#FF7CF29C","show":{"minWidth":250}},
+   {"type":"text","text":"{battery}%","size":13,"color":"#CCFFFFFF","show":{"minWidth":250}}]},
+  {"type":"row","show":{"minHeight":150},"children":[
+   {"type":"icon","name":"weather","size":16,"color":"#FFFFD27A"},
+   {"type":"text","text":" {weather.temp} {weather.condition}","size":13,"color":"#CCFFFFFF","maxLines":1}]},
+  {"type":"spacer","size":10,"show":{"minHeight":230}},
+  {"type":"row","show":{"minHeight":230},"children":[
+   {"type":"column","align":"center","grow":true,"children":[
+    {"type":"text","text":"{weather.h1.time}","size":11,"color":"#99FFFFFF"},
+    {"type":"icon","name":"sun","live":"{weather.h1.icon}","size":18,"color":"#FFFFD27A"},
+    {"type":"text","text":"{weather.h1.temp}","size":12,"color":"#FFFFFFFF"}]},
+   {"type":"column","align":"center","grow":true,"children":[
+    {"type":"text","text":"{weather.h2.time}","size":11,"color":"#99FFFFFF"},
+    {"type":"icon","name":"sun","live":"{weather.h2.icon}","size":18,"color":"#FFFFD27A"},
+    {"type":"text","text":"{weather.h2.temp}","size":12,"color":"#FFFFFFFF"}]},
+   {"type":"column","align":"center","grow":true,"children":[
+    {"type":"text","text":"{weather.h3.time}","size":11,"color":"#99FFFFFF"},
+    {"type":"icon","name":"sun","live":"{weather.h3.icon}","size":18,"color":"#FFFFD27A"},
+    {"type":"text","text":"{weather.h3.temp}","size":12,"color":"#FFFFFFFF"}]}]}]}}
 """.trim()
 }

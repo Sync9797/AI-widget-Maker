@@ -37,7 +37,7 @@ object FeedParsers {
         val code = current["weather_code"].int() ?: 0
         val isDay = (current["is_day"].int() ?: 1) == 1
         val unit = if (fahrenheit) "mph" else "km/h"
-        return mapOf(
+        return forecast(root) + mapOf(
             "weather.temp" to degrees(current["temperature_2m"].double()),
             "weather.feelsLike" to degrees(current["apparent_temperature"].double()),
             "weather.high" to degrees(daily["temperature_2m_max"].first()),
@@ -51,6 +51,38 @@ object FeedParsers {
     }
 
     private fun degrees(value: Double?) = value?.let { "${it.roundToInt()}°" } ?: "--"
+
+    /**
+     * The next hours (weather.h1 to h5: time, temp, icon) and the next days
+     * (weather.d1 to d3: day, high, low, icon), for bigger widgets.
+     */
+    private fun forecast(root: JsonObject): Map<String, String> {
+        val out = mutableMapOf<String, String>()
+        val hourly = root["hourly"].obj()
+        val times = (hourly["time"] as? JsonArray)?.mapNotNull { it.str() }.orEmpty()
+        val temps = hourly["temperature_2m"] as? JsonArray
+        val codes = hourly["weather_code"] as? JsonArray
+        val days = hourly["is_day"] as? JsonArray
+        // The first hour returned is the current one; the forecast starts at the next.
+        for (i in 1..5) {
+            val time = times.getOrNull(i)?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() } ?: break
+            out["weather.h$i.time"] = time.format(DateTimeFormatter.ofPattern("h a", Locale.US))
+            out["weather.h$i.temp"] = degrees(temps?.at(i))
+            out["weather.h$i.icon"] = weatherIcon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
+        }
+        val daily = root["daily"].obj()
+        val dates = (daily["time"] as? JsonArray)?.mapNotNull { it.str() }.orEmpty()
+        for (i in 1..3) {
+            val date = dates.getOrNull(i)?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: break
+            out["weather.d$i.day"] = date.format(DateTimeFormatter.ofPattern("EEE", Locale.US))
+            out["weather.d$i.high"] = degrees((daily["temperature_2m_max"] as? JsonArray)?.at(i))
+            out["weather.d$i.low"] = degrees((daily["temperature_2m_min"] as? JsonArray)?.at(i))
+            out["weather.d$i.icon"] = weatherIcon((daily["weather_code"] as? JsonArray)?.at(i)?.roundToInt() ?: 0, true)
+        }
+        return out
+    }
+
+    private fun JsonArray.at(i: Int): Double? = (getOrNull(i) as? JsonPrimitive)?.doubleOrNull
 
     /** WMO weather codes, as Open-Meteo reports them. */
     fun condition(code: Int) = when (code) {
@@ -180,7 +212,7 @@ object FeedParsers {
 
     // ---- News (Google News RSS) ----
 
-    fun news(body: String, count: Int = 3): Map<String, String> {
+    fun news(body: String, count: Int = 5): Map<String, String> {
         val factory = DocumentBuilderFactory.newInstance().apply {
             // External entities off: the feed is remote content.
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -203,7 +235,7 @@ object FeedParsers {
 
     // ---- Events (Ticketmaster Discovery) ----
 
-    fun events(body: String, today: LocalDate, count: Int = 3): Map<String, String> {
+    fun events(body: String, today: LocalDate, count: Int = 5): Map<String, String> {
         val events = (json.parseToJsonElement(body).obj()["_embedded"].obj()["events"] as? JsonArray) ?: return emptyMap()
         val out = mutableMapOf<String, String>()
         events.take(count).forEachIndexed { i, element ->

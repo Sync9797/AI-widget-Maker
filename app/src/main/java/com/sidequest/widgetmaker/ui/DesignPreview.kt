@@ -52,6 +52,7 @@ import com.sidequest.widgetmaker.spec.Weight
 import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.widget.AiWidget
 import com.sidequest.widgetmaker.widget.iconRes
+import com.sidequest.widgetmaker.widget.textColor
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -120,7 +121,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, modifier: Modifier) {
         is TextNode -> Text(
             text = tokens.fill(node.text),
             modifier = modifier,
-            color = color(node.color),
+            color = color(textColor(node, tokens)),
             fontSize = node.size.sp,
             lineHeight = (node.size * 1.2f).sp,
             fontWeight = weight(node.weight),
@@ -142,7 +143,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, modifier: Modifier) {
             maxLines = 1,
         )
         is IconNode -> Image(
-            painter = painterResource(iconRes(node.name)),
+            painter = painterResource(iconRes(node.name, tokens)),
             contentDescription = null,
             modifier = modifier.size(node.size.dp),
             colorFilter = ColorFilter.tint(color(node.color)),

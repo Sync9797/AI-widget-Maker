@@ -15,8 +15,10 @@ data class Tokens(
     val battery: Int?,
     val charging: Boolean,
     val locale: Locale = Locale.getDefault(),
+    /** Latest values from the data sources (weather, crypto, traffic, news, events). */
+    val feeds: Map<String, String> = emptyMap(),
 ) {
-    fun values(): Map<String, String> = mapOf(
+    fun values(): Map<String, String> = feeds + mapOf(
         "date" to now.format(DateTimeFormatter.ofPattern("EEE d MMM", locale)),
         "day" to now.format(DateTimeFormatter.ofPattern("EEEE", locale)),
         "month" to now.format(DateTimeFormatter.ofPattern("MMMM", locale)),
@@ -27,10 +29,28 @@ data class Tokens(
         "charging" to if (charging) "Charging" else "",
     )
 
-    /** Replaces {token} with its value; unknown tokens are left as they are. */
+    /**
+     * Replaces {token} with its value. A data-source value that isn't there
+     * yet (not set up, or not fetched) shows as "--"; other unknown tokens
+     * are left as they are.
+     */
     fun fill(text: String): String {
         val values = values()
-        return TOKEN.replace(text) { m -> values[m.groupValues[1]] ?: m.value }
+        return TOKEN.replace(text) { m ->
+            val name = m.groupValues[1]
+            values[name] ?: if (FEED_PREFIXES.any { name.startsWith(it) }) "--" else m.value
+        }
+    }
+
+    /** Up (true), down (false) or unknown (null), from a value like "+2.4%" or a token holding one. */
+    fun trend(value: String): Boolean? {
+        // A sign followed by a digit: "--" (no data yet) is neither up nor down.
+        val text = fill(value).trim()
+        return when {
+            UP.containsMatchIn(text) -> true
+            DOWN.containsMatchIn(text) -> false
+            else -> null
+        }
     }
 
     /** A progress value: a number, or a token such as {battery}. */
@@ -40,7 +60,10 @@ data class Tokens(
     }
 
     companion object {
-        private val TOKEN = Regex("\\{(\\w+)\\}")
+        private val TOKEN = Regex("\\{([\\w.]+)\\}")
+        private val UP = Regex("^\\+\\s*[0-9]")
+        private val DOWN = Regex("^-\\s*[0-9]")
+        private val FEED_PREFIXES = listOf("weather.", "crypto.", "traffic.", "news.", "events.")
 
         val NAMES = listOf("date", "day", "month", "dayOfMonth", "year", "greeting", "battery", "charging")
 

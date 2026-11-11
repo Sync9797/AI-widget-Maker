@@ -9,6 +9,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sidequest.widgetmaker.ai.WidgetDesigner
 import com.sidequest.widgetmaker.data.DesignStore
+import com.sidequest.widgetmaker.feeds.FeedSettings
+import com.sidequest.widgetmaker.feeds.FeedSnapshot
+import com.sidequest.widgetmaker.feeds.FeedWorker
+import com.sidequest.widgetmaker.feeds.Feeds
+import com.sidequest.widgetmaker.feeds.Place
 import com.sidequest.widgetmaker.spec.SavedDesign
 import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.widget.AiWidget
@@ -36,10 +41,44 @@ data class MakerState(
     val message: String? = null,
     val saved: List<SavedDesign> = emptyList(),
     val hasApiKey: Boolean = false,
+    val sources: FeedSettings = FeedSettings(),
+    val snapshot: FeedSnapshot = FeedSnapshot(),
+    val sourcesBusy: Boolean = false,
+    val sourcesStatus: String? = null,
 )
+
+/** What the Data sources screen edits: plain text, looked up when saved. */
+data class SourcesForm(
+    val town: String,
+    val fahrenheit: Boolean,
+    val coins: String,
+    val currency: String,
+    val tomtomKey: String,
+    val home: String,
+    val work: String,
+    val newsTopic: String,
+    val ticketmasterKey: String,
+    val radiusMiles: String,
+) {
+    companion object {
+        fun from(s: FeedSettings) = SourcesForm(
+            town = s.place?.name.orEmpty(),
+            fahrenheit = s.fahrenheit,
+            coins = s.coins.joinToString(", "),
+            currency = s.currency.uppercase(),
+            tomtomKey = s.tomtomKey,
+            home = s.home?.name.orEmpty(),
+            work = s.work?.name.orEmpty(),
+            newsTopic = s.newsTopic,
+            ticketmasterKey = s.ticketmasterKey,
+            radiusMiles = s.eventsRadiusMiles.toString(),
+        )
+    }
+}
 
 class MakerViewModel(app: Application) : AndroidViewModel(app) {
     private val store = DesignStore(app)
+    private val feeds = Feeds(app)
     private val _state = MutableStateFlow(MakerState())
     val state: StateFlow<MakerState> = _state
 
@@ -50,7 +89,11 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     private fun reload() {
         viewModelScope.launch {
             val saved = withContext(Dispatchers.IO) { store.all() }
-            _state.update { it.copy(saved = saved, hasApiKey = store.apiKey.isNotBlank()) }
+            val sources = feeds.settings
+            val snapshot = withContext(Dispatchers.IO) { feeds.snapshot() }
+            _state.update {
+                it.copy(saved = saved, hasApiKey = store.apiKey.isNotBlank(), sources = sources, snapshot = snapshot)
+            }
         }
     }
 
@@ -80,7 +123,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(busy = true, error = null, message = null) }
         viewModelScope.launch {
             try {
-                val design = WidgetDesigner(key).design(text, previous?.design)
+                val design = WidgetDesigner(key).design(text, previous?.design, feeds.settings.summary())
                 val prompt = if (previous == null) text else previous.prompt + "\n→ " + text
                 _state.update { it.copy(busy = false, draft = Draft(previous?.id, prompt, design)) }
             } catch (e: WidgetDesigner.DesignFailed) {
@@ -145,8 +188,62 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         manager.requestPinAppWidget(ComponentName(app, AiWidgetReceiver::class.java), null, callback)
     }
 
-    /** Called when the app comes to the front: redraw widgets so dates and battery are fresh. */
+    /** Called when the app comes to the front: fresh data, then redraw widgets. */
     fun refreshWidgets() {
-        viewModelScope.launch { AiWidget.refreshAll(getApplication()) }
+        viewModelScope.launch {
+            val snapshot = feeds.snapshot()
+            // Fetch now if the data is older than 15 minutes; the background job covers the rest.
+            if (System.currentTimeMillis() - snapshot.updatedAt > 15 * 60_000) {
+                runCatching { feeds.refresh() }.onSuccess { fresh -> _state.update { it.copy(snapshot = fresh) } }
+            }
+            AiWidget.refreshAll(getApplication())
+        }
     }
+
+    /** Looks up the places, saves the data sources, then fetches everything once to check it works. */
+    fun saveSources(form: SourcesForm) {
+        if (_state.value.sourcesBusy) return
+        _state.update { it.copy(sourcesBusy = true, sourcesStatus = "Saving…") }
+        viewModelScope.launch {
+            val old = feeds.settings
+            val problems = mutableListOf<String>()
+            suspend fun lookup(text: String, current: Place?, label: String, find: suspend (String) -> Place?): Place? {
+                if (text.isBlank()) return null
+                if (current != null && current.name == text.trim()) return current
+                return runCatching { find(text) }.getOrNull()
+                    ?: run { problems += "Couldn't find $label “${text.trim()}”."; current }
+            }
+            val place = lookup(form.town, old.place, "the town") { feeds.findTown(it) }
+            val key = form.tomtomKey.trim()
+            val home = if (key.isBlank()) null else lookup(form.home, old.home, "the home address") { feeds.findAddress(it, key) }
+            val work = if (key.isBlank()) null else lookup(form.work, old.work, "the work address") { feeds.findAddress(it, key) }
+            val settings = FeedSettings(
+                place = place,
+                fahrenheit = form.fahrenheit,
+                coins = form.coins.split(',', ' ', ';').map { it.trim().uppercase() }.filter { it.isNotEmpty() }.distinct().take(10),
+                currency = form.currency.trim().lowercase().ifBlank { "usd" },
+                tomtomKey = key,
+                home = home ?: old.home.takeIf { form.home.isNotBlank() },
+                work = work ?: old.work.takeIf { form.work.isNotBlank() },
+                newsTopic = form.newsTopic.trim(),
+                ticketmasterKey = form.ticketmasterKey.trim(),
+                eventsRadiusMiles = form.radiusMiles.trim().toIntOrNull()?.coerceIn(1, 200) ?: 25,
+            )
+            feeds.settings = settings
+            FeedWorker.schedule(getApplication())
+            val snapshot = runCatching { feeds.refresh() }.getOrElse { FeedSnapshot(errors = mapOf("all" to (it.message ?: "failed"))) }
+            AiWidget.refreshAll(getApplication())
+            problems += snapshot.errors.map { (feed, why) -> "${feed.replaceFirstChar { it.uppercase() }}: $why" }
+            _state.update {
+                it.copy(
+                    sources = settings,
+                    snapshot = snapshot,
+                    sourcesBusy = false,
+                    sourcesStatus = if (problems.isEmpty()) "Saved. Everything is working." else problems.joinToString("\n"),
+                )
+            }
+        }
+    }
+
+    fun clearSourcesStatus() = _state.update { it.copy(sourcesStatus = null) }
 }

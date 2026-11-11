@@ -21,7 +21,9 @@ Elements ("type" picks one; leave out any field to use its default):
    "background":color,"cornerRadius":dp,"padding":dp}   stacks children top to bottom
 - {"type":"row", same fields as column}   places children left to right
 - {"type":"text","text":"...","size":14,"color":"#FFFFFFFF","weight":"light|normal|medium|bold",
-   "align":"start|center|end","maxLines":2}
+   "align":"start|center|end","maxLines":2,"trendOf":null,"upColor":"#FF4ADE80","downColor":"#FFF87171"}
+   set "trendOf" to a value like "{crypto.BTC.change}" to color the text upColor when it rises and
+   downColor when it falls (good for prices and changes)
 - {"type":"clock","format":"h:mm","size":40,"color":"#FFFFFFFF","weight":"light|normal|bold"}
    a live clock or date that updates every minute. "format" is an Android date pattern:
    "h:mm" (3:07), "HH:mm" (15:07), "h:mm a" (3:07 PM), "EEEE" (Tuesday), "EEE d MMM" (Tue 4 Mar),
@@ -35,11 +37,27 @@ Text can include these live values, written in braces: ${Tokens.NAMES.joinToStri
 % sign; {charging} is "Charging" or empty. These refresh about every 30 minutes, so they suit
 dates and greetings, not the time.
 
+Live data from the internet (refreshed about every 30 minutes; each request says which are set up):
+- Weather: {weather.temp} "18°", {weather.feelsLike}, {weather.high}, {weather.low},
+  {weather.condition} "Partly cloudy", {weather.rain} "40%" (chance today), {weather.wind} "9 mph",
+  {weather.place} the town name. The icon "weather" shows the current conditions.
+- Crypto, for each coin the user tracks (SYMBOL is like BTC): {crypto.SYMBOL.price} "$97,412",
+  {crypto.SYMBOL.change} "+2.4%" (24 hours). Use trendOf on the change (and the price) text.
+- Traffic: {traffic.commute} "24 min" (home to work in the morning, back home from noon),
+  {traffic.delay} "+6 min" or "No delays", {traffic.distance} "12.3 mi", {traffic.to} "Work" or "Home".
+- Local news: {news.1}, {news.2}, {news.3} headlines, and {news.1.source} etc. Headlines are long:
+  give each its own text element with maxLines 2 and a modest size.
+- Nearby events: {events.1}, {events.2}, {events.3} names, {events.1.when} "Sat 8 PM",
+  {events.1.venue}.
+- {updated}: when the data was last refreshed, like "8:42 AM".
+A value that isn't available shows as "--". If asked for data that isn't set up, design it anyway
+with the values above; the user can set it up later.
+
 Limits: at most ${DesignParser.MAX_NODES} elements and ${DesignParser.MAX_DEPTH} levels of nesting.
 The widget may be shown anywhere from 2x1 to 4x2 home-screen cells, so keep layouts that hold up
-when resized, and keep text short. Only weather, calendar, music and other data not listed above
-can't be shown yet: if asked for them, design the look with a sensible placeholder and keep it
-honest (for example a sun icon and "Sunny" rather than a made-up temperature).
+when resized, and keep text short. Data not listed above (calendar events, music playing, stock
+prices) can't be shown yet: if asked for it, design the look with a clearly labeled placeholder
+rather than made-up numbers.
 
 Make it look designed: a clear hierarchy (one large element, smaller supporting ones), a
 consistent palette that fits the description, comfortable padding, and good contrast between

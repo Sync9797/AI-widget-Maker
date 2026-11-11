@@ -33,8 +33,11 @@ enum class HAlign { start, center, end }
 enum class VAlign { top, center, bottom }
 enum class Weight { light, normal, medium, bold }
 
-/** Icons the widget can draw (each is a drawable in the app). */
-enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music }
+/**
+ * Icons the widget can draw (each is a drawable in the app). "weather" is
+ * live: it shows sun, moon, cloud, rain, snow or storm for the current weather.
+ */
+enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, weather }
 
 @Serializable
 sealed interface Node {
@@ -76,6 +79,13 @@ data class TextNode(
     val weight: Weight = Weight.normal,
     val align: HAlign = HAlign.start,
     val maxLines: Int = 2,
+    /**
+     * Colors the text by a value going up or down, like "{crypto.BTC.change}":
+     * [upColor] when it starts with "+", [downColor] with "-", else [color].
+     */
+    val trendOf: String? = null,
+    val upColor: String = "#FF4ADE80",
+    val downColor: String = "#FFF87171",
     override val grow: Boolean = false,
 ) : Node
 

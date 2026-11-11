@@ -45,6 +45,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.sidequest.widgetmaker.R
 import com.sidequest.widgetmaker.data.DesignStore
+import com.sidequest.widgetmaker.feeds.Feeds
 import com.sidequest.widgetmaker.spec.ClockNode
 import com.sidequest.widgetmaker.spec.Colors
 import com.sidequest.widgetmaker.spec.ColumnNode
@@ -91,6 +92,7 @@ class AiWidget : GlanceAppWidget() {
                 now = LocalDateTime.now(),
                 battery = level?.takeIf { it in 0..100 },
                 charging = battery?.isCharging == true,
+                feeds = Feeds(context).snapshot().values,
             )
         }
     }
@@ -185,7 +187,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, modifier: GlanceModifier = Gl
             modifier = modifier,
             maxLines = node.maxLines,
             style = TextStyle(
-                color = color(node.color),
+                color = color(textColor(node, tokens)),
                 fontSize = node.size.sp,
                 fontWeight = when (node.weight) {
                     Weight.bold -> FontWeight.Bold
@@ -201,7 +203,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, modifier: GlanceModifier = Gl
         )
         is ClockNode -> AndroidRemoteViews(remoteViews = clockViews(node), modifier = modifier)
         is IconNode -> Image(
-            provider = ImageProvider(iconRes(node.name)),
+            provider = ImageProvider(iconRes(node.name, tokens)),
             contentDescription = null,
             modifier = modifier.size(node.size.dp),
             colorFilter = ColorFilter.tint(color(node.color)),
@@ -254,7 +256,21 @@ private fun vertical(align: VAlign) = when (align) {
     VAlign.bottom -> Alignment.Vertical.Bottom
 }
 
-fun iconRes(name: IconName) = when (name) {
+/** A text's color, following [TextNode.trendOf] when it's set. */
+fun textColor(node: TextNode, tokens: Tokens): String = when (node.trendOf?.let { tokens.trend(it) }) {
+    true -> node.upColor
+    false -> node.downColor
+    null -> node.color
+}
+
+/** The drawable for an icon; the live "weather" icon follows the latest weather. */
+fun iconRes(name: IconName, tokens: Tokens): Int {
+    if (name != IconName.weather) return iconRes(name)
+    val live = tokens.feeds["weather.icon"]?.let { runCatching { IconName.valueOf(it) }.getOrNull() }
+    return iconRes(live ?: IconName.sun)
+}
+
+fun iconRes(name: IconName): Int = when (name) {
     IconName.star -> R.drawable.icon_star
     IconName.heart -> R.drawable.icon_heart
     IconName.bolt -> R.drawable.icon_bolt
@@ -263,4 +279,13 @@ fun iconRes(name: IconName) = when (name) {
     IconName.battery -> R.drawable.icon_battery
     IconName.calendar -> R.drawable.icon_calendar
     IconName.music -> R.drawable.icon_music
+    IconName.cloud -> R.drawable.icon_cloud
+    IconName.rain -> R.drawable.icon_rain
+    IconName.snow -> R.drawable.icon_snow
+    IconName.storm -> R.drawable.icon_storm
+    IconName.car -> R.drawable.icon_car
+    IconName.news -> R.drawable.icon_news
+    IconName.ticket -> R.drawable.icon_ticket
+    IconName.coin -> R.drawable.icon_coin
+    IconName.weather -> R.drawable.icon_sun
 }

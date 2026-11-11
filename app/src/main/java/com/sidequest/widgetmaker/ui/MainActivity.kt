@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.sidequest.widgetmaker.feeds.FeedWorker
 import com.sidequest.widgetmaker.spec.SavedDesign
 
 class MainActivity : ComponentActivity() {
@@ -64,6 +65,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        FeedWorker.schedule(this)
         setContent { MakerTheme { MakerScreen(viewModel) } }
     }
 
@@ -88,6 +90,11 @@ fun MakerTheme(content: @Composable () -> Unit) {
 
 private val IDEAS = listOf(
     "A big minimalist clock with the date underneath",
+    "Today's weather with the high, low and chance of rain",
+    "Crypto ticker for my coins, green and red for up and down",
+    "My commute time with traffic, and the weather",
+    "Top 3 local headlines on a newspaper-style card",
+    "What's on nearby this week: the next 3 events",
     "Retro terminal: green text on black, time, date and battery",
     "Pastel sunset gradient vibe with a greeting and the time",
     "A battery widget with a glowing progress bar",
@@ -99,6 +106,14 @@ private val IDEAS = listOf(
 private fun MakerScreen(viewModel: MakerViewModel) {
     val state by viewModel.state.collectAsState()
     var showSettings by rememberSaveable { mutableStateOf(false) }
+
+    if (showSettings) {
+        SettingsScreen(viewModel, state, onBack = {
+            viewModel.clearSourcesStatus()
+            showSettings = false
+        })
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -121,7 +136,8 @@ private fun MakerScreen(viewModel: MakerViewModel) {
                 InfoCard(
                     title = "Connect Claude",
                     body = "This app uses Claude to design widgets. Add an Anthropic API key " +
-                        "(from console.anthropic.com) in Settings to get started.",
+                        "(from console.anthropic.com) in Settings to get started. Settings is also " +
+                        "where you turn on weather, crypto, traffic, local news and nearby events.",
                     action = "Open Settings" to { showSettings = true },
                 )
             }
@@ -166,17 +182,6 @@ private fun MakerScreen(viewModel: MakerViewModel) {
             )
             Spacer(Modifier.height(24.dp))
         }
-    }
-
-    if (showSettings) {
-        SettingsDialog(
-            current = viewModel.apiKey,
-            onSave = {
-                viewModel.setApiKey(it)
-                showSettings = false
-            },
-            onDismiss = { showSettings = false },
-        )
     }
 }
 
@@ -294,28 +299,4 @@ private fun BusyButton(label: String, busy: Boolean, enabled: Boolean, onClick: 
             Text(label)
         }
     }
-}
-
-@Composable
-private fun SettingsDialog(current: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
-    var key by remember { mutableStateOf(current) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Settings") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Anthropic API key. It's stored only on this phone and sent only to Anthropic.")
-                OutlinedTextField(
-                    value = key,
-                    onValueChange = { key = it },
-                    singleLine = true,
-                    placeholder = { Text("sk-ant-…") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                )
-            }
-        },
-        confirmButton = { TextButton(onClick = { onSave(key) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
 }

@@ -11,8 +11,18 @@ Every push to `main` builds the app and publishes it as the
 [`latest` release](../../releases/tag/latest).
 Download `AIWidgetMaker.apk` on your phone and open it.
 
-The first time, open **Settings** in the app and paste an Anthropic API key
-(from console.anthropic.com). It's stored only on the phone.
+## Three ways to make a widget, two of them free
+
+- **Free, with the Claude app:** describe a widget and tap **Design in Claude
+  (free)**. The app opens the Claude app (or claude.ai) with your request; a
+  free account works. Send it, copy Claude's reply, come back and tap **Paste
+  design**. Changes ("make it purple") work the same way.
+- **Free, no AI:** start from one of the ready-made designs: big clock, clock
+  and weather, forecast, crypto ticker, commute, local news, nearby events,
+  battery. Save it as it is, or change it with Claude.
+- **Automatic, paid per use:** add an Anthropic API key (from
+  console.anthropic.com) in **Settings** and designs are made in the app, a few
+  cents each. The key is stored only on the phone.
 
 ## Resize for more
 

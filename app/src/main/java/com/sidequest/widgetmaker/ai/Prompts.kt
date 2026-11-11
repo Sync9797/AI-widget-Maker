@@ -3,8 +3,33 @@ package com.sidequest.widgetmaker.ai
 import com.sidequest.widgetmaker.spec.DesignParser
 import com.sidequest.widgetmaker.spec.IconName
 import com.sidequest.widgetmaker.spec.Tokens
+import com.sidequest.widgetmaker.spec.WidgetDesign
 
 object Prompts {
+    /** The user's turn: what to design (or how to change [previous]), and which live data is set up. */
+    fun request(description: String, previous: WidgetDesign?, dataSources: String): String {
+        val available = if (dataSources.isBlank()) "" else "Live data the user has set up:\n$dataSources\n\n"
+        return available + if (previous == null) {
+            "Design this widget: $description"
+        } else {
+            "Here is the current widget design:\n" + DesignParser.encode(previous) +
+                "\n\nChange it like this, keeping everything else: $description"
+        }
+    }
+
+    /**
+     * Everything in one message, for pasting into the Claude app or claude.ai
+     * (free accounts work). The reply is pasted back into this app.
+     */
+    fun forChat(description: String, previous: WidgetDesign?, dataSources: String): String =
+        "I'm using the AI Widget Maker app for Android. Please follow these instructions to design a widget.\n\n" +
+            SYSTEM + "\n\n----------\n\n" + request(description, previous, dataSources) +
+            "\n\nReply with only the JSON object, so I can copy your whole reply into the app."
+
+    /** A follow-up for the chat when a pasted reply couldn't be used. */
+    fun chatFix(problem: String) =
+        "The app couldn't use that design: $problem\nPlease reply again with only the corrected JSON object."
+
     val SYSTEM = """
 You design Android widgets for the home screen and the lock screen. You reply with one JSON
 object describing the widget and nothing else: no explanation and no code fence.

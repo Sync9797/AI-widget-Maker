@@ -7,7 +7,10 @@ import android.content.ComponentName
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.sidequest.widgetmaker.ai.ClaudeApp
+import com.sidequest.widgetmaker.ai.Prompts
 import com.sidequest.widgetmaker.ai.WidgetDesigner
+import com.sidequest.widgetmaker.spec.DesignParser
 import com.sidequest.widgetmaker.data.DesignStore
 import com.sidequest.widgetmaker.feeds.FeedSettings
 import com.sidequest.widgetmaker.feeds.FeedSnapshot
@@ -15,6 +18,7 @@ import com.sidequest.widgetmaker.feeds.FeedWorker
 import com.sidequest.widgetmaker.feeds.Feeds
 import com.sidequest.widgetmaker.feeds.Place
 import com.sidequest.widgetmaker.spec.SavedDesign
+import com.sidequest.widgetmaker.spec.Starters
 import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.spec.WidgetTheme
 import com.sidequest.widgetmaker.widget.AiWidget
@@ -35,8 +39,21 @@ data class Draft(
     val design: WidgetDesign,
 )
 
+/** A design being made in the Claude app: waiting for its reply to be pasted back. */
+data class ChatRequest(
+    val description: String,
+    val previous: Draft?,
+    val prompt: String,
+    val openedIn: ClaudeApp.Opened,
+    /** Why the last paste didn't work. */
+    val problem: String? = null,
+    /** The pasted reply was a design Claude got wrong, so asking Claude to fix it can help. */
+    val fixable: Boolean = false,
+)
+
 data class MakerState(
     val draft: Draft? = null,
+    val chat: ChatRequest? = null,
     val busy: Boolean = false,
     val error: String? = null,
     val message: String? = null,
@@ -128,10 +145,8 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     private fun run(text: String, previous: Draft?) {
         if (text.isBlank() || _state.value.busy) return
         val key = store.apiKey
-        if (key.isBlank()) {
-            _state.update { it.copy(error = "Add your Anthropic API key in Settings first.") }
-            return
-        }
+        // No API key: the free way, through the Claude app.
+        if (key.isBlank()) return startChat(text, previous)
         _state.update { it.copy(busy = true, error = null, message = null) }
         viewModelScope.launch {
             try {
@@ -144,6 +159,55 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(busy = false, error = "Something went wrong: ${e.message}") }
             }
         }
+    }
+
+    private fun startChat(text: String, previous: Draft?) {
+        val prompt = Prompts.forChat(text, previous?.design, feeds.settings.summary())
+        val opened = ClaudeApp.send(getApplication(), prompt)
+        _state.update { it.copy(chat = ChatRequest(text, previous, prompt, opened), error = null, message = null) }
+    }
+
+    /** Reads Claude's reply from the clipboard and turns it into the draft. */
+    fun pasteChatReply() {
+        val chat = _state.value.chat ?: return
+        val text = ClaudeApp.pasted(getApplication())
+        if (text.isNullOrBlank()) {
+            _state.update { it.copy(chat = chat.copy(problem = "Nothing is copied yet. Copy Claude's whole reply, then tap Paste design.", fixable = false)) }
+            return
+        }
+        if (text.trim() == chat.prompt.trim()) {
+            _state.update { it.copy(chat = chat.copy(problem = "That's still the request. Send it to Claude, then copy Claude's reply.", fixable = false)) }
+            return
+        }
+        try {
+            val design = DesignParser.parse(text)
+            val prompt = if (chat.previous == null) chat.description else chat.previous.prompt + "\n→ " + chat.description
+            _state.update { it.copy(chat = null, draft = Draft(chat.previous?.id, prompt, design)) }
+        } catch (e: DesignParser.InvalidDesign) {
+            _state.update {
+                it.copy(chat = chat.copy(problem = e.message ?: "That doesn't look like a widget design.", fixable = true))
+            }
+        }
+    }
+
+    /** Copies a "please fix it" message for the same Claude chat and opens Claude. */
+    fun askClaudeToFix() {
+        val chat = _state.value.chat ?: return
+        ClaudeApp.copy(getApplication(), Prompts.chatFix(chat.problem.orEmpty()))
+        ClaudeApp.open(getApplication())
+        _state.update { it.copy(chat = chat.copy(problem = null, fixable = false)) }
+    }
+
+    fun reopenChat() {
+        val chat = _state.value.chat ?: return
+        ClaudeApp.send(getApplication(), chat.prompt)
+    }
+
+    fun cancelChat() = _state.update { it.copy(chat = null) }
+
+    /** A ready-made design becomes the draft, to save as is or change. */
+    fun useStarter(starter: Starters.Starter) {
+        _state.update { it.copy(draft = Draft(null, starter.title, starter.design), error = null, message = null) }
     }
 
     fun edit(saved: SavedDesign) {

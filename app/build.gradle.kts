@@ -46,6 +46,10 @@ android {
 
     buildFeatures { compose = true }
 
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+    }
+
     packaging {
         resources {
             // The Claude SDK's dependencies (OkHttp, Jackson) ship overlapping license files.
@@ -83,6 +87,10 @@ dependencies {
     implementation("com.anthropic:anthropic-java:3.8.0")
 
     testImplementation("junit:junit:4.13.2")
+    // Renders previews on the JVM, to look at designs without a phone.
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 kotlin {

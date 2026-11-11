@@ -79,7 +79,12 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                 )
             }
 
-            Section("Claude", "Your Anthropic API key, from console.anthropic.com. Stored only on this phone.") {
+            Section(
+                "Claude",
+                "Optional. Without a key, designs are made free in the Claude app or claude.ai and pasted back. " +
+                    "With an Anthropic API key (from console.anthropic.com, paid per use) they're made automatically. " +
+                    "Stored only on this phone.",
+            ) {
                 Secret("API key", apiKey, "sk-ant-…") { apiKey = it }
             }
 

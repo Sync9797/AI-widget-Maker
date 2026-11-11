@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,7 +59,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sidequest.widgetmaker.feeds.FeedWorker
+import com.sidequest.widgetmaker.ai.ClaudeApp
 import com.sidequest.widgetmaker.spec.SavedDesign
+import com.sidequest.widgetmaker.spec.Starters
 import com.sidequest.widgetmaker.spec.WidgetTheme
 
 class MainActivity : ComponentActivity() {
@@ -133,19 +137,19 @@ private fun MakerScreen(viewModel: MakerViewModel) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (!state.hasApiKey) {
-                InfoCard(
-                    title = "Connect Claude",
-                    body = "This app uses Claude to design widgets. Add an Anthropic API key " +
-                        "(from console.anthropic.com) in Settings to get started. Settings is also " +
-                        "where you turn on weather, crypto, traffic, local news and nearby events.",
-                    action = "Open Settings" to { showSettings = true },
-                )
-            }
-
             val draft = state.draft
-            if (draft == null) {
-                DescribeCard(busy = state.busy, onGenerate = viewModel::generate)
+            val chat = state.chat
+            if (chat != null) {
+                ChatCard(
+                    chat = chat,
+                    onPaste = viewModel::pasteChatReply,
+                    onFix = viewModel::askClaudeToFix,
+                    onReopen = viewModel::reopenChat,
+                    onCancel = viewModel::cancelChat,
+                )
+            } else if (draft == null) {
+                DescribeCard(busy = state.busy, free = !state.hasApiKey, onGenerate = viewModel::generate)
+                StartersRow(theme = state.theme, onPick = viewModel::useStarter)
             } else {
                 DraftCard(
                     draft = draft,
@@ -155,6 +159,7 @@ private fun MakerScreen(viewModel: MakerViewModel) {
                     onSaveAndAdd = { viewModel.saveDraft(thenPin = true) },
                     onDiscard = viewModel::discardDraft,
                     theme = state.theme,
+                    free = !state.hasApiKey,
                 )
             }
 
@@ -189,7 +194,7 @@ private fun MakerScreen(viewModel: MakerViewModel) {
 }
 
 @Composable
-private fun DescribeCard(busy: Boolean, onGenerate: (String) -> Unit) {
+private fun DescribeCard(busy: Boolean, free: Boolean, onGenerate: (String) -> Unit) {
     var text by rememberSaveable { mutableStateOf("") }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -204,7 +209,14 @@ private fun DescribeCard(busy: Boolean, onGenerate: (String) -> Unit) {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IDEAS.forEach { idea -> SuggestionChip(onClick = { text = idea }, label = { Text(idea) }) }
             }
-            BusyButton("Design it", busy = busy, enabled = text.isNotBlank()) { onGenerate(text) }
+            BusyButton(if (free) "Design in Claude (free)" else "Design it", busy = busy, enabled = text.isNotBlank()) { onGenerate(text) }
+            if (free) {
+                Text(
+                    "Opens the Claude app (or claude.ai) with your request; a free account works. " +
+                        "Prefer it automatic? Add an API key in Settings.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
     }
 }
@@ -218,6 +230,7 @@ private fun DraftCard(
     onSaveAndAdd: () -> Unit,
     onDiscard: () -> Unit,
     theme: WidgetTheme,
+    free: Boolean,
 ) {
     var change by remember(draft) { mutableStateOf("") }
     var size by rememberSaveable { mutableStateOf(PreviewSize.Wide) }
@@ -239,11 +252,70 @@ private fun DraftCard(
                 label = { Text("Change something") },
                 placeholder = { Text("Make the clock bigger and the background purple") },
             )
-            BusyButton("Change it", busy = busy, enabled = change.isNotBlank()) { onRefine(change) }
+            BusyButton(if (free) "Change it in Claude" else "Change it", busy = busy, enabled = change.isNotBlank()) { onRefine(change) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onSaveAndAdd, enabled = !busy) { Text("Save & add") }
                 OutlinedButton(onClick = onSave, enabled = !busy) { Text("Save") }
                 TextButton(onClick = onDiscard, enabled = !busy) { Text("Discard") }
+            }
+        }
+    }
+}
+
+/** Waiting for Claude's reply from the Claude app or claude.ai. */
+@Composable
+private fun ChatCard(
+    chat: ChatRequest,
+    onPaste: () -> Unit,
+    onFix: () -> Unit,
+    onReopen: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Finish in Claude", style = MaterialTheme.typography.titleLarge)
+            val first = if (chat.openedIn == ClaudeApp.Opened.App) {
+                "1. Claude opened with your request. Send it."
+            } else {
+                "1. claude.ai opened in your browser. Paste the request (it's copied) and send it."
+            }
+            Text(first)
+            Text("2. When Claude replies, copy its whole reply (the copy button under it, or long-press it and tap Copy).")
+            Text("3. Come back here and tap Paste design.")
+            chat.problem?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onPaste) { Text("Paste design") }
+                if (chat.fixable) {
+                    OutlinedButton(onClick = onFix) { Text("Ask Claude to fix it") }
+                } else {
+                    OutlinedButton(onClick = onReopen) { Text("Open Claude again") }
+                }
+                TextButton(onClick = onCancel) { Text("Cancel") }
+            }
+            if (chat.fixable) {
+                Text(
+                    "Ask Claude to fix it copies a short note: paste it into the same chat, then copy the new reply.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
+}
+
+/** Ready-made designs: no AI needed. */
+@Composable
+private fun StartersRow(theme: WidgetTheme, onPick: (Starters.Starter) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Or start from one of these", style = MaterialTheme.typography.titleMedium)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Starters.all.forEach { starter ->
+                Card(Modifier.width(184.dp).clickable { onPick(starter) }) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        DesignPreview(starter.design, PreviewSize.Square, theme)
+                        Text(starter.title, style = MaterialTheme.typography.titleSmall)
+                        Text(starter.about, style = MaterialTheme.typography.bodySmall, maxLines = 3)
+                    }
+                }
             }
         }
     }

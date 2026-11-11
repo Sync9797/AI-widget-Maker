@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.os.BatteryManager
 import android.os.Build
 import android.util.TypedValue
@@ -61,7 +60,7 @@ import com.sidequest.widgetmaker.spec.SpacerNode
 import com.sidequest.widgetmaker.spec.TextNode
 import com.sidequest.widgetmaker.spec.Tokens
 import com.sidequest.widgetmaker.spec.VAlign
-import com.sidequest.widgetmaker.spec.Material3Colors
+import com.sidequest.widgetmaker.spec.MaterialSlot
 import com.sidequest.widgetmaker.spec.Role
 import com.sidequest.widgetmaker.spec.Styler
 import com.sidequest.widgetmaker.spec.Weight
@@ -84,7 +83,7 @@ class AiWidget : GlanceAppWidget() {
         val store = DesignStore(context)
         val saved = withContext(Dispatchers.IO) { store.designFor(appWidgetId) }
         val tokens = currentTokens(context)
-        val styler = styler(context, store.theme)
+        val styler = styler(context, store.themeFor(appWidgetId))
         provideContent {
             val open = GlanceModifier.clickable(actionStartActivity<MainActivity>())
             if (saved == null) EmptyWidget(open) else DesignWidget(saved.design, tokens, styler, open)
@@ -94,23 +93,25 @@ class AiWidget : GlanceAppWidget() {
     companion object {
         suspend fun refreshAll(context: Context) = AiWidget().updateAll(context)
 
-        /** The chosen theme, with this phone's wallpaper colors for Material 3 (Android 12+). */
-        fun styler(context: Context, theme: WidgetTheme): Styler {
-            if (theme != WidgetTheme.material || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return Styler(theme)
-            fun c(id: Int) = context.getColor(id)
-            return Styler(
-                theme,
-                Material3Colors(
-                    surfaceDay = c(android.R.color.system_neutral1_10),
-                    surfaceNight = c(android.R.color.system_neutral1_900),
-                    containerDay = c(android.R.color.system_accent2_100),
-                    containerNight = c(android.R.color.system_accent2_700),
-                    onSurfaceDay = c(android.R.color.system_neutral1_900),
-                    onSurfaceNight = c(android.R.color.system_neutral1_100),
-                    primaryDay = c(android.R.color.system_accent1_600),
-                    primaryNight = c(android.R.color.system_accent1_200),
-                ),
-            )
+        /**
+         * The chosen theme. For Material 3 the app reads the phone's colors
+         * from the same resources the widget hands to the launcher (used for
+         * the in-app preview; the widget itself never resolves them).
+         */
+        fun styler(context: Context, theme: WidgetTheme): Styler =
+            Styler(theme) { slot, _ -> context.getColor(materialRes(slot)) }
+
+        /** The color resource for a Material 3 slot (res/color*, per Android version and light or dark). */
+        fun materialRes(slot: MaterialSlot): Int = when (slot) {
+            MaterialSlot.Surface -> R.color.m3_surface
+            MaterialSlot.Container -> R.color.m3_container
+            MaterialSlot.Text -> R.color.m3_text
+            MaterialSlot.Text80 -> R.color.m3_text_80
+            MaterialSlot.Text65 -> R.color.m3_text_65
+            MaterialSlot.Primary -> R.color.m3_primary
+            MaterialSlot.Track -> R.color.m3_track
+            MaterialSlot.Up -> R.color.m3_up
+            MaterialSlot.Down -> R.color.m3_down
         }
 
         fun currentTokens(context: Context): Tokens {
@@ -198,12 +199,16 @@ private fun DesignWidget(design: WidgetDesign, tokens: Tokens, styler: Styler, m
     }
 }
 
-/** Colors for the widget under the chosen theme; Material 3 colors switch with dark mode. */
+/**
+ * Colors for the widget under the chosen theme. Material 3 colors are handed
+ * over as color resources, which the launcher looks up when it draws: they
+ * match the phone's current palette (wallpaper or a One UI color palette) and
+ * light or dark mode, with nothing cached in this app.
+ */
 private class Paint(val styler: Styler) {
     operator fun invoke(role: Role, design: String?): ColorProvider {
-        val day = styler.argb(role, design, dark = false)
-        if (!styler.followsDarkMode) return ColorProvider(Color(day))
-        return androidx.glance.color.ColorProvider(day = Color(day), night = Color(styler.argb(role, design, dark = true)))
+        if (styler.theme == WidgetTheme.material) return ColorProvider(AiWidget.materialRes(styler.materialSlot(role, design)))
+        return ColorProvider(Color(styler.argb(role, design, dark = false)))
     }
 }
 
@@ -275,18 +280,20 @@ private fun clockViews(node: ClockNode, styler: Styler): RemoteViews {
         Weight.light -> R.layout.clock_light
         Weight.normal -> R.layout.clock_normal
     }
-    val day = styler.argb(Role.Text, node.color, dark = false)
-    val night = styler.argb(Role.Text, node.color, dark = true)
     return RemoteViews(context.packageName, layout).apply {
         // The same pattern whatever the phone's 12/24-hour setting: the design chose it.
         setCharSequence(R.id.clock, "setFormat12Hour", node.format)
         setCharSequence(R.id.clock, "setFormat24Hour", node.format)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && day != night) {
-            setColorInt(R.id.clock, "setTextColor", day, night)
+        if (styler.theme == WidgetTheme.material) {
+            val res = AiWidget.materialRes(styler.materialSlot(Role.Text, node.color))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Looked up by the launcher, like the rest of the Material 3 colors.
+                setColorStateList(R.id.clock, "setTextColor", res)
+            } else {
+                setTextColor(R.id.clock, context.getColor(res))
+            }
         } else {
-            val dark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
-            setTextColor(R.id.clock, if (dark) night else day)
+            setTextColor(R.id.clock, styler.argb(Role.Text, node.color, dark = false))
         }
         setTextViewTextSize(R.id.clock, TypedValue.COMPLEX_UNIT_SP, node.size.toFloat())
     }

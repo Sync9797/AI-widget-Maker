@@ -132,6 +132,26 @@ class FeedParsersTest {
     }
 
     @Test
+    fun eventsFromLocalNews() {
+        val body = """<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>
+            <item><title>10 things to do in Austin this weekend - Austin Chronicle</title>
+              <pubDate>Wed, 11 Nov 2026 14:00:00 GMT</pubDate><source url="https://x">Austin Chronicle</source></item>
+            <item><title>Old festival recap - KXAN</title>
+              <pubDate>Mon, 05 Oct 2026 10:00:00 GMT</pubDate><source url="https://y">KXAN</source></item>
+            <item><title>Holiday market opens downtown - KVUE</title>
+              <pubDate>Mon, 09 Nov 2026 10:00:00 GMT</pubDate><source url="https://z">KVUE</source></item>
+            </channel></rss>"""
+        val v = FeedParsers.eventArticles(body, today = LocalDate.of(2026, 11, 11))
+        assertEquals("10 things to do in Austin this weekend", v["events.1"])
+        assertEquals("Today", v["events.1.when"])
+        assertEquals("Austin Chronicle", v["events.1.venue"])
+        // The month-old article is skipped.
+        assertEquals("Holiday market opens downtown", v["events.2"])
+        assertEquals("Mon", v["events.2.when"])
+        assertNull(v["events.3"])
+    }
+
+    @Test
     fun events() {
         val body = """{"_embedded":{"events":[
             {"name":"Austin FC vs. LA Galaxy","dates":{"start":{"localDate":"2026-11-14","localTime":"19:30:00"}},

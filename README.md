@@ -39,9 +39,14 @@ layout always stays as designed:
 
 - **Glass** (default): smoky see-through glass with a bright edge and white
   text. Icons and bars keep their colors.
-- **Material 3**: colors from your wallpaper (Android 12+), switching between
-  light and dark with your phone.
+- **Material 3**: your phone's colors (wallpaper or a Samsung One UI color
+  palette, Android 12+), switching between light and dark with your phone. The
+  launcher looks the colors up itself each time it draws the widget, so they
+  match the phone's current palette; Settings shows them as swatches.
 - **Original colors**: the palette Claude chose for each design.
+
+Each widget can also have its own style: long-press it, tap its settings, and
+pick one (or keep "App default").
 
 ## Live data
 
@@ -55,7 +60,7 @@ check it works:
 | Crypto prices and 24 h change, green or red | CoinGecko | List your coins, like `BTC, ETH`. No account. |
 | Local news (up to 5 headlines) | Google News | Your town, or a topic. No account. |
 | Commute time with live traffic | TomTom | Free key from [developer.tomtom.com](https://developer.tomtom.com), plus home and work addresses. |
-| Nearby events (up to 5: concerts, games, shows) | Ticketmaster | Free key ("Consumer Key") from [developer.ticketmaster.com](https://developer.ticketmaster.com). |
+| Nearby events (up to 5) | Local news (Google News), or Ticketmaster | Your town. No account. For exact listings with dates and venues, optionally add a free Ticketmaster key. |
 
 Then just ask for it, for example "my commute time and today's weather" or
 "a crypto ticker for my coins".

@@ -36,7 +36,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sidequest.widgetmaker.feeds.FeedSnapshot
+import com.sidequest.widgetmaker.spec.MaterialSlot
 import com.sidequest.widgetmaker.spec.WidgetTheme
+import com.sidequest.widgetmaker.widget.AiWidget
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 
 /** Settings: the Claude key, and the data sources widgets can show. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,11 +81,12 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                 Text(
                     when (state.theme) {
                         WidgetTheme.glass -> "Smoky see-through glass with white text. Icons and bars keep their colors."
-                        WidgetTheme.material -> "Colors from your wallpaper (Android 12+), light or dark with your phone."
+                        WidgetTheme.material -> "Your phone's colors (wallpaper or One UI color palette, Android 12+), light or dark with your phone."
                         WidgetTheme.original -> "The colors Claude chose for each design."
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
+                if (state.theme == WidgetTheme.material) MaterialSwatches()
             }
 
             Section(
@@ -117,11 +127,12 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
 
             Section(
                 "Nearby events",
-                "Concerts, games and shows near your town, from Ticketmaster. Get a free key at " +
-                    "developer.ticketmaster.com (sign up, then copy the Consumer Key from My Apps).",
+                "Works without an account: recent local articles about events and things to do in your town. " +
+                    "Optional: a free Ticketmaster key (developer.ticketmaster.com, Consumer Key under My Apps) " +
+                    "gives exact listings with dates and venues instead.",
             ) {
-                Secret("Ticketmaster key", form.ticketmasterKey, "") { form = form.copy(ticketmasterKey = it) }
-                Field("Within (miles)", form.radiusMiles, "25", KeyboardType.Number) { form = form.copy(radiusMiles = it) }
+                Secret("Ticketmaster key (optional)", form.ticketmasterKey, "") { form = form.copy(ticketmasterKey = it) }
+                Field("Within (miles, Ticketmaster only)", form.radiusMiles, "25", KeyboardType.Number) { form = form.copy(radiusMiles = it) }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -203,4 +214,34 @@ private fun Secret(label: String, value: String, hint: String, onChange: (String
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
     )
+}
+
+/**
+ * The colors Material 3 widgets use on this phone right now, read from the
+ * same system colors the launcher uses, to compare with the phone's palette.
+ */
+@Composable
+private fun MaterialSwatches() {
+    val context = LocalContext.current
+    val slots = listOf(
+        "Background" to MaterialSlot.Surface,
+        "Panel" to MaterialSlot.Container,
+        "Text" to MaterialSlot.Text,
+        "Accent" to MaterialSlot.Primary,
+    )
+    Text("Your phone's colors right now:", style = MaterialTheme.typography.bodySmall)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        slots.forEach { (label, slot) ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(context.getColor(AiWidget.materialRes(slot))))
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                )
+                Text(label, style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
 }

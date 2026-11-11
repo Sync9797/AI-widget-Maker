@@ -46,7 +46,7 @@ class DesignStore(context: Context) {
     }
 
     fun forget(appWidgetId: Int) {
-        prefs.edit().remove(widgetKey(appWidgetId)).apply()
+        prefs.edit().remove(widgetKey(appWidgetId)).remove("widget_theme_$appWidgetId").apply()
     }
 
     /** How every widget is colored (Settings). */
@@ -54,6 +54,21 @@ class DesignStore(context: Context) {
         get() = prefs.getString("widget_theme", null)
             ?.let { runCatching { WidgetTheme.valueOf(it) }.getOrNull() } ?: WidgetTheme.glass
         set(value) = prefs.edit().putString("widget_theme", value.name).apply()
+
+    /** A placed widget's own theme, if one was picked in its settings; otherwise the app's. */
+    fun themeFor(appWidgetId: Int): WidgetTheme =
+        prefs.getString("widget_theme_$appWidgetId", null)
+            ?.let { runCatching { WidgetTheme.valueOf(it) }.getOrNull() } ?: theme
+
+    /** Whether a widget has its own theme (rather than following the app's). */
+    fun hasOwnTheme(appWidgetId: Int) = prefs.contains("widget_theme_$appWidgetId")
+
+    /** Sets a widget's own theme; null makes it follow the app's again. */
+    fun setThemeFor(appWidgetId: Int, theme: WidgetTheme?) {
+        prefs.edit().apply {
+            if (theme == null) remove("widget_theme_$appWidgetId") else putString("widget_theme_$appWidgetId", theme.name)
+        }.apply()
+    }
 
     var apiKey: String
         get() = prefs.getString("api_key", "").orEmpty()

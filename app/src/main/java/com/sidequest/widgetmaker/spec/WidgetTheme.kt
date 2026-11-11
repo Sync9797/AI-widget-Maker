@@ -16,33 +16,55 @@ enum class WidgetTheme(val label: String) {
 /** What a color is used for, so a theme knows what to replace it with. */
 enum class Role { Background, Container, Text, Accent, Track, TrendUp, TrendDown }
 
-/** The Material 3 colors a widget uses, for light and dark mode. */
-data class Material3Colors(
-    val surfaceDay: Int,
-    val surfaceNight: Int,
-    val containerDay: Int,
-    val containerNight: Int,
-    val onSurfaceDay: Int,
-    val onSurfaceNight: Int,
-    val primaryDay: Int,
-    val primaryNight: Int,
-) {
-    companion object {
-        /** Material 3's baseline palette, for phones before Android 12 (no wallpaper colors). */
-        val BASELINE = Material3Colors(
-            surfaceDay = 0xFFFEF7FF.toInt(), surfaceNight = 0xFF141218.toInt(),
-            containerDay = 0xFFE8DEF8.toInt(), containerNight = 0xFF4A4458.toInt(),
-            onSurfaceDay = 0xFF1D1B20.toInt(), onSurfaceNight = 0xFFE6E0E9.toInt(),
-            primaryDay = 0xFF6750A4.toInt(), primaryNight = 0xFFD0BCFF.toInt(),
-        )
-    }
+/**
+ * The Material 3 colors a widget uses. On the home screen each slot is a color
+ * resource that the launcher looks up itself, so it always matches the phone's
+ * current palette (including Samsung One UI's) and light or dark mode.
+ */
+enum class MaterialSlot { Surface, Container, Text, Text80, Text65, Primary, Track, Up, Down }
+
+/** Material 3's baseline palette: phones before Android 12, and tests. Mirrors res/color and res/color-night. */
+object Baseline {
+    fun color(slot: MaterialSlot, dark: Boolean): Int = when (slot) {
+        MaterialSlot.Surface -> if (dark) 0xFF141218 else 0xFFFEF7FF
+        MaterialSlot.Container -> if (dark) 0xFF4A4458 else 0xFFE8DEF8
+        MaterialSlot.Text -> if (dark) 0xFFE6E0E9 else 0xFF1D1B20
+        MaterialSlot.Text80 -> if (dark) 0xCCE6E0E9 else 0xCC1D1B20
+        MaterialSlot.Text65 -> if (dark) 0xA6E6E0E9 else 0xA61D1B20
+        MaterialSlot.Primary -> if (dark) 0xFFD0BCFF else 0xFF6750A4
+        MaterialSlot.Track -> if (dark) 0x3DD0BCFF else 0x3D6750A4
+        MaterialSlot.Up -> if (dark) 0xFF6EE7A0 else 0xFF1B873F
+        MaterialSlot.Down -> if (dark) 0xFFFF8A80 else 0xFFC62828
+    }.toInt()
 }
 
-/** Works out each color under the chosen theme. Pure, so the widget and the preview agree. */
-class Styler(val theme: WidgetTheme, private val m3: Material3Colors = Material3Colors.BASELINE) {
+/**
+ * Works out each color under the chosen theme. Pure, so the widget and the
+ * preview agree. [material] gives a Material 3 slot's color (the phone's, in
+ * the app; the baseline in tests).
+ */
+class Styler(
+    val theme: WidgetTheme,
+    private val material: (MaterialSlot, Boolean) -> Int = Baseline::color,
+) {
 
     /** Whether light and dark mode can give different colors (only Material 3 follows the phone). */
     val followsDarkMode get() = theme == WidgetTheme.material
+
+    /** Which Material 3 slot a design color becomes. Text keeps roughly the design's fade. */
+    fun materialSlot(role: Role, design: String?): MaterialSlot = when (role) {
+        Role.Background -> MaterialSlot.Surface
+        Role.Container -> MaterialSlot.Container
+        Role.Text -> when (alphaOf(Colors.argb(design, fallback = 0xFFFFFFFF.toInt()))) {
+            in 0xE6..0xFF -> MaterialSlot.Text
+            in 0xBF..0xE5 -> MaterialSlot.Text80
+            else -> MaterialSlot.Text65
+        }
+        Role.Accent -> MaterialSlot.Primary
+        Role.Track -> MaterialSlot.Track
+        Role.TrendUp -> MaterialSlot.Up
+        Role.TrendDown -> MaterialSlot.Down
+    }
 
     /** The color to draw for a design color with this [role], as ARGB. */
     fun argb(role: Role, design: String?, dark: Boolean): Int {
@@ -57,16 +79,7 @@ class Styler(val theme: WidgetTheme, private val m3: Material3Colors = Material3
                 Role.Track -> 0x2EFFFFFF
                 Role.Accent, Role.TrendUp, Role.TrendDown -> original
             }
-            WidgetTheme.material -> when (role) {
-                Role.Background -> if (dark) m3.surfaceNight else m3.surfaceDay
-                Role.Container -> if (dark) m3.containerNight else m3.containerDay
-                Role.Text -> withAlpha(if (dark) m3.onSurfaceNight else m3.onSurfaceDay, alphaOf(original).coerceAtLeast(0xAA))
-                Role.Accent -> if (dark) m3.primaryNight else m3.primaryDay
-                Role.Track -> withAlpha(if (dark) m3.primaryNight else m3.primaryDay, 0x3D)
-                // Greens and reds that read well on light and dark surfaces.
-                Role.TrendUp -> if (dark) 0xFF6EE7A0.toInt() else 0xFF1B873F.toInt()
-                Role.TrendDown -> if (dark) 0xFFFF8A80.toInt() else 0xFFC62828.toInt()
-            }
+            WidgetTheme.material -> material(materialSlot(role, design), dark)
         }
     }
 

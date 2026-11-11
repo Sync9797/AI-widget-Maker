@@ -148,21 +148,31 @@ class Feeds(private val context: Context) {
     }
 
     private fun news(s: FeedSettings): Map<String, String> {
+        val query = s.newsTopic.ifBlank { s.place!!.name.substringBefore(",") }
+        return FeedParsers.news(get(newsUrl(query)))
+    }
+
+    /** A Google News search feed in the phone's language and country. */
+    private fun newsUrl(query: String): HttpUrl {
         val locale = Locale.getDefault()
         val country = locale.country.ifBlank { "US" }
         val language = locale.language.ifBlank { "en" }
-        val query = s.newsTopic.ifBlank { s.place!!.name.substringBefore(",") }
-        val url = "https://news.google.com/rss/search".toHttpUrl().newBuilder()
+        return "https://news.google.com/rss/search".toHttpUrl().newBuilder()
             .addQueryParameter("q", query)
             .addQueryParameter("hl", "$language-$country")
             .addQueryParameter("gl", country)
             .addQueryParameter("ceid", "$country:$language")
             .build()
-        return FeedParsers.news(get(url))
     }
 
     private fun events(s: FeedSettings): Map<String, String> {
         val place = s.place!!
+        if (s.ticketmasterKey.isBlank()) {
+            // No account: recent local articles about things to do, from Google News.
+            val town = place.name.substringBefore(",")
+            val url = newsUrl("(events OR concerts OR festival OR \"things to do\") \"$town\" when:14d")
+            return FeedParsers.eventArticles(get(url), LocalDate.now())
+        }
         val url = "https://app.ticketmaster.com/discovery/v2/events.json".toHttpUrl().newBuilder()
             .addQueryParameter("apikey", s.ticketmasterKey.trim())
             .addQueryParameter("latlong", "${place.lat},${place.lon}")

@@ -13,6 +13,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.sidequest.widgetmaker.spec.MaterialSlot
+import com.sidequest.widgetmaker.spec.Role
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -116,7 +118,7 @@ class WidgetThemeTest {
     private val glass = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.glass)
     private val material = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.material)
     private val original = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.original)
-    private val m3 = com.sidequest.widgetmaker.spec.Material3Colors.BASELINE
+    private val baseline = com.sidequest.widgetmaker.spec.Baseline
 
     @Test
     fun originalKeepsTheDesignsColors() {
@@ -135,12 +137,15 @@ class WidgetThemeTest {
     }
 
     @Test
-    fun materialFollowsDarkMode() {
-        val bg = com.sidequest.widgetmaker.spec.Role.Background
-        assertEquals(m3.surfaceDay, material.argb(bg, "#E61E1E2E", dark = false))
-        assertEquals(m3.surfaceNight, material.argb(bg, "#E61E1E2E", dark = true))
-        assertEquals(m3.primaryNight, material.argb(com.sidequest.widgetmaker.spec.Role.Accent, "#FFFF0000", dark = true))
-        assertEquals(m3.onSurfaceDay, material.argb(com.sidequest.widgetmaker.spec.Role.Text, "#FFFFFFFF", dark = false))
+    fun materialMapsEveryColorToASystemSlot() {
+        assertEquals(MaterialSlot.Surface, material.materialSlot(Role.Background, "#E61E1E2E"))
+        assertEquals(MaterialSlot.Primary, material.materialSlot(Role.Accent, "#FFFF0000"))
+        assertEquals(MaterialSlot.Text, material.materialSlot(Role.Text, "#FFFFFFFF"))
+        assertEquals(MaterialSlot.Text80, material.materialSlot(Role.Text, "#CCFFFFFF"))
+        assertEquals(MaterialSlot.Text65, material.materialSlot(Role.Text, "#80FFFFFF"))
+        assertEquals(MaterialSlot.Up, material.materialSlot(Role.TrendUp, "#FF4ADE80"))
+        assertEquals(baseline.color(MaterialSlot.Surface, true), material.argb(Role.Background, "#E61E1E2E", dark = true))
+        assertEquals(baseline.color(MaterialSlot.Surface, false), material.argb(Role.Background, "#E61E1E2E", dark = false))
         assertTrue(material.followsDarkMode)
         assertTrue(!glass.followsDarkMode)
     }

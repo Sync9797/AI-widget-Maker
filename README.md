@@ -19,7 +19,7 @@ Download `AIWidgetMaker.apk` on your phone and open it.
   design**. Changes ("make it purple") work the same way.
 - **Free, no AI:** start from one of the ready-made designs: big clock, clock
   and weather, forecast, crypto ticker, commute, local news, nearby events,
-  battery. Save it as it is, or change it with Claude.
+  up next (calendar), battery. Save it as it is, or change it with Claude.
 - **Automatic, paid per use:** add an Anthropic API key (from
   console.anthropic.com) in **Settings** and designs are made in the app, a few
   cents each. The key is stored only on the phone.
@@ -60,7 +60,8 @@ check it works:
 | Crypto prices and 24 h change, green or red | CoinGecko | List your coins, like `BTC, ETH`. No account. |
 | Local news (up to 5 headlines) | Google News | Your town, or a topic. No account. |
 | Commute time with live traffic | TomTom | Free key from [developer.tomtom.com](https://developer.tomtom.com), plus home and work addresses. |
-| Nearby events (up to 5) | Local news (Google News), or Ticketmaster | Your town. No account. For exact listings with dates and venues, optionally add a free Ticketmaster key. |
+| Nearby events (up to 5) | Local news (Google News), or Ticketmaster | Your town. No account: event-like headlines first, crime and accident news left out, and dates read from headlines ("this weekend", "Sat", "Nov 14"). For exact listings, optionally add a free Ticketmaster key. |
+| Your calendar (next 7 days) | The calendars on your phone | Turn on **Your calendar** and allow access. Read on the phone only. |
 
 Then just ask for it, for example "my commute time and today's weather" or
 "a crypto ticker for my coins".

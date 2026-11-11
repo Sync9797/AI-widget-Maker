@@ -118,6 +118,10 @@ class StarterShots {
             "events.2" to "Jazz Night", "events.2.when" to "Today 8 PM", "events.2.venue" to "Elephant Room",
             "events.3" to "Comedy Showcase", "events.3.when" to "Fri 9 PM", "events.3.venue" to "Cap City Comedy",
             "events.4" to "Indie Rock Live", "events.4.when" to "Sun 7 PM", "events.4.venue" to "Mohawk",
+            "calendar.1" to "Dentist", "calendar.1.when" to "Today 3 PM", "calendar.1.where" to "Smile Dental, 5th St",
+            "calendar.2" to "Team standup", "calendar.2.when" to "Tomorrow 9 AM",
+            "calendar.3" to "Mom's birthday", "calendar.3.when" to "Fri",
+            "calendar.4" to "Soccer practice", "calendar.4.when" to "Sat 10 AM", "calendar.today" to "1 more today",
             "updated" to "3:12 PM",
         )
     }

@@ -29,12 +29,16 @@ data class FeedSettings(
     /** Optional free key from developer.ticketmaster.com, for exact listings; without it, events come from local news. */
     val ticketmasterKey: String = "",
     val eventsRadiusMiles: Int = 25,
+
+    /** Show your upcoming calendar events (needs the calendar permission). */
+    val calendar: Boolean = false,
 ) {
     val weatherReady get() = place != null
     val cryptoReady get() = coins.isNotEmpty()
     val trafficReady get() = tomtomKey.isNotBlank() && home != null && work != null
     val newsReady get() = place != null || newsTopic.isNotBlank()
     val eventsReady get() = place != null
+    val calendarReady get() = calendar
 
     /** One line per feed for Claude, so it knows what a design can show right now. */
     fun summary(): String = listOf(
@@ -45,8 +49,9 @@ data class FeedSettings(
         "events" to when {
             !eventsReady -> "not set up"
             ticketmasterKey.isNotBlank() -> "set up near ${place!!.name} (Ticketmaster listings)"
-            else -> "set up near ${place!!.name} (local articles about things to do: names may be long headlines, and {events.N.when} is when it was published)"
+            else -> "set up near ${place!!.name} (local articles about things to do: names are headlines, often long, and {events.N.when} is a day named in the headline or when it was posted)"
         },
+        "calendar" to if (calendarReady) "set up (the user's own upcoming events)" else "not set up",
     ).joinToString("\n") { (k, v) -> "- $k: $v" }
 }
 

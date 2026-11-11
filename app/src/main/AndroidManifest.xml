@@ -3,6 +3,8 @@
 
     <!-- Talks to the Claude API to design widgets. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Optional: your upcoming calendar events, for "up next" widgets. Asked for only when you turn it on. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <!-- Lets the app see whether the Claude app is installed, to hand it a widget request. -->
     <queries>

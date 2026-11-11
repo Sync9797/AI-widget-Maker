@@ -5,6 +5,7 @@ import com.sidequest.widgetmaker.feeds.Place
 import com.sidequest.widgetmaker.spec.Tokens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -134,21 +135,66 @@ class FeedParsersTest {
     @Test
     fun eventsFromLocalNews() {
         val body = """<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>
+            <item><title>City budget vote delayed again - KXAN</title>
+              <pubDate>Wed, 11 Nov 2026 15:00:00 GMT</pubDate><source url="https://a">KXAN</source></item>
             <item><title>10 things to do in Austin this weekend - Austin Chronicle</title>
               <pubDate>Wed, 11 Nov 2026 14:00:00 GMT</pubDate><source url="https://x">Austin Chronicle</source></item>
+            <item><title>Police arrest suspect after downtown festival crash - KVUE</title>
+              <pubDate>Wed, 11 Nov 2026 13:00:00 GMT</pubDate><source url="https://b">KVUE</source></item>
             <item><title>Old festival recap - KXAN</title>
               <pubDate>Mon, 05 Oct 2026 10:00:00 GMT</pubDate><source url="https://y">KXAN</source></item>
-            <item><title>Holiday market opens downtown - KVUE</title>
+            <item><title>Holiday market opens downtown Saturday - KVUE</title>
               <pubDate>Mon, 09 Nov 2026 10:00:00 GMT</pubDate><source url="https://z">KVUE</source></item>
             </channel></rss>"""
         val v = FeedParsers.eventArticles(body, today = LocalDate.of(2026, 11, 11))
+        // Event-like headlines first; crime news and month-old articles are dropped.
         assertEquals("10 things to do in Austin this weekend", v["events.1"])
-        assertEquals("Today", v["events.1.when"])
+        assertEquals("This weekend", v["events.1.when"])
         assertEquals("Austin Chronicle", v["events.1.venue"])
-        // The month-old article is skipped.
-        assertEquals("Holiday market opens downtown", v["events.2"])
-        assertEquals("Mon", v["events.2.when"])
-        assertNull(v["events.3"])
+        assertEquals("Holiday market opens downtown Saturday", v["events.2"])
+        assertEquals("Sat", v["events.2.when"])
+        assertEquals("City budget vote delayed again", v["events.3"])
+        assertEquals("New today", v["events.3.when"])
+        assertNull(v["events.4"])
+    }
+
+    @Test
+    fun calendarEvents() {
+        val now = LocalDateTime.of(2026, 11, 11, 14, 30) // Wednesday
+        fun e(title: String, start: LocalDateTime, minutes: Long, allDay: Boolean = false, where: String = "") =
+            FeedParsers.CalendarEvent(title, start, start.plusMinutes(minutes), allDay, where)
+        val events = listOf(
+            e("Over already", now.minusHours(2), 30),
+            e("Holiday", LocalDateTime.of(2026, 11, 11, 0, 0), 24 * 60, allDay = true),
+            e("Meeting", now.minusMinutes(10), 60, where = "Room 4"),
+            e("Dentist", LocalDateTime.of(2026, 11, 11, 16, 0), 30),
+            e("Standup", LocalDateTime.of(2026, 11, 12, 9, 15), 15),
+            e("Soccer", LocalDateTime.of(2026, 11, 14, 10, 0), 90),
+        )
+        val v = FeedParsers.calendar(events, now)
+        assertEquals("Holiday", v["calendar.1"])
+        assertEquals("Today", v["calendar.1.when"])
+        assertEquals("Meeting", v["calendar.2"])
+        assertEquals("Now", v["calendar.2.when"])
+        assertEquals("Room 4", v["calendar.2.where"])
+        assertEquals("Today 4 PM", v["calendar.3.when"])
+        assertEquals("Tomorrow 9:15 AM", v["calendar.4.when"])
+        assertEquals("Sat 10 AM", v["calendar.5.when"])
+        assertEquals("3 more today", v["calendar.today"])
+    }
+
+    @Test
+    fun headlineDates() {
+        val wed = LocalDate.of(2026, 11, 11)
+        assertEquals("Nov 14", FeedParsers.headlineWhen("Lights festival returns Nov. 14", wed))
+        assertEquals("Dec 3", FeedParsers.headlineWhen("Tree lighting set for December 3rd", wed))
+        assertEquals("Tonight", FeedParsers.headlineWhen("Free jazz tonight at the park", wed))
+        assertEquals("Today", FeedParsers.headlineWhen("Farmers market Wednesday downtown", wed))
+        assertEquals(null, FeedParsers.headlineWhen("Council approves new park", wed))
+        // "May" the verb isn't a date without a day number.
+        assertEquals(null, FeedParsers.headlineWhen("Rain may cancel the parade", wed))
+        assertEquals(-1, FeedParsers.eventScore("Man killed in crash"))
+        assertTrue(FeedParsers.eventScore("Free family concert this weekend") >= 3)
     }
 
     @Test

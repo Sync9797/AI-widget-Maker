@@ -18,7 +18,9 @@ class FeedWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     override suspend fun doWork(): Result {
         val feeds = Feeds(applicationContext)
         val s = feeds.settings
-        if (!(s.weatherReady || s.cryptoReady || s.trafficReady || s.newsReady || s.eventsReady)) return Result.success()
+        if (!(s.weatherReady || s.cryptoReady || s.trafficReady || s.newsReady || s.eventsReady || s.calendarReady)) {
+            return Result.success()
+        }
         feeds.refresh()
         AiWidget.refreshAll(applicationContext)
         return Result.success()

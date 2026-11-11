@@ -37,6 +37,13 @@ object Starters {
          {"type":"text","text":"{events.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
          {"type":"text","text":"{events.$n.when} · {events.$n.venue}","size":11,"color":"#99FFFFFF","maxLines":1}]}"""
 
+    private fun appointment(n: Int, minHeight: Int) = """
+        {"type":"row","show":{"minHeight":$minHeight},"children":[
+         {"type":"column","grow":true,"children":[
+          {"type":"spacer","size":8},
+          {"type":"text","text":"{calendar.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
+          {"type":"text","text":"{calendar.$n.when}","size":11,"color":"#99FFFFFF","maxLines":1}]}]}"""
+
     private fun coin(symbol: String, minHeight: Int) = """
         {"type":"row","show":{"minHeight":$minHeight},"children":[
          {"type":"text","text":"$symbol","size":14,"color":"#CCFFFFFF","weight":"bold","grow":true},
@@ -158,6 +165,22 @@ object Starters {
              ${event(2, 180)},
              ${event(3, 240)},
              ${event(4, 300)}]}}""",
+        ),
+        Triple(
+            "Up next", "Your next calendar events; more of them the taller it is. Turn on Your calendar in Settings.",
+            """{"name":"Up next","background":"#E61A2433","cornerRadius":24,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","show":{"minHeight":120},"children":[
+              {"type":"icon","name":"calendar","size":16,"color":"#FF8AB4F8"},
+              {"type":"text","text":"  Up next","size":13,"color":"#FF8AB4F8","weight":"bold","grow":true},
+              {"type":"text","text":"{calendar.today}","size":11,"color":"#99FFFFFF","show":{"minWidth":250}}]},
+             {"type":"spacer","size":6,"show":{"minHeight":120}},
+             {"type":"text","text":"{calendar.1}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+             {"type":"text","text":"{calendar.1.when}","size":13,"color":"#FF8AB4F8","maxLines":1},
+             {"type":"text","text":"{calendar.1.where}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minHeight":150}},
+             ${appointment(2, 190)},
+             ${appointment(3, 240)},
+             ${appointment(4, 290)}]}}""",
         ),
         Triple(
             "Battery", "Your battery level with a bar; the time and date when it's bigger.",

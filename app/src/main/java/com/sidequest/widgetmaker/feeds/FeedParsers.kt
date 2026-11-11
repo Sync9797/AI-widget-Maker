@@ -246,21 +246,106 @@ object FeedParsers {
     }
 
     /**
-     * Events without an account: recent articles about things to do in town,
-     * from Google News. events.N is the headline, events.N.when when it was
-     * published ("Today", "Thu"), events.N.venue the publication. Articles
-     * older than two weeks are skipped.
+     * Events without an account: recent local articles about things to do,
+     * from Google News. Headlines that look like events come first, crime and
+     * accident news is dropped, and articles older than two weeks are skipped.
+     * events.N is the headline, events.N.when the day it names ("This weekend",
+     * "Sat", "Nov 14") or else when it was posted, events.N.venue the publication.
      */
     fun eventArticles(body: String, today: LocalDate, count: Int = 5): Map<String, String> {
-        val out = mutableMapOf<String, String>()
-        headlines(body)
+        val recent = headlines(body)
             .filter { it.published == null || !it.published.isBefore(today.minusDays(14)) }
-            .take(count)
-            .forEachIndexed { i, h ->
-                out["events.${i + 1}"] = h.title
-                out["events.${i + 1}.when"] = whenText(h.published, null, today)
-                out["events.${i + 1}.venue"] = h.source
+            .filter { eventScore(it.title) >= 0 }
+        // Event-like headlines first (most event words first), then the rest, each in the feed's order.
+        val ranked = recent.sortedByDescending { minOf(eventScore(it.title), 3) }
+        val out = mutableMapOf<String, String>()
+        ranked.take(count).forEachIndexed { i, h ->
+            out["events.${i + 1}"] = h.title
+            out["events.${i + 1}.when"] = headlineWhen(h.title, today)
+                ?: if (h.published == today) "New today" else "Posted ${whenText(h.published, null, today)}".trim()
+            out["events.${i + 1}.venue"] = h.source
+        }
+        return out
+    }
+
+    private val EVENT_WORDS = listOf(
+        "things to do", "this weekend", "weekend", "event", "concert", "festival", "fest ", "fair", "market",
+        "parade", "live music", "show", "performance", "exhibit", "museum", "tickets", "tour", "comedy",
+        "theater", "theatre", "celebrat", "holiday", "fireworks", "marathon", "5k", "game day", "opening",
+        "tonight", "free ", "family", "kids", "food truck", "brewery", "art walk",
+    )
+
+    private val SKIP_WORDS = listOf(
+        "police", "shooting", " shot", "killed", "kills", " dies", " died", " dead", "death", "crash", "arrest",
+        "charged", "lawsuit", "murder", "stabb", "injur", "missing", "sentenced", "court", "suspect", "robbery",
+    )
+
+    /** How event-like a headline is: the number of event words, or -1 for crime and accident news. */
+    fun eventScore(title: String): Int {
+        val t = " ${title.lowercase()} "
+        if (SKIP_WORDS.any { t.contains(it) }) return -1
+        return EVENT_WORDS.count { t.contains(it) }
+    }
+
+    private val WEEKDAYS = listOf("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+    private val MONTH_DAY = Regex(
+        "\\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** The day a headline names, if any: "Tonight", "This weekend", "Sat", "Nov 14". */
+    fun headlineWhen(title: String, today: LocalDate): String? {
+        val t = title.lowercase()
+        if ("tonight" in t) return "Tonight"
+        if ("this weekend" in t) return "This weekend"
+        if ("next weekend" in t) return "Next weekend"
+        MONTH_DAY.find(title)?.let { m ->
+            val month = m.groupValues[1].lowercase().take(3)
+            val day = m.groupValues[2].toInt()
+            if (day in 1..31) return month.replaceFirstChar { it.uppercase() } + " " + day
+        }
+        WEEKDAYS.firstOrNull { Regex("\\b$it\\b").containsMatchIn(t) }?.let { name ->
+            val day = java.time.DayOfWeek.valueOf(name.uppercase())
+            return if (day == today.dayOfWeek) "Today" else name.take(3).replaceFirstChar { it.uppercase() }
+        }
+        return null
+    }
+
+    // ---- Your calendar (on the phone) ----
+
+    /** An upcoming event from the phone's calendar. */
+    data class CalendarEvent(
+        val title: String,
+        val start: LocalDateTime,
+        val end: LocalDateTime,
+        val allDay: Boolean,
+        val location: String,
+    )
+
+    /**
+     * calendar.N (title), calendar.N.when ("Now", "Today 3 PM", "Tomorrow",
+     * "Sat 9 AM"), calendar.N.where, and calendar.today ("2 more today").
+     * [events] must be in start order; ones that have ended are skipped.
+     */
+    fun calendar(events: List<CalendarEvent>, now: LocalDateTime, count: Int = 5): Map<String, String> {
+        val today = now.toLocalDate()
+        val upcoming = events.filter { it.end.isAfter(now) }
+        val out = mutableMapOf<String, String>()
+        upcoming.take(count).forEachIndexed { i, e ->
+            out["calendar.${i + 1}"] = e.title.ifBlank { "(No title)" }
+            out["calendar.${i + 1}.when"] = when {
+                e.allDay -> whenText(e.start.toLocalDate(), null, today).ifBlank { "All day" }
+                !e.start.isAfter(now) -> "Now"
+                else -> whenText(e.start.toLocalDate(), e.start.toLocalTime(), today)
             }
+            out["calendar.${i + 1}.where"] = e.location
+        }
+        val leftToday = upcoming.count { it.start.toLocalDate() == today || (it.allDay && it.start.toLocalDate() == today) }
+        out["calendar.today"] = when (leftToday) {
+            0 -> "Nothing else today"
+            1 -> "1 more today"
+            else -> "$leftToday more today"
+        }
         return out
     }
 

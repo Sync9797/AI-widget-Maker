@@ -1,6 +1,11 @@
 package com.sidequest.widgetmaker.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.Switch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,6 +59,7 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
     BackHandler(onBack = onBack)
     var apiKey by remember { mutableStateOf(viewModel.apiKey) }
     var form by remember { mutableStateOf(SourcesForm.from(state.sources)) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -123,6 +129,29 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
 
             Section("Local news", "Headlines from Google News. Free, no account needed. Leave the topic blank for news about your town.") {
                 Field("Topic (optional)", form.newsTopic, "Austin food, Texas Longhorns…") { form = form.copy(newsTopic = it) }
+            }
+
+            Section(
+                "Your calendar",
+                "Your upcoming events (next 7 days) for \"up next\" widgets, from the calendars on this phone " +
+                    "(Samsung Calendar, Google Calendar and any you subscribe to). Read on the phone only; nothing is uploaded.",
+            ) {
+                val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                    form = form.copy(calendar = granted)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Show my calendar", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = form.calendar,
+                        onCheckedChange = { on ->
+                            if (on && context.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
+                                askCalendar.launch(Manifest.permission.READ_CALENDAR)
+                            } else {
+                                form = form.copy(calendar = on)
+                            }
+                        },
+                    )
+                }
             }
 
             Section(

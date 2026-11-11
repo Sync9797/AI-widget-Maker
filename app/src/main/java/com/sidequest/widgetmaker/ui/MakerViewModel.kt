@@ -78,6 +78,7 @@ data class SourcesForm(
     val newsTopic: String,
     val ticketmasterKey: String,
     val radiusMiles: String,
+    val calendar: Boolean,
 ) {
     companion object {
         fun from(s: FeedSettings) = SourcesForm(
@@ -91,6 +92,7 @@ data class SourcesForm(
             newsTopic = s.newsTopic,
             ticketmasterKey = s.ticketmasterKey,
             radiusMiles = s.eventsRadiusMiles.toString(),
+            calendar = s.calendar,
         )
     }
 }
@@ -304,6 +306,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
                 newsTopic = form.newsTopic.trim(),
                 ticketmasterKey = form.ticketmasterKey.trim(),
                 eventsRadiusMiles = form.radiusMiles.trim().toIntOrNull()?.coerceIn(1, 200) ?: 25,
+                calendar = form.calendar,
             )
             feeds.settings = settings
             FeedWorker.schedule(getApplication())

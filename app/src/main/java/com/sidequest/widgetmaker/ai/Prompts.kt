@@ -89,6 +89,9 @@ Live data from the internet (refreshed about every 30 minutes; each request says
 - Nearby events: {events.1} to {events.5} names, {events.1.when} "Sat 8 PM",
   {events.1.venue}.
   For lists, show more items the taller the widget is.
+- Your calendar (the user's own events, next 7 days): {calendar.1} to {calendar.5} titles,
+  {calendar.1.when} "Now", "Today 3 PM", "Tomorrow" or "Sat 9 AM", {calendar.1.where} the place
+  (often empty), and {calendar.today} like "2 more today".
 - {updated}: when the data was last refreshed, like "8:42 AM".
 A value that isn't available shows as "--". If asked for data that isn't set up, design it anyway
 with the values above; the user can set it up later.

@@ -1,6 +1,14 @@
 package com.sidequest.widgetmaker.feeds
 
+import android.Manifest
+import android.content.ContentUris
 import android.content.Context
+import android.content.pm.PackageManager
+import android.provider.CalendarContract
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 import com.sidequest.widgetmaker.spec.DesignParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -57,6 +65,7 @@ class Feeds(private val context: Context) {
                 if (s.trafficReady) "traffic" to async { runCatching { traffic(s) } } else null,
                 if (s.newsReady) "news" to async { runCatching { news(s) } } else null,
                 if (s.eventsReady) "events" to async { runCatching { events(s) } } else null,
+                if (s.calendarReady) "calendar" to async { runCatching { calendar() } } else null,
             )
             val values = mutableMapOf<String, String>()
             val errors = mutableMapOf<String, String>()
@@ -182,6 +191,47 @@ class Feeds(private val context: Context) {
             .addQueryParameter("size", "5")
             .build()
         return FeedParsers.events(get(url), LocalDate.now())
+    }
+
+    /** Whether the user allowed reading the calendar. */
+    fun canReadCalendar() =
+        context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
+
+    /** The next week's events from the phone's visible calendars. */
+    private fun calendar(): Map<String, String> {
+        if (!canReadCalendar()) throw IOException("Calendar permission is off. Turn it on in Settings.")
+        val now = System.currentTimeMillis()
+        val uri = CalendarContract.Instances.CONTENT_URI.buildUpon().also {
+            ContentUris.appendId(it, now - 24 * 3600_000L)
+            ContentUris.appendId(it, now + 7 * 24 * 3600_000L)
+        }.build()
+        val columns = arrayOf(
+            CalendarContract.Instances.TITLE,
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.ALL_DAY,
+            CalendarContract.Instances.EVENT_LOCATION,
+        )
+        val local = ZoneId.systemDefault()
+        val events = mutableListOf<FeedParsers.CalendarEvent>()
+        context.contentResolver.query(
+            uri, columns, "${CalendarContract.Instances.VISIBLE} = 1", null, "${CalendarContract.Instances.BEGIN} ASC",
+        )?.use { c ->
+            while (c.moveToNext() && events.size < 50) {
+                val allDay = c.getInt(3) == 1
+                // All-day events are stored at midnight UTC.
+                val zone = if (allDay) ZoneOffset.UTC else local
+                fun time(ms: Long) = LocalDateTime.ofInstant(Instant.ofEpochMilli(ms), zone)
+                events += FeedParsers.CalendarEvent(
+                    title = c.getString(0).orEmpty(),
+                    start = time(c.getLong(1)),
+                    end = time(c.getLong(2)),
+                    allDay = allDay,
+                    location = c.getString(4).orEmpty(),
+                )
+            }
+        }
+        return FeedParsers.calendar(events.sortedBy { it.start }, LocalDateTime.now())
     }
 
     private fun get(url: HttpUrl): String {

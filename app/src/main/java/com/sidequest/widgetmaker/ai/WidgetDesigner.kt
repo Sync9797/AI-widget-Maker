@@ -30,14 +30,9 @@ class WidgetDesigner(apiKey: String) {
     class DesignFailed(message: String) : Exception(message)
 
     /** A new design from [description], or [previous] changed as [description] asks. */
-    suspend fun design(description: String, previous: WidgetDesign? = null): WidgetDesign =
+    suspend fun design(description: String, previous: WidgetDesign? = null, dataSources: String = ""): WidgetDesign =
         withContext(Dispatchers.IO) {
-            val request = if (previous == null) {
-                "Design this widget: $description"
-            } else {
-                "Here is the current widget design:\n" + DesignParser.encode(previous) +
-                    "\n\nChange it like this, keeping everything else: $description"
-            }
+            val request = Prompts.request(description, previous, dataSources)
             val first = ask(request, retry = null)
             try {
                 DesignParser.parse(first)

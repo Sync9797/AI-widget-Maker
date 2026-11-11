@@ -14,8 +14,8 @@ object DesignParser {
     }
 
     /** Widgets get slow and launchers refuse them past a few dozen views. */
-    const val MAX_NODES = 40
-    const val MAX_DEPTH = 6
+    const val MAX_NODES = 60
+    const val MAX_DEPTH = 7
 
     class InvalidDesign(message: String) : Exception(message)
 
@@ -61,40 +61,60 @@ object DesignParser {
         root = sanitize(design.root),
     )
 
+    private fun sanitize(show: Show?): Show? = show?.let {
+        Show(
+            minWidth = it.minWidth.coerceIn(0, 1000),
+            minHeight = it.minHeight.coerceIn(0, 1000),
+            maxWidth = it.maxWidth.coerceIn(0, 1000),
+            maxHeight = it.maxHeight.coerceIn(0, 1000),
+        )
+    }
+
     private fun sanitize(node: Node): Node = when (node) {
         is ColumnNode -> node.copy(
+            show = sanitize(node.show),
             children = node.children.map { sanitize(it) },
             background = node.background?.let { Colors.parseOrNull(it)?.let { _ -> it } },
             cornerRadius = node.cornerRadius.coerceIn(0, 40),
             padding = node.padding.coerceIn(0, 32),
         )
         is RowNode -> node.copy(
+            show = sanitize(node.show),
             children = node.children.map { sanitize(it) },
             background = node.background?.let { Colors.parseOrNull(it)?.let { _ -> it } },
             cornerRadius = node.cornerRadius.coerceIn(0, 40),
             padding = node.padding.coerceIn(0, 32),
         )
         is TextNode -> node.copy(
+            show = sanitize(node.show),
             text = node.text.take(200),
             size = node.size.coerceIn(8, 72),
             color = Colors.orDefault(node.color, "#FFFFFFFF"),
             maxLines = node.maxLines.coerceIn(1, 6),
+            trendOf = node.trendOf?.take(60),
+            upColor = Colors.orDefault(node.upColor, "#FF4ADE80"),
+            downColor = Colors.orDefault(node.downColor, "#FFF87171"),
         )
         is ClockNode -> node.copy(
+            show = sanitize(node.show),
             format = node.format.take(30).ifBlank { "h:mm" },
             size = node.size.coerceIn(10, 96),
             color = Colors.orDefault(node.color, "#FFFFFFFF"),
         )
         is IconNode -> node.copy(
+            show = sanitize(node.show),
+            live = node.live?.take(60),
             size = node.size.coerceIn(10, 64),
             color = Colors.orDefault(node.color, "#FFFFFFFF"),
         )
         is ProgressNode -> node.copy(
+            show = sanitize(node.show),
             color = Colors.orDefault(node.color, "#FF7CF29C"),
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
             height = node.height.coerceIn(2, 24),
         )
-        is SpacerNode -> node.copy(size = node.size.coerceIn(0, 64))
+        is SpacerNode -> node.copy(
+            show = sanitize(node.show),size = node.size.coerceIn(0, 64))
     }
 }
 

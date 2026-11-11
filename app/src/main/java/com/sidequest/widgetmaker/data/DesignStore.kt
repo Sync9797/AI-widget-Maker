@@ -3,6 +3,7 @@ package com.sidequest.widgetmaker.data
 import android.content.Context
 import com.sidequest.widgetmaker.spec.DesignParser
 import com.sidequest.widgetmaker.spec.SavedDesign
+import com.sidequest.widgetmaker.spec.WidgetTheme
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
 
@@ -47,6 +48,12 @@ class DesignStore(context: Context) {
     fun forget(appWidgetId: Int) {
         prefs.edit().remove(widgetKey(appWidgetId)).apply()
     }
+
+    /** How every widget is colored (Settings). */
+    var theme: WidgetTheme
+        get() = prefs.getString("widget_theme", null)
+            ?.let { runCatching { WidgetTheme.valueOf(it) }.getOrNull() } ?: WidgetTheme.glass
+        set(value) = prefs.edit().putString("widget_theme", value.name).apply()
 
     var apiKey: String
         get() = prefs.getString("api_key", "").orEmpty()

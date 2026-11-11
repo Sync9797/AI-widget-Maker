@@ -2,8 +2,12 @@ package com.sidequest.widgetmaker.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -26,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
@@ -37,7 +43,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sidequest.widgetmaker.spec.ClockNode
-import com.sidequest.widgetmaker.spec.Colors
 import com.sidequest.widgetmaker.spec.ColumnNode
 import com.sidequest.widgetmaker.spec.HAlign
 import com.sidequest.widgetmaker.spec.IconNode
@@ -49,9 +54,14 @@ import com.sidequest.widgetmaker.spec.TextNode
 import com.sidequest.widgetmaker.spec.Tokens
 import com.sidequest.widgetmaker.spec.VAlign
 import com.sidequest.widgetmaker.spec.Weight
+import com.sidequest.widgetmaker.spec.Role
+import com.sidequest.widgetmaker.spec.Styler
 import com.sidequest.widgetmaker.spec.WidgetDesign
+import com.sidequest.widgetmaker.spec.WidgetTheme
 import com.sidequest.widgetmaker.widget.AiWidget
+import com.sidequest.widgetmaker.widget.Fit
 import com.sidequest.widgetmaker.widget.iconRes
+import com.sidequest.widgetmaker.widget.textColor
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -59,7 +69,9 @@ import java.util.Calendar
 enum class PreviewSize(val label: String, val width: Dp, val height: Dp) {
     Small("2×1", 160.dp, 80.dp),
     Square("2×2", 160.dp, 160.dp),
+    Tall("2×4", 160.dp, 320.dp),
     Wide("4×2", 320.dp, 160.dp),
+    Large("4×4", 320.dp, 320.dp),
 }
 
 /**
@@ -67,8 +79,10 @@ enum class PreviewSize(val label: String, val width: Dp, val height: Dp) {
  * rules, same live values), so you can see it before adding it.
  */
 @Composable
-fun DesignPreview(design: WidgetDesign, size: PreviewSize, modifier: Modifier = Modifier) {
+fun DesignPreview(design: WidgetDesign, size: PreviewSize, theme: WidgetTheme, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val styler = remember(theme) { AiWidget.styler(context, theme) }
+    val paint = PreviewPaint(styler, isSystemInDarkTheme())
     var tokens by remember { mutableStateOf(AiWidget.currentTokens(context)) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -77,22 +91,39 @@ fun DesignPreview(design: WidgetDesign, size: PreviewSize, modifier: Modifier = 
         }
     }
     val shape = RoundedCornerShape(design.cornerRadius.dp)
-    Box(
-        modifier
-            .size(size.width, size.height)
-            .clip(shape)
-            .background(color(design.background))
-            .padding(design.padding.dp),
-    ) {
-        PreviewNode(design.root, tokens, Modifier.fillMaxSize())
+    val surface = if (theme == WidgetTheme.glass) {
+        // Same layers as the widget's glass drawable.
+        Modifier
+            .background(Brush.verticalGradient(listOf(Color(0x7A1C2333), Color(0x590B0F1A))))
+            .background(Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x08FFFFFF), Color(0x00FFFFFF))))
+            .border(1.dp, Color(0x4DFFFFFF), shape)
+    } else {
+        Modifier.background(paint(Role.Background, design.background))
+    }
+    // Shrinks to fit narrow screens, drawn exactly as at full size.
+    BoxWithConstraints(modifier) {
+        val scale = minOf(1f, maxWidth / size.width)
+        Box(Modifier.size(size.width * scale, size.height * scale), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .requiredSize(size.width, size.height)
+                    .graphicsLayer(scaleX = scale, scaleY = scale)
+                    .clip(shape)
+                    .then(surface)
+                    .padding(design.padding.dp),
+            ) {
+        val fit = Fit(size.width.value.toInt(), size.height.value.toInt())
+                if (fit.shows(design.root)) PreviewNode(design.root, tokens, paint, fit, Modifier.fillMaxSize())
+            }
+        }
     }
 }
 
 @Composable
-private fun PreviewNode(node: Node, tokens: Tokens, modifier: Modifier) {
+private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit, modifier: Modifier) {
     when (node) {
         is ColumnNode -> Column(
-            modifier = container(modifier, node.background, node.cornerRadius, node.padding),
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
             horizontalAlignment = when (node.align) {
                 HAlign.start -> Alignment.Start
                 HAlign.center -> Alignment.CenterHorizontally
@@ -103,9 +134,9 @@ private fun PreviewNode(node: Node, tokens: Tokens, modifier: Modifier) {
                 VAlign.center -> Arrangement.Center
                 VAlign.bottom -> Arrangement.Bottom
             },
-        ) { node.children.forEach { ColumnChild(it, tokens) } }
+        ) { node.children.filter(fit::shows).forEach { ColumnChild(it, tokens, paint, fit) } }
         is RowNode -> Row(
-            modifier = container(modifier, node.background, node.cornerRadius, node.padding),
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
             horizontalArrangement = when (node.align) {
                 HAlign.start -> Arrangement.Start
                 HAlign.center -> Arrangement.Center
@@ -116,11 +147,11 @@ private fun PreviewNode(node: Node, tokens: Tokens, modifier: Modifier) {
                 VAlign.center -> Alignment.CenterVertically
                 VAlign.bottom -> Alignment.Bottom
             },
-        ) { node.children.forEach { RowChild(it, tokens) } }
+        ) { node.children.filter(fit::shows).forEach { RowChild(it, tokens, paint, fit) } }
         is TextNode -> Text(
             text = tokens.fill(node.text),
             modifier = modifier,
-            color = color(node.color),
+            color = textColor(node, tokens).let { (role, c) -> paint(role, c) },
             fontSize = node.size.sp,
             lineHeight = (node.size * 1.2f).sp,
             fontWeight = weight(node.weight),
@@ -135,23 +166,23 @@ private fun PreviewNode(node: Node, tokens: Tokens, modifier: Modifier) {
         is ClockNode -> Text(
             text = android.text.format.DateFormat.format(node.format, Calendar.getInstance()).toString(),
             modifier = modifier,
-            color = color(node.color),
+            color = paint(Role.Text, node.color),
             fontSize = node.size.sp,
             lineHeight = node.size.sp,
             fontWeight = weight(node.weight),
             maxLines = 1,
         )
         is IconNode -> Image(
-            painter = painterResource(iconRes(node.name)),
+            painter = painterResource(iconRes(node, tokens)),
             contentDescription = null,
             modifier = modifier.size(node.size.dp),
-            colorFilter = ColorFilter.tint(color(node.color)),
+            colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)),
         )
         is ProgressNode -> LinearProgressIndicator(
             progress = { tokens.progress(node.value) },
             modifier = modifier.fillMaxWidth().height(node.height.dp).clip(RoundedCornerShape(node.height.dp)),
-            color = color(node.color),
-            trackColor = color(node.trackColor),
+            color = paint(Role.Accent, node.color),
+            trackColor = paint(Role.Track, node.trackColor),
             gapSize = 0.dp,
             drawStopIndicator = {},
         )
@@ -160,21 +191,24 @@ private fun PreviewNode(node: Node, tokens: Tokens, modifier: Modifier) {
 }
 
 @Composable
-private fun ColumnScope.ColumnChild(node: Node, tokens: Tokens) =
-    PreviewNode(node, tokens, if (node.grow) Modifier.weight(1f) else Modifier)
+private fun ColumnScope.ColumnChild(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit) =
+    PreviewNode(node, tokens, paint, fit, if (node.grow) Modifier.weight(1f) else Modifier)
 
 @Composable
-private fun RowScope.RowChild(node: Node, tokens: Tokens) =
-    PreviewNode(node, tokens, if (node.grow) Modifier.weight(1f) else Modifier)
+private fun RowScope.RowChild(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit) =
+    PreviewNode(node, tokens, paint, fit, if (node.grow) Modifier.weight(1f) else Modifier)
 
-private fun container(modifier: Modifier, background: String?, radius: Int, padding: Int): Modifier {
+private fun container(modifier: Modifier, paint: PreviewPaint, background: String?, radius: Int, padding: Int): Modifier {
     var m = modifier
-    if (background != null) m = m.clip(RoundedCornerShape(radius.dp)).background(color(background))
+    if (background != null) m = m.clip(RoundedCornerShape(radius.dp)).background(paint(Role.Container, background))
     if (padding > 0) m = m.padding(padding.dp)
     return m
 }
 
-private fun color(value: String) = Color(Colors.argb(value))
+/** Theme colors for the preview, in the app's current light or dark mode. */
+private class PreviewPaint(val styler: Styler, val dark: Boolean) {
+    operator fun invoke(role: Role, design: String?) = Color(styler.argb(role, design, dark))
+}
 
 private fun weight(weight: Weight) = when (weight) {
     Weight.light -> FontWeight.Light

@@ -33,14 +33,38 @@ enum class HAlign { start, center, end }
 enum class VAlign { top, center, bottom }
 enum class Weight { light, normal, medium, bold }
 
-/** Icons the widget can draw (each is a drawable in the app). */
-enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music }
+/**
+ * Icons the widget can draw (each is a drawable in the app). "weather" is
+ * live: it shows sun, moon, cloud, rain, snow or storm for the current weather.
+ */
+enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, weather }
 
 @Serializable
 sealed interface Node {
     /** In a row or column: take up the leftover space. */
     val grow: Boolean
+    /** Sizes this element appears at; null means every size. */
+    val show: Show?
 }
+
+/**
+ * Makes an element appear only at some widget sizes (in dp, the widget's
+ * whole size), so a bigger widget shows more. 0 means no limit.
+ */
+@Serializable
+data class Show(
+    val minWidth: Int = 0,
+    val minHeight: Int = 0,
+    val maxWidth: Int = 0,
+    val maxHeight: Int = 0,
+) {
+    fun fits(width: Int, height: Int) =
+        width >= minWidth && height >= minHeight &&
+            (maxWidth == 0 || width <= maxWidth) && (maxHeight == 0 || height <= maxHeight)
+}
+
+/** Whether [node] appears in a widget this size. */
+fun visible(node: Node, width: Int, height: Int) = node.show?.fits(width, height) ?: true
 
 @Serializable
 @SerialName("column")
@@ -52,6 +76,7 @@ data class ColumnNode(
     val cornerRadius: Int = 0,
     val padding: Int = 0,
     override val grow: Boolean = false,
+    override val show: Show? = null,
 ) : Node
 
 @Serializable
@@ -64,6 +89,7 @@ data class RowNode(
     val cornerRadius: Int = 0,
     val padding: Int = 0,
     override val grow: Boolean = false,
+    override val show: Show? = null,
 ) : Node
 
 /** Text. May contain tokens like {date} or {battery}; see [Tokens]. */
@@ -76,7 +102,15 @@ data class TextNode(
     val weight: Weight = Weight.normal,
     val align: HAlign = HAlign.start,
     val maxLines: Int = 2,
+    /**
+     * Colors the text by a value going up or down, like "{crypto.BTC.change}":
+     * [upColor] when it starts with "+", [downColor] with "-", else [color].
+     */
+    val trendOf: String? = null,
+    val upColor: String = "#FF4ADE80",
+    val downColor: String = "#FFF87171",
     override val grow: Boolean = false,
+    override val show: Show? = null,
 ) : Node
 
 /**
@@ -91,15 +125,19 @@ data class ClockNode(
     val color: String = "#FFFFFFFF",
     val weight: Weight = Weight.light,
     override val grow: Boolean = false,
+    override val show: Show? = null,
 ) : Node
 
 @Serializable
 @SerialName("icon")
 data class IconNode(
     val name: IconName = IconName.star,
+    /** A value holding an icon name, like "{weather.h1.icon}": the icon follows it. */
+    val live: String? = null,
     val size: Int = 20,
     val color: String = "#FFFFFFFF",
     override val grow: Boolean = false,
+    override val show: Show? = null,
 ) : Node
 
 /** A bar from 0 to 100. [value] is a number or "{battery}". */
@@ -111,6 +149,7 @@ data class ProgressNode(
     val trackColor: String = "#33FFFFFF",
     val height: Int = 6,
     override val grow: Boolean = false,
+    override val show: Show? = null,
 ) : Node
 
 /** Empty space: [size] dp, or all the leftover space when [grow] is set. */
@@ -119,4 +158,5 @@ data class ProgressNode(
 data class SpacerNode(
     val size: Int = 8,
     override val grow: Boolean = false,
+    override val show: Show? = null,
 ) : Node

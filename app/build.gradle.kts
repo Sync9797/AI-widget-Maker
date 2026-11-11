@@ -15,8 +15,8 @@ android {
         applicationId = "com.sidequest.widgetmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     signingConfigs {
@@ -45,6 +45,10 @@ android {
     }
 
     buildFeatures { compose = true }
+
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+    }
 
     packaging {
         resources {
@@ -75,10 +79,18 @@ dependencies {
     // The widgets themselves.
     implementation("androidx.glance:glance-appwidget:1.1.1")
 
+    // Live data: background refresh and HTTP for weather, crypto, traffic, news and events.
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // Claude, which designs the widgets.
     implementation("com.anthropic:anthropic-java:3.8.0")
 
     testImplementation("junit:junit:4.13.2")
+    // Renders previews on the JVM, to look at designs without a phone.
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 kotlin {

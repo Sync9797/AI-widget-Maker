@@ -19,13 +19,44 @@ import java.util.Locale
 class DesignParserTest {
     @Test
     fun parsesThePromptsOwnExample() {
-        val example = Prompts.SYSTEM.substringAfter("Example (a calm clock widget):")
+        val example = Prompts.SYSTEM.substringAfter("Example (a calm clock widget")
         val design = DesignParser.parse(example)
         assertEquals("Calm clock", design.name)
         val root = design.root as ColumnNode
         assertTrue(root.children[1] is ClockNode)
         val row = root.children[2] as RowNode
         assertEquals(IconName.battery, (row.children[1] as IconNode).name)
+    }
+
+    @Test
+    fun theExampleShowsMoreAsItGrows() {
+        val design = DesignParser.parse(Prompts.SYSTEM.substringAfter("Example (a calm clock widget"))
+        fun count(node: com.sidequest.widgetmaker.spec.Node, w: Int, h: Int): Int {
+            if (!com.sidequest.widgetmaker.spec.visible(node, w, h)) return 0
+            val kids = when (node) {
+                is ColumnNode -> node.children
+                is RowNode -> node.children
+                else -> emptyList()
+            }
+            return 1 + kids.sumOf { count(it, w, h) }
+        }
+        val small = count(design.root, 160, 80)
+        val wide = count(design.root, 320, 80)
+        val square = count(design.root, 160, 160)
+        val large = count(design.root, 320, 320)
+        assertTrue(small < wide)
+        assertTrue(small < square)
+        assertTrue(square < large)
+    }
+
+    @Test
+    fun showLimits() {
+        val show = com.sidequest.widgetmaker.spec.Show(minWidth = 200, maxHeight = 150)
+        assertTrue(show.fits(250, 100))
+        assertTrue(!show.fits(150, 100))
+        assertTrue(!show.fits(250, 200))
+        val parsed = DesignParser.parse("""{"root":{"type":"text","text":"x","show":{"minWidth":5000}}}""")
+        assertEquals(1000, parsed.root.show!!.minWidth)
     }
 
     @Test
@@ -68,7 +99,7 @@ class DesignParserTest {
 
     @Test
     fun roundTrips() {
-        val design = DesignParser.parse(Prompts.SYSTEM.substringAfter("Example (a calm clock widget):"))
+        val design = DesignParser.parse(Prompts.SYSTEM.substringAfter("Example (a calm clock widget"))
         assertEquals(design, DesignParser.parse(DesignParser.encode(design)))
     }
 
@@ -78,5 +109,39 @@ class DesignParserTest {
         assertEquals("Good morning, Wednesday 76% Charging {nope}", tokens.fill("{greeting}, {day} {battery}% {charging} {nope}"))
         assertEquals(0.76f, tokens.progress("{battery}"), 0.001f)
         assertEquals(1f, tokens.progress("250"), 0.001f)
+    }
+}
+
+class WidgetThemeTest {
+    private val glass = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.glass)
+    private val material = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.material)
+    private val original = com.sidequest.widgetmaker.spec.Styler(com.sidequest.widgetmaker.spec.WidgetTheme.original)
+    private val m3 = com.sidequest.widgetmaker.spec.Material3Colors.BASELINE
+
+    @Test
+    fun originalKeepsTheDesignsColors() {
+        assertEquals(0xFF00FF66.toInt(), original.argb(com.sidequest.widgetmaker.spec.Role.Text, "#FF00FF66", dark = false))
+    }
+
+    @Test
+    fun glassMakesTextWhiteButKeepsItsFade() {
+        val role = com.sidequest.widgetmaker.spec.Role.Text
+        assertEquals(0xFFFFFFFF.toInt(), glass.argb(role, "#FF00FF66", dark = false))
+        assertEquals(0xB3FFFFFF.toInt(), glass.argb(role, "#B3123456", dark = false))
+        // Very faint text is raised so it stays readable on glass.
+        assertEquals(0x99FFFFFF.toInt(), glass.argb(role, "#33FFFFFF", dark = false))
+        // Accents keep their color.
+        assertEquals(0xFF7CF29C.toInt(), glass.argb(com.sidequest.widgetmaker.spec.Role.Accent, "#FF7CF29C", dark = false))
+    }
+
+    @Test
+    fun materialFollowsDarkMode() {
+        val bg = com.sidequest.widgetmaker.spec.Role.Background
+        assertEquals(m3.surfaceDay, material.argb(bg, "#E61E1E2E", dark = false))
+        assertEquals(m3.surfaceNight, material.argb(bg, "#E61E1E2E", dark = true))
+        assertEquals(m3.primaryNight, material.argb(com.sidequest.widgetmaker.spec.Role.Accent, "#FFFF0000", dark = true))
+        assertEquals(m3.onSurfaceDay, material.argb(com.sidequest.widgetmaker.spec.Role.Text, "#FFFFFFFF", dark = false))
+        assertTrue(material.followsDarkMode)
+        assertTrue(!glass.followsDarkMode)
     }
 }

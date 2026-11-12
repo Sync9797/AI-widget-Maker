@@ -24,7 +24,7 @@ class StartersAndChatTest {
 
     @Test
     fun everyStarterParses() {
-        assertEquals(22, Starters.all.size)
+        assertEquals(25, Starters.all.size)
         Starters.all.forEach { assertTrue(it.title, it.design.name.isNotBlank()) }
     }
 

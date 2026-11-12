@@ -45,12 +45,13 @@ object Starters {
           {"type":"text","text":"{calendar.$n.when}","size":11,"color":"#99FFFFFF","maxLines":1}]}]}"""
 
     /** One hour in a forecast list: time, chance of rain, conditions, temperature, then a divider. */
-    private fun hourRow(n: Int, minHeight: Int, divider: Boolean = true): String {
+    private fun hourRow(n: Int, minHeight: Int, divider: Boolean = true, clock24: Boolean = false): String {
+        val time = if (clock24) "time24" else "time"
         val line = if (divider) DIVIDER_GAP else ""
         return """
         {"type":"column","show":{"minHeight":$minHeight},"children":[
          {"type":"row","verticalAlign":"center","children":[
-          {"type":"text","text":"{weather.h$n.time}","size":13,"color":"#B3FFFFFF","grow":true},
+          {"type":"text","text":"{weather.h$n.$time}","size":13,"color":"#B3FFFFFF","grow":true},
           {"type":"icon","name":"umbrella","size":12,"color":"#99FFFFFF"},
           {"type":"text","text":" {weather.h$n.rain}","size":13,"color":"#B3FFFFFF","grow":true},
           {"type":"icon","name":"sun","live":"{weather.h$n.icon}","size":18,"color":"#FFDCE8FF"},
@@ -284,19 +285,21 @@ object Starters {
              {"type":"clock","format":"MMMM","size":14,"color":"#CC1B2A4A","weight":"medium","show":{"minHeight":200}}]}}""",
         ),
         Triple(
-            "Hourly weather", "Now on the left, the next hours as a list with rain chances on the right (when wide).",
+            "Hourly weather", "Now on the left with the outlook (\"Rain possible tonight\"), the next hours with rain chances on the right, in 24-hour time.",
             """{"name":"Hourly weather","background":"#F2163170","cornerRadius":30,"padding":16,"root":
             {"type":"row","children":[
              {"type":"column","grow":true,"children":[
-              {"type":"icon","name":"weather","size":44,"color":"#FFDCE8FF","show":{"minHeight":150}},
+              {"type":"row","show":{"minHeight":150},"children":[
+               {"type":"spacer","grow":true},
+               {"type":"icon","name":"weather","size":52,"color":"#FFC9DDE6"}]},
               {"type":"spacer","grow":true},
               {"type":"text","text":"{weather.temp}","size":30,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
-              {"type":"text","text":"{weather.condition}","size":13,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100}},
+              {"type":"text","text":"{weather.outlook}","size":13,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100}},
               {"type":"row","show":{"minHeight":120},"children":[
                {"type":"icon","name":"pin","size":13,"color":"#B3FFFFFF"},
                {"type":"text","text":" {weather.place}","size":13,"color":"#B3FFFFFF","maxLines":1}]}]},
              {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
-              ${hourRow(1, 0)},${hourRow(2, 0)},${hourRow(3, 150)},${hourRow(4, 150, divider = false)}]}]}}""",
+              ${hourRow(1, 0, clock24 = true)},${hourRow(2, 0, clock24 = true)},${hourRow(3, 140, clock24 = true)},${hourRow(4, 140, divider = false, clock24 = true)}]}]}}""",
         ),
         Triple(
             "Battery pill", "An oval battery meter, like One UI's: the percentage and a bar.",
@@ -479,6 +482,80 @@ object Starters {
              {"type":"row","show":{"minHeight":180},"children":[
               {"type":"clock","format":"h:mm","size":22,"color":"#FFFFFFFF","weight":"light","grow":true},
               {"type":"clock","format":"EEE d MMM","size":13,"color":"#B3FFFFFF"}]}]}}""",
+        ),
+        Triple(
+            "NOOP recovery", "Charge (estimated from HRV and resting heart rate) and effort from NOOP; HRV, sleep, SpO2 and more as it grows. Turn on Health Connect in NOOP.",
+            """{"name":"NOOP recovery","background":"#F20B0F14","cornerRadius":28,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"Charge","size":12,"color":"#99FFFFFF","show":{"minHeight":100}},
+               {"type":"row","verticalAlign":"bottom","children":[
+                {"type":"text","text":"{health.charge}%","size":28,"color":"#FF2BE38A","weight":"bold","maxLines":1},
+                {"type":"text","text":" {health.charge.label}","size":13,"color":"#CCFFFFFF","maxLines":1}]}]},
+              {"type":"column","align":"end","show":{"minWidth":250},"children":[
+               {"type":"text","text":"Effort","size":12,"color":"#99FFFFFF","show":{"minHeight":100}},
+               {"type":"text","text":"{health.effort}","size":24,"color":"#FF4FA3FF","weight":"bold"}]}]},
+             {"type":"spacer","size":6,"show":{"minHeight":100}},
+             {"type":"progress","value":"{health.charge}","color":"#FF2BE38A","trackColor":"#26FFFFFF","height":6,"show":{"minHeight":100}},
+             {"type":"spacer","size":12,"show":{"minHeight":150}},
+             {"type":"row","show":{"minHeight":150},"children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"icon","name":"heart","size":15,"color":"#FF2BE38A"},
+               {"type":"text","text":"{health.hrv}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+               {"type":"text","text":"HRV","size":11,"color":"#99FFFFFF"}]},
+              {"type":"column","grow":true,"show":{"minWidth":250},"children":[
+               {"type":"icon","name":"heart","size":15,"color":"#FFFF5C7A"},
+               {"type":"text","text":"{health.restingHeart}","size":15,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"resting bpm","size":11,"color":"#99FFFFFF","maxLines":1}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"icon","name":"moon","size":15,"color":"#FFB4A0FF"},
+               {"type":"text","text":"{health.sleep}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+               {"type":"text","text":"sleep","size":11,"color":"#99FFFFFF"}]}]},
+             {"type":"spacer","size":10,"show":{"minHeight":230}},
+             {"type":"row","show":{"minHeight":230},"children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{health.spo2}","size":14,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"SpO2","size":11,"color":"#99FFFFFF"}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{health.respRate}","size":14,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"br/min","size":11,"color":"#99FFFFFF","maxLines":1}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{health.vo2max}","size":14,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"VO2 max","size":11,"color":"#99FFFFFF","maxLines":1}]}]}]}}""",
+        ),
+        Triple(
+            "Now playing", "The song, artist and album art with play/pause, next and previous; big art when tall. Allow music access in Settings.",
+            """{"name":"Now playing","background":"#F2181A20","cornerRadius":28,"padding":14,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"art","size":120,"cornerRadius":18,"show":{"minHeight":250}},
+             {"type":"spacer","size":12,"show":{"minHeight":250}},
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"art","size":56,"cornerRadius":12,"show":{"minWidth":220,"maxHeight":249}},
+              {"type":"spacer","size":12,"show":{"minWidth":220,"maxHeight":249}},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{music.title}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+               {"type":"text","text":"{music.artist}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100}},
+               {"type":"spacer","size":6,"show":{"minHeight":100}},
+               {"type":"row","verticalAlign":"center","children":[
+                {"type":"icon","name":"previous","size":24,"color":"#E6FFFFFF","tap":"music:prev"},
+                {"type":"spacer","size":16},
+                {"type":"icon","name":"play","live":"{music.playIcon}","size":30,"color":"#FFFFFFFF","tap":"music:toggle"},
+                {"type":"spacer","size":16},
+                {"type":"icon","name":"next","size":24,"color":"#E6FFFFFF","tap":"music:next"},
+                {"type":"spacer","grow":true},
+                {"type":"text","text":"{music.app}","size":11,"color":"#80FFFFFF","maxLines":1,"show":{"minWidth":300}}]}]}]}]}}""",
+        ),
+        Triple(
+            "Music pill", "What's playing in an oval, with play/pause (and next when wider).",
+            """{"name":"Music pill","background":"#E6202124","cornerRadius":40,"padding":10,"shape":"pill","root":
+            {"type":"row","verticalAlign":"center","children":[
+             {"type":"art","size":36,"cornerRadius":18,"show":{"minWidth":200}},
+             {"type":"spacer","size":10,"show":{"minWidth":200}},
+             {"type":"text","text":"{music.line}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1,"grow":true},
+             {"type":"icon","name":"play","live":"{music.playIcon}","size":26,"color":"#FFFFFFFF","tap":"music:toggle"},
+             {"type":"spacer","size":10,"show":{"minWidth":240}},
+             {"type":"icon","name":"next","size":22,"color":"#CCFFFFFF","tap":"music:next","show":{"minWidth":240}}]}}""",
         ),
     )
 }

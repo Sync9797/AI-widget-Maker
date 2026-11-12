@@ -63,7 +63,7 @@ data class Tokens(
         private val TOKEN = Regex("\\{([\\w.]+)\\}")
         private val UP = Regex("^\\+\\s*[0-9]")
         private val DOWN = Regex("^-\\s*[0-9]")
-        private val FEED_PREFIXES = listOf("weather.", "crypto.", "traffic.", "news.", "events.", "calendar.", "health.", "mq.")
+        private val FEED_PREFIXES = listOf("weather.", "crypto.", "traffic.", "news.", "events.", "calendar.", "health.", "mq.", "music.")
 
         val NAMES = listOf("date", "day", "month", "dayOfMonth", "year", "greeting", "battery", "charging")
 

@@ -12,6 +12,7 @@ enum class TapKind(val label: String) {
     battery("Battery"),
     health("Health & fitness"),
     game("Monster Quest"),
+    music("Music"),
 }
 
 /** What a tap does once its values are filled in. */
@@ -30,6 +31,9 @@ sealed interface TapAction {
 
     /** Asks Monster Quest to "complete" a quest, "claim" an adventure or "hatch" an egg. */
     data class GameAction(val action: String, val id: String) : TapAction
+
+    /** Play/pause ("toggle"), "next" or "prev" on whatever is playing. */
+    data class Media(val command: String) : TapAction
 }
 
 /**
@@ -86,6 +90,7 @@ object Taps {
                 is ClockNode -> add(if (node.format.contains('h', ignoreCase = true)) TapKind.clock else TapKind.calendar)
                 is IconNode -> add(if (node.name == IconName.weather || node.live?.contains("weather.") == true) TapKind.weather else null)
                 is ProgressNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
+                is ArtNode -> add(TapKind.music)
                 is SpacerNode, is DividerNode -> Unit
             }
         }
@@ -104,6 +109,7 @@ object Taps {
         "battery", "charging" -> TapKind.battery
         "health" -> TapKind.health
         "mq" -> TapKind.game
+        "music" -> TapKind.music
         else -> null
     }
 
@@ -118,6 +124,9 @@ object Taps {
         if (value.startsWith("mq-action:")) {
             val parts = value.removePrefix("mq-action:").split(':', limit = 2)
             return if (parts.size == 2 && parts[0] in setOf("complete", "claim", "hatch") && parts[1].isNotBlank()) TapAction.GameAction(parts[0], parts[1]) else null
+        }
+        if (value.startsWith("music:")) {
+            return value.removePrefix("music:").takeIf { it in setOf("toggle", "next", "prev") }?.let { TapAction.Media(it) }
         }
         if (value.startsWith("calendar-event:")) {
             val parts = value.removePrefix("calendar-event:").split(':').mapNotNull { it.toLongOrNull() }

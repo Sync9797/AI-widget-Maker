@@ -100,13 +100,15 @@ check it works:
 
 | Data | From | Setup |
 |---|---|---|
-| Weather (now, the next 5 hours, the next 3 days, with live weather icons) | Open-Meteo | Type your town. No account. |
+| Weather (now, an outlook like "Rain possible tonight", the next 5 hours in 12- or 24-hour time, the next 3 days, with live weather icons) | Open-Meteo | Type your town. No account. |
 | Crypto prices and 24 h change, green or red | CoinGecko | List your coins, like `BTC, ETH`. No account. |
 | Local news (up to 5 headlines) | Google News | Your town, or a topic. No account. |
 | Commute time with live traffic | TomTom | Free key from [developer.tomtom.com](https://developer.tomtom.com), plus home and work addresses. |
 | Nearby events (up to 5) | Local news (Google News), or Ticketmaster | Your town. No account: event-like headlines first, crime and accident news left out, and dates read from headlines ("this weekend", "Sat", "Nov 14"). For exact listings, optionally add a free Ticketmaster key. |
 | Your calendar (next 7 days) | The calendars on your phone | Turn on **Your calendar** and allow access. Read on the phone only. |
 | Exercise & health: steps, heart rate, kcal, workouts, sleep, effort | Health Connect (Samsung Health, WHOOP, Google Fit, Fitbit, Garmin...) | Turn on **Exercise & health** and allow access. In Samsung Health: Settings → Health Connect. "Effort" is estimated from heart rate (WHOOP keeps its strain score private). |
+| NOOP (the offline WHOOP app by ryanbr): HRV, resting heart rate, SpO2, breathing rate, VO2 max, sleep, plus an estimated Charge | Health Connect | Turn on Health Connect in NOOP's **Data Sources** screen, then **Exercise & health** here. NOOP's data is used first when other apps share too. NOOP keeps Charge/Effort/Rest private, so Charge is estimated from HRV and resting heart rate against your 30-day baseline (needs ~5 days). Health widgets open NOOP when tapped. |
+| Music: what's playing (any app), album art, play/pause, next, previous | Android's media sessions | **Settings → Music → Allow music access** (notification access, used only for this). On Android 13+ for apps not from the Play Store, first allow restricted settings: App info → ⋮ → Allow restricted settings. |
 | Monster Quest: quests, eggs, adventures, party, bounty, torches, phone-free time, steps, sleep | The game itself | Install Monster Quest (3.24 or newer); widgets update whenever the game changes. |
 
 Then just ask for it, for example "my commute time and today's weather" or

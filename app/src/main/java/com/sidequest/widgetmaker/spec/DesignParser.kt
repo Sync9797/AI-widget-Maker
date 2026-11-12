@@ -126,6 +126,12 @@ object DesignParser {
             color = Colors.orDefault(node.color, "#26FFFFFF"),
             thickness = node.thickness.coerceIn(1, 4),
         )
+        is ArtNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            size = node.size.coerceIn(24, 200),
+            cornerRadius = node.cornerRadius.coerceIn(0, 100),
+        )
         is SpacerNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),size = node.size.coerceIn(0, 64))

@@ -78,6 +78,7 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"progress","value":"{battery}" or a number 0-100,"color":color,"trackColor":color,"height":6}
 - {"type":"spacer","size":8}   empty space; with "grow":true it pushes things apart
 - {"type":"divider","color":"#26FFFFFF","thickness":1}   a thin line between rows (lists, forecasts)
+- {"type":"art","size":56,"cornerRadius":12}   the album art of what's playing (music widgets)
 
 Text can include these live values, written in braces: ${Tokens.NAMES.joinToString(", ") { "{$it}" }}.
 {greeting} is "Good morning/afternoon/evening/night"; {battery} is the percentage without the
@@ -88,7 +89,8 @@ Live data from the internet (refreshed about every 30 minutes; each request says
 - Weather: {weather.temp} "18°", {weather.feelsLike}, {weather.high}, {weather.low},
   {weather.condition} "Partly cloudy", {weather.rain} "40%" (chance today), {weather.wind} "9 mph",
   {weather.place} the town name. The icon "weather" shows the current conditions.
-  Next hours, N = 1 to 5: {weather.hN.time} "3 PM", {weather.hN.temp}, {weather.hN.icon}, {weather.hN.rain} "10%".
+  {weather.outlook} "Rain possible tonight" (the next 12 hours, in words).
+  Next hours, N = 1 to 5: {weather.hN.time} "3 PM" ({weather.hN.time24} "15:00"), {weather.hN.temp}, {weather.hN.icon}, {weather.hN.rain} "10%".
   Next days, N = 1 to 3: {weather.dN.day} "Thu", {weather.dN.high}, {weather.dN.low}, {weather.dN.icon}.
   Show forecasts as a row of small columns (time, live icon, temp), only at bigger sizes.
 - Crypto, for each coin the user tracks (SYMBOL is like BTC): {crypto.SYMBOL.price} "$97,412",
@@ -109,6 +111,15 @@ Live data from the internet (refreshed about every 30 minutes; each request says
   {health.effort} "8.4" (0-21, estimated from heart rate, like WHOOP strain), {health.exercise} "45 min",
   {health.workout} "Run", {health.workout.when}, {health.workout.duration}, {health.sleep} "7h 12m",
   {health.sleep.deep}, {health.sleep.rem}. Icons: steps, heart, flame, moon.
+  From NOOP (the offline WHOOP app) or similar: {health.hrv} "62 ms", {health.spo2} "97%",
+  {health.respRate} "14.8" breaths/min, {health.vo2max} "48", {health.charge} (1-99, recovery, estimated
+  from HRV and resting heart rate, like WHOOP/NOOP "Charge"; for a progress bar too),
+  {health.charge.label} "Charged", "Steady" or "Drained", {health.source} "NOOP" when it comes from NOOP.
+- Music (whatever is playing on the phone: Spotify, YouTube Music, podcasts...): {music.title},
+  {music.artist}, {music.album}, {music.app} "Spotify", {music.line} "Song · Artist", {music.state}
+  "Playing" or "Paused". The element {"type":"art","size":56,"cornerRadius":12} shows the album art
+  (size 24-200). Buttons: icons "previous", "play" with "live":"{music.playIcon}" (shows pause while
+  playing) and "next", with "tap" set to "music:prev", "music:toggle" and "music:next".
 - Monster Quest (the user's game): {mq.hero}, {mq.level}, {mq.steps}, {mq.torches}, {mq.gold},
   eggs: {mq.eggs} count, {mq.eggs.ready}, and N = 1 to 5: {mq.egg.N} species, {mq.egg.N.progress} (0-100),
   {mq.egg.N.left} "1.2 km to go" or "Ready to hatch!"; adventures: {mq.adventures} count, N = 1 to 3:

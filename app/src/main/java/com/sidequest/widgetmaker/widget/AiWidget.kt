@@ -21,6 +21,10 @@ import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.action.actionSendBroadcast
+import com.sidequest.widgetmaker.music.MusicControlReceiver
+import com.sidequest.widgetmaker.spec.ArtNode
+import com.sidequest.widgetmaker.spec.TapAction
 import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -108,7 +112,7 @@ class AiWidget : GlanceAppWidget() {
                 // It goes through the tap screen, which also learns where the widget is (for the One UI blur).
                 val whole = Taps.forWidget(saved.design)?.let { Taps.resolve(it, tokens) }
                 val open = GlanceModifier.clickable(actionStartActivity(TapIntents.root(context, appWidgetId, whole)))
-                DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open)
+                DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open, inputs.art)
             }
         }
     }
@@ -171,7 +175,7 @@ class AiWidget : GlanceAppWidget() {
                 now = LocalDateTime.now(),
                 battery = level?.takeIf { it in 0..100 },
                 charging = battery?.isCharging == true,
-                feeds = Feeds(context).snapshot().values,
+                feeds = Feeds(context).snapshot().values + com.sidequest.widgetmaker.music.Music.values(context),
             )
         }
     }
@@ -221,6 +225,7 @@ private class Inputs(
     val look: Look,
     val shape: WidgetShape?,
     val onScreen: Backdrop.Box?,
+    val art: android.graphics.Bitmap?,
 ) {
     companion object {
         fun load(context: Context, appWidgetId: Int): Inputs {
@@ -232,7 +237,15 @@ private class Inputs(
                 look = store.look,
                 shape = store.shapeFor(appWidgetId),
                 onScreen = store.boundsFor(appWidgetId),
+                art = store.designFor(appWidgetId)?.design?.let { if (usesArt(it.root)) com.sidequest.widgetmaker.music.Music.art(context) else null },
             )
+        }
+
+        private fun usesArt(node: Node): Boolean = when (node) {
+            is ArtNode -> true
+            is ColumnNode -> node.children.any(::usesArt)
+            is RowNode -> node.children.any(::usesArt)
+            else -> false
         }
     }
 }
@@ -259,13 +272,14 @@ private fun DesignWidget(
     shape: WidgetShape?,
     onScreen: Backdrop.Box?,
     open: GlanceModifier,
+    albumArt: android.graphics.Bitmap? = null,
 ) {
     val context = androidx.glance.LocalContext.current
     // The widget's size right now: its panel, and the elements with size rules, follow it.
     val size = LocalSize.current
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, look, shape)
     val art = PanelArt.build(context, theme, panel, look, onScreen)
-    val paint = Paint(art.styler)
+    val paint = Paint(art.styler, albumArt)
     Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Box(GlanceModifier.size(panel.width.dp, panel.height.dp).then(open)) {
             // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.
@@ -295,7 +309,7 @@ private fun DesignWidget(
  * match the phone's current palette (wallpaper or a One UI color palette) and
  * light or dark mode, with nothing cached in this app.
  */
-private class Paint(val styler: Styler) {
+private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? = null) {
     operator fun invoke(role: Role, design: String?): ColorProvider {
         if (styler.theme == WidgetTheme.material) return ColorProvider(AiWidget.materialRes(styler.materialSlot(role, design)))
         return ColorProvider(Color(styler.argb(role, design, dark = false)))
@@ -307,7 +321,11 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
     // Its own tap, if it has one: a headline's article, a calendar entry, the clock app...
     val context = androidx.glance.LocalContext.current
     val tap = Taps.forNode(node)?.let { Taps.resolve(it, tokens) }
-    val modifier = tap?.let { base.clickable(actionStartActivity(TapIntents.intent(context, it))) } ?: base
+    val modifier = tap?.let {
+        // Music buttons act at once, without opening anything.
+        if (it is TapAction.Media) base.clickable(actionSendBroadcast(MusicControlReceiver.intent(context, it.command)))
+        else base.clickable(actionStartActivity(TapIntents.intent(context, it)))
+    } ?: base
     when (node) {
         is ColumnNode -> Column(
             modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
@@ -362,6 +380,30 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             color = paint(Role.Accent, node.color),
             backgroundColor = paint(Role.Track, node.trackColor),
         )
+        is ArtNode -> {
+            val cover = paint.albumArt
+            if (cover != null) {
+                Image(
+                    provider = ImageProvider(ArtCorners.round(cover, node.cornerRadius.toFloat() / node.size)),
+                    contentDescription = null,
+                    modifier = modifier.size(node.size.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                // No art: a music note on a soft tile the same size.
+                Box(
+                    modifier.size(node.size.dp).cornerRadius(node.cornerRadius.dp).background(paint(Role.Container, "#26FFFFFF")),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        provider = ImageProvider(R.drawable.icon_music),
+                        contentDescription = null,
+                        modifier = GlanceModifier.size((node.size / 2).dp),
+                        colorFilter = ColorFilter.tint(paint(Role.Accent, "#CCFFFFFF")),
+                    )
+                }
+            }
+        }
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size(node.size.dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color))) {}
     }
@@ -461,5 +503,9 @@ fun iconRes(name: IconName): Int = when (name) {
     IconName.paw -> R.drawable.icon_paw
     IconName.steps -> R.drawable.icon_steps
     IconName.check -> R.drawable.icon_check
+    IconName.play -> R.drawable.icon_play
+    IconName.pause -> R.drawable.icon_pause
+    IconName.next -> R.drawable.icon_next
+    IconName.previous -> R.drawable.icon_previous
     IconName.weather -> R.drawable.icon_sun
 }

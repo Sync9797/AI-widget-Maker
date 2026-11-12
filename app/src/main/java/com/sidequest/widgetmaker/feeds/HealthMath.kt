@@ -18,6 +18,43 @@ object HealthMath {
     data class Workout(val name: String, val start: LocalDateTime, val minutes: Long)
     data class Sleep(val asleepMinutes: Long, val deepMinutes: Long, val remMinutes: Long)
 
+    /** Readings NOOP (and other WHOOP-style apps) share: HRV and resting heart rate against your own baseline, and more. */
+    data class Extras(
+        val hrvToday: Double? = null,
+        val hrvBaseline: Double? = null,
+        val restingBaseline: Double? = null,
+        val spo2: Double? = null,
+        val respiratoryRate: Double? = null,
+        val vo2max: Double? = null,
+        /** "NOOP" when the data comes from NOOP. */
+        val source: String? = null,
+    )
+
+    /** The middle of the last readings (needs at least 5 days), so one odd day doesn't move it. */
+    fun baseline(values: List<Double>): Double? {
+        if (values.size < 5) return null
+        val sorted = values.sorted()
+        return sorted[sorted.size / 2]
+    }
+
+    /**
+     * A recovery score from 1 to 99, like WHOOP's (NOOP's "Charge"), which
+     * NOOP keeps to itself, so this is an estimate: HRV above your baseline,
+     * resting heart rate below it, and a full night's sleep each raise it.
+     */
+    fun charge(hrv: Double, hrvBaseline: Double, resting: Int?, restingBaseline: Double?, asleepMinutes: Long?): Int {
+        var score = 55.0 + 110.0 * (hrv / hrvBaseline - 1.0)
+        if (resting != null && restingBaseline != null) score += 2.5 * (restingBaseline - resting)
+        if (asleepMinutes != null) score += 25.0 * ((asleepMinutes / 480.0).coerceAtMost(1.1) - 0.85)
+        return score.roundToInt().coerceIn(1, 99)
+    }
+
+    fun chargeLabel(charge: Int) = when {
+        charge >= 67 -> "Charged"
+        charge >= 34 -> "Steady"
+        else -> "Drained"
+    }
+
     fun values(
         steps: Long?,
         stepGoal: Int,
@@ -30,6 +67,7 @@ object HealthMath {
         sleep: Sleep?,
         now: LocalDateTime,
         zone: ZoneId = ZoneId.systemDefault(),
+        extras: Extras = Extras(),
     ): Map<String, String> {
         val out = mutableMapOf<String, String>()
         val count = DecimalFormat("#,##0", DecimalFormatSymbols(Locale.US))
@@ -51,6 +89,16 @@ object HealthMath {
             out["health.workout"] = it.name
             out["health.workout.when"] = FeedParsers.whenText(it.start.toLocalDate(), it.start.toLocalTime(), now.toLocalDate())
             out["health.workout.duration"] = FeedParsers.duration((it.minutes * 60).toInt())
+        }
+        extras.hrvToday?.let { out["health.hrv"] = "${it.roundToInt()} ms" }
+        extras.spo2?.let { out["health.spo2"] = "${it.roundToInt()}%" }
+        extras.respiratoryRate?.let { out["health.respRate"] = "%.1f".format(Locale.US, it) }
+        extras.vo2max?.let { out["health.vo2max"] = it.roundToInt().toString() }
+        extras.source?.let { out["health.source"] = it }
+        if (extras.hrvToday != null && extras.hrvBaseline != null) {
+            val c = charge(extras.hrvToday, extras.hrvBaseline, resting, extras.restingBaseline, sleep?.asleepMinutes)
+            out["health.charge"] = c.toString()
+            out["health.charge.label"] = chargeLabel(c)
         }
         sleep?.let {
             out["health.sleep"] = hoursMinutes(it.asleepMinutes)

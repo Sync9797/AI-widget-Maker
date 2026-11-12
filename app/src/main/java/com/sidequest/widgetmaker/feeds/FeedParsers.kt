@@ -68,10 +68,12 @@ object FeedParsers {
         for (i in 1..5) {
             val time = times.getOrNull(i)?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() } ?: break
             out["weather.h$i.time"] = time.format(DateTimeFormatter.ofPattern("h a", Locale.US))
+            out["weather.h$i.time24"] = time.format(DateTimeFormatter.ofPattern("HH:mm", Locale.US))
             out["weather.h$i.temp"] = degrees(temps?.at(i))
             out["weather.h$i.rain"] = rain?.at(i)?.roundToInt()?.let { "$it%" } ?: "--"
             out["weather.h$i.icon"] = weatherIcon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
         }
+        outlook(times, codes, rain)?.let { out["weather.outlook"] = it }
         val daily = root["daily"].obj()
         val dates = (daily["time"] as? JsonArray)?.mapNotNull { it.str() }.orEmpty()
         for (i in 1..3) {
@@ -82,6 +84,47 @@ object FeedParsers {
             out["weather.d$i.icon"] = weatherIcon((daily["weather_code"] as? JsonArray)?.at(i)?.roundToInt() ?: 0, true)
         }
         return out
+    }
+
+    /**
+     * A line about the next 12 hours, like a weather app's: "Rain possible
+     * tonight", "Snow likely this afternoon" or "Dry for the next 12 hours".
+     */
+    private fun outlook(times: List<String>, codes: JsonArray?, rain: JsonArray?): String? {
+        if (times.size < 2) return null
+        val start = runCatching { LocalDateTime.parse(times[0]) }.getOrNull() ?: return null
+        var best = -1
+        var bestChance = -1.0
+        for (i in 1 until minOf(times.size, 13)) {
+            val chance = rain?.at(i) ?: continue
+            if (chance > bestChance) { bestChance = chance; best = i }
+        }
+        if (best < 0) return null
+        val snow = (1 until minOf(times.size, 13)).any { (codes?.at(it)?.roundToInt() ?: 0) in setOf(71, 73, 75, 77, 85, 86) }
+        val storm = (1 until minOf(times.size, 13)).any { (codes?.at(it)?.roundToInt() ?: 0) >= 95 }
+        val what = when { storm -> "Storms"; snow -> "Snow"; else -> "Rain" }
+        val time = runCatching { LocalDateTime.parse(times[best]) }.getOrNull() ?: return null
+        return when {
+            bestChance >= 60 -> "$what likely ${period(start, time)}"
+            bestChance >= 25 -> "$what possible ${period(start, time)}"
+            else -> "Dry for the next 12 hours"
+        }
+    }
+
+    /** "this afternoon", "tonight", "tomorrow morning"... for a time soon after [now]. */
+    fun period(now: LocalDateTime, time: LocalDateTime): String {
+        val tomorrow = time.toLocalDate().isAfter(now.toLocalDate())
+        val h = time.hour
+        return when {
+            tomorrow && h < 5 -> "tonight"
+            tomorrow && h < 12 -> "tomorrow morning"
+            tomorrow -> "tomorrow"
+            h < 5 -> "overnight"
+            h < 12 -> "this morning"
+            h < 17 -> "this afternoon"
+            h < 21 -> "this evening"
+            else -> "tonight"
+        }
     }
 
     private fun JsonArray.at(i: Int): Double? = (getOrNull(i) as? JsonPrimitive)?.doubleOrNull

@@ -124,6 +124,27 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
             ) { LookControls(state.theme, onChange = viewModel::setLook) }
 
             Section(
+                "Updates",
+                "You have version ${com.sidequest.widgetmaker.update.Updater.currentVersion}. New versions come from the app's GitHub page; " +
+                    "updating keeps your widgets, designs and settings.",
+            ) {
+                val context = LocalContext.current
+                var onStart by remember { mutableStateOf(com.sidequest.widgetmaker.update.Updater.checkOnStart(context)) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = { viewModel.checkForUpdates() }, enabled = !state.update.checking) { Text("Check for updates") }
+                    state.update.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f)) }
+                }
+                state.update.available?.let { UpdateCard(it, state.update, viewModel::installUpdate, viewModel::laterUpdate) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Check when the app opens", modifier = Modifier.weight(1f))
+                    Switch(checked = onStart, onCheckedChange = {
+                        onStart = it
+                        com.sidequest.widgetmaker.update.Updater.setCheckOnStart(context, it)
+                    })
+                }
+            }
+
+            Section(
                 "Update frequency",
                 "How often weather, health, calendar and the rest refresh in the background. More often uses a little " +
                     "more battery. Music and Side Quest update right away anyway.",

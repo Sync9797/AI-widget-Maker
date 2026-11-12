@@ -74,6 +74,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         FeedWorker.schedule(this)
         openFrom(intent)
+        // Settings → Updates: look for a newer build each time the app opens.
+        if (savedInstanceState == null && com.sidequest.widgetmaker.update.Updater.checkOnStart(this)) viewModel.checkForUpdates(quiet = true)
         setContent { MakerTheme { MakerScreen(viewModel) } }
     }
 
@@ -179,6 +181,7 @@ private fun Pane(modifier: Modifier, content: @Composable androidx.compose.found
 /** Describing a widget, the draft being made, and the ready-made designs by section. */
 @Composable
 private fun CreatePane(state: MakerState, viewModel: MakerViewModel, columns: Int) {
+    state.update.available?.let { UpdateCard(it, state.update, viewModel::installUpdate, viewModel::laterUpdate) }
     HealthAccessCard()
     val draft = state.draft
     val chat = state.chat
@@ -600,3 +603,29 @@ private val NAMES = mapOf(
     "TOTAL_CALORIES_BURNED" to "calories",
     "IN_BACKGROUND" to "background updates",
 )
+
+/** A newer build is out: update now (download, then Android's installer) or later. */
+@Composable
+fun UpdateCard(release: com.sidequest.widgetmaker.update.Release, ui: UpdateUi, onUpdate: () -> Unit, onLater: () -> Unit) {
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Update available", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Version ${release.version ?: "(newer build)"} is ready (you have ${com.sidequest.widgetmaker.update.Updater.currentVersion}). " +
+                    "Your widgets and designs stay as they are.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            val pct = ui.downloading
+            if (pct != null) {
+                androidx.compose.material3.LinearProgressIndicator(progress = { pct / 100f }, modifier = Modifier.fillMaxWidth())
+                Text("Downloading… $pct%", style = MaterialTheme.typography.bodySmall)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onUpdate) { Text("Update") }
+                    TextButton(onClick = onLater) { Text("Later") }
+                }
+                ui.note?.takeIf { it.startsWith("Allow") || it.startsWith("The download") }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            }
+        }
+    }
+}

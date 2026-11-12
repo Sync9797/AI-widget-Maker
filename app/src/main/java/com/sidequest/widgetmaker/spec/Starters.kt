@@ -66,17 +66,50 @@ object Starters {
          {"type":"row","verticalAlign":"center","children":[
           {"type":"icon","name":"egg","size":14,"color":"#FFFFE1A8"},
           {"type":"text","text":"  {mq.egg.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","grow":true,"maxLines":1},
-          {"type":"text","text":"{mq.egg.$n.left}","size":11,"color":"#B3FFFFFF","maxLines":1}]},
+          {"type":"text","text":"{mq.egg.$n.left}","size":11,"color":"#B3FFFFFF","maxLines":1,"show":{"minWidth":250}},
+          {"type":"text","text":"  Hatch","size":12,"color":"#FFFFC857","weight":"bold","tap":"{mq.egg.$n.hatch}","show":{"ifSet":"{mq.egg.$n.hatch}"}}]},
+         {"type":"text","text":"{mq.egg.$n.left}","size":11,"color":"#B3FFFFFF","maxLines":1,"show":{"maxWidth":249}},
          {"type":"spacer","size":4},
          {"type":"progress","value":"{mq.egg.$n.progress}","color":"#FFFFC857","trackColor":"#26FFFFFF","height":5}]}"""
 
     private fun adventure(n: Int, minHeight: Int) = """
         {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{mq.adv.$n}"},"children":[
          {"type":"spacer","size":10},
-         {"type":"text","text":"{mq.adv.$n}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+         {"type":"row","verticalAlign":"center","children":[
+          {"type":"text","text":"{mq.adv.$n}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true},
+          {"type":"text","text":"Claim","size":12,"color":"#FF8FE3B0","weight":"bold","tap":"{mq.adv.$n.claim}","show":{"ifSet":"{mq.adv.$n.claim}"}}]},
          {"type":"text","text":"{mq.adv.$n.team} · {mq.adv.$n.left}","size":12,"color":"#B3FFFFFF","maxLines":1},
          {"type":"spacer","size":4},
          {"type":"progress","value":"{mq.adv.$n.progress}","color":"#FF8FE3B0","trackColor":"#26FFFFFF","height":5}]}"""
+
+    private fun quest(n: Int, minHeight: Int) = """
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{mq.quest.$n}"},"children":[
+         {"type":"spacer","size":8},
+         {"type":"row","verticalAlign":"center","children":[
+          {"type":"icon","name":"check","size":22,"color":"#FF8AB4F8","tap":"{mq.quest.$n.done}"},
+          {"type":"spacer","size":10},
+          {"type":"column","grow":true,"children":[
+           {"type":"text","text":"{mq.quest.$n}","size":14,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
+           {"type":"text","text":"{mq.quest.$n.when}","size":11,"color":"#99FFFFFF","maxLines":1,"show":{"ifSet":"{mq.quest.$n.when}"}}]}]}]}"""
+
+    private fun member(n: Int, minHeight: Int) = """
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{mq.party.$n}"},"children":[
+         {"type":"spacer","size":8},
+         {"type":"row","verticalAlign":"center","children":[
+          {"type":"text","text":"{mq.party.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","grow":true,"maxLines":1},
+          {"type":"text","text":"{mq.party.$n.level}","size":11,"color":"#99FFFFFF"},
+          {"type":"text","text":"  {mq.party.$n.hp}","size":11,"color":"#CCFFFFFF","show":{"minWidth":250}}]},
+         {"type":"spacer","size":4},
+         {"type":"progress","value":"{mq.party.$n.hpPct}","color":"#FF4CD137","trackColor":"#26FFFFFF","height":5}]}"""
+
+    private fun bountyLine(n: Int, minHeight: Int) = """
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{mq.bounty.$n}"},"children":[
+         {"type":"spacer","size":6},
+         {"type":"row","children":[
+          {"type":"text","text":"{mq.bounty.$n}","size":12,"color":"#E6FFFFFF","grow":true,"maxLines":1},
+          {"type":"text","text":"{mq.bounty.$n.progress}","size":11,"color":"#99FFFFFF","show":{"minWidth":250}}]},
+         {"type":"spacer","size":3},
+         {"type":"progress","value":"{mq.bounty.$n.pct}","color":"#FFFF9F43","trackColor":"#26FFFFFF","height":4}]}"""
 
     private fun coin(symbol: String, minHeight: Int) = """
         {"type":"row","show":{"minHeight":$minHeight},"children":[
@@ -377,11 +410,60 @@ object Starters {
                {"type":"text","text":"{mq.torches}","size":16,"color":"#FFFFFFFF","weight":"bold"},
                {"type":"text","text":"torches","size":11,"color":"#99FFFFFF"}]},
               {"type":"column","grow":true,"children":[
-               {"type":"text","text":"{mq.sleep}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+               {"type":"text","text":"{mq.sleep}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
                {"type":"text","text":"sleep","size":11,"color":"#99FFFFFF"}]},
               {"type":"column","grow":true,"children":[
                {"type":"text","text":"{mq.eggs}","size":16,"color":"#FFFFFFFF","weight":"bold"},
                {"type":"text","text":"eggs","size":11,"color":"#99FFFFFF"}]}]}]}}""",
+        ),
+        Triple(
+            "Monster Quest quests", "Your next quests with a check button: tap it to complete the quest in the game.",
+            """{"name":"Monster Quest quests","background":"#E6182230","cornerRadius":26,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","show":{"minHeight":120},"children":[
+              {"type":"text","text":"Quests","size":15,"color":"#FFFFFFFF","weight":"bold","grow":true},
+              {"type":"text","text":"{mq.quests} open","size":12,"color":"#99FFFFFF"}]},
+             ${quest(1, 0)},
+             ${quest(2, 150)},
+             ${quest(3, 200)},
+             ${quest(4, 250)},
+             ${quest(5, 300)}]}}""",
+        ),
+        Triple(
+            "Monster Quest progress", "Steps to your next torch, the weekly bounty, and a phone-free session's time left.",
+            """{"name":"Monster Quest progress","background":"#E6261A14","cornerRadius":26,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"flame","size":16,"color":"#FFFF9F43"},
+              {"type":"text","text":"  {mq.torches} torches","size":14,"color":"#FFFFFFFF","weight":"bold","grow":true},
+              {"type":"text","text":"{mq.torch.next}","size":11,"color":"#99FFFFFF","show":{"minWidth":250}}]},
+             {"type":"spacer","size":4},
+             {"type":"progress","value":"{mq.torch.pct}","color":"#FFFF9F43","trackColor":"#26FFFFFF","height":6},
+             {"type":"column","show":{"minHeight":100,"ifSet":"{mq.focus}"},"children":[
+              {"type":"spacer","size":10},
+              {"type":"text","text":"{mq.focus}","size":13,"color":"#FF8AB4F8","weight":"medium","maxLines":1},
+              {"type":"spacer","size":4},
+              {"type":"progress","value":"{mq.focus.pct}","color":"#FF8AB4F8","trackColor":"#26FFFFFF","height":5}]},
+             {"type":"spacer","size":10,"show":{"minHeight":150}},
+             {"type":"row","show":{"minHeight":150},"children":[
+              {"type":"text","text":"Weekly bounty","size":13,"color":"#FFFFFFFF","weight":"bold","grow":true},
+              {"type":"text","text":"{mq.bounty.ready}","size":11,"color":"#FFFFC857","show":{"ifSet":"{mq.bounty.ready}"}}]},
+             ${bountyLine(1, 150)},
+             ${bountyLine(2, 190)},
+             ${bountyLine(3, 230)}]}}""",
+        ),
+        Triple(
+            "Monster Quest party", "Your party's monsters with their level and health.",
+            """{"name":"Monster Quest party","background":"#E6142618","cornerRadius":26,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"paw","size":16,"color":"#FF4CD137"},
+              {"type":"text","text":"  Party","size":14,"color":"#FFFFFFFF","weight":"bold"}]},
+             ${member(1, 0)},
+             ${member(2, 140)},
+             ${member(3, 190)},
+             ${member(4, 240)},
+             ${member(5, 290)}]}}""",
         ),
         Triple(
             "Battery", "Your battery level with a bar; the time and date when it's bigger.",

@@ -113,7 +113,18 @@ Live data from the internet (refreshed about every 30 minutes; each request says
   eggs: {mq.eggs} count, {mq.eggs.ready}, and N = 1 to 5: {mq.egg.N} species, {mq.egg.N.progress} (0-100),
   {mq.egg.N.left} "1.2 km to go" or "Ready to hatch!"; adventures: {mq.adventures} count, N = 1 to 3:
   {mq.adv.N} title, {mq.adv.N.place}, {mq.adv.N.team} monster names, {mq.adv.N.left} "1 h 20 min left",
-  {mq.adv.N.progress} (0-100); {mq.sleep}, {mq.sleep.deep}. Icons: egg, paw, steps, moon.
+  {mq.adv.N.progress} (0-100); {mq.sleep}, {mq.sleep.deep}. Icons: egg, paw, steps, moon, check.
+  Quests (the user's to-dos), N = 1 to 5: {mq.quest.N} title, {mq.quest.N.when} "Today 3 PM" (may be
+  empty); {mq.quests} open count. Party, N = 1 to 6: {mq.party.N} name, {mq.party.N.level} "Lv 12",
+  {mq.party.N.hp} "34/50", {mq.party.N.hpPct} (0-100). Weekly bounty, N = 1 to 3: {mq.bounty.N} goal,
+  {mq.bounty.N.progress} "12,000 / 40,000", {mq.bounty.N.pct}; {mq.bounty.ready}. Torches:
+  {mq.torch.next} "520 steps to the next torch", {mq.torch.pct}, {mq.torchCap}. {mq.focus}
+  "Phone-free · 23 min left" and {mq.focus.pct} during a phone-free session (else empty).
+  Buttons that act in the game: give an element "tap" set to {mq.quest.N.done} (completes the quest;
+  use a "check" icon), {mq.adv.N.claim} (claims a finished adventure; a "Claim" text) or
+  {mq.egg.N.hatch} (hatches a ready egg; a "Hatch" text). The last two are empty until possible, so
+  give those buttons "show":{"ifSet":"{mq.adv.N.claim}"} etc. Eggs, adventures and quests open their
+  game screen when tapped.
 - {updated}: when the data was last refreshed, like "8:42 AM".
 A value that isn't available shows as "--". If asked for data that isn't set up, design it anyway
 with the values above; the user can set it up later.

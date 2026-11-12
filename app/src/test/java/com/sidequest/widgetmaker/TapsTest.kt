@@ -70,6 +70,9 @@ class TapsTest {
             "Monster Quest eggs" to TapKind.game,
             "Monster Quest adventures" to TapKind.game,
             "Monster Quest day" to TapKind.game,
+            "Monster Quest quests" to TapKind.game,
+            "Monster Quest progress" to TapKind.game,
+            "Monster Quest party" to TapKind.game,
             "Battery" to TapKind.battery,
         )
         Starters.all.forEach { s -> assertEquals(s.title, expected[s.title], Taps.mainKind(s.design)) }
@@ -79,5 +82,51 @@ class TapsTest {
     fun unknownTapsAreIgnored() {
         assertNull(Taps.resolve("teleport", tokens))
         assertNull(Taps.resolve("calendar-event:oops", tokens))
+    }
+}
+
+class GameBridgeTest {
+    private val nowMs = 1_800_000_000_000L
+    private val body = """{"v":2,"hero":"Aaron","level":23,"steps":3508,"torches":4,"torchCap":15,"torchSteps":480,"stepsPerTorch":1000,
+        "eggs":[{"id":"e1","name":"Ember Pup","progress":100,"left":"0 m","ready":true},{"id":"e2","name":"Tide Sprite","progress":40,"left":"1.2 km","ready":false}],
+        "adventures":[{"id":"a1","title":"Clear the cellar","team":"Ember","startMs":${nowMs - 1000},"endMs":${nowMs + 3_600_000}},
+                      {"id":"a2","title":"Scout","team":"Pip","startMs":${nowMs - 7_200_000},"endMs":${nowMs - 1}}],
+        "quests":[{"id":"q1","title":"Write report","when":"Today 3 PM"}],"questsOpen":6,
+        "party":[{"name":"Ember","level":24,"hp":52,"maxHp":60}],
+        "bounty":[{"text":"Walk 40,000 steps","progress":12400,"goal":40000}],"bountyReady":false,
+        "focus":{"startMs":${nowMs - 600_000},"endMs":${nowMs + 600_000},"minutes":20}}"""
+
+    @Test
+    fun valuesAndButtons() {
+        val v = com.sidequest.widgetmaker.feeds.MonsterQuestMath.values(body, nowMs)
+        assertEquals("mq-action:hatch:e1", v["mq.egg.1.hatch"])
+        assertEquals("", v["mq.egg.2.hatch"])
+        assertEquals("", v["mq.adv.1.claim"])
+        assertEquals("mq-action:claim:a2", v["mq.adv.2.claim"])
+        assertEquals("mq-action:complete:q1", v["mq.quest.1.done"])
+        assertEquals("6", v["mq.quests"])
+        assertEquals("52/60", v["mq.party.1.hp"])
+        assertEquals("86", v["mq.party.1.hpPct"])
+        assertEquals("12,400 / 40,000", v["mq.bounty.1.progress"])
+        assertEquals("520 steps to the next torch", v["mq.torch.next"])
+        assertEquals("Phone-free · 10 min left", v["mq.focus"])
+        assertEquals("50", v["mq.focus.pct"])
+    }
+
+    @Test
+    fun tapsOpenScreensAndAct() {
+        val tokens = Tokens(java.time.LocalDateTime.now(), null, false, feeds = com.sidequest.widgetmaker.feeds.MonsterQuestMath.values(body, nowMs))
+        assertEquals("{mq.egg.2.link}", Taps.forNode(TextNode("  {mq.egg.2}")))
+        assertEquals(TapAction.GameScreen("eggs"), Taps.resolve("{mq.egg.2.link}", tokens))
+        assertEquals(TapAction.GameAction("hatch", "e1"), Taps.resolve("{mq.egg.1.hatch}", tokens))
+        assertEquals(TapAction.GameAction("complete", "q1"), Taps.resolve("{mq.quest.1.done}", tokens))
+        // Not ready yet: nothing to tap.
+        assertNull(Taps.resolve("{mq.egg.2.hatch}", tokens))
+        assertNull(Taps.resolve("mq-action:explode:x", tokens))
+        // Game widgets open the screen they're about.
+        val eggs = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Monster Quest eggs" }.design
+        assertEquals("mq-open:eggs", Taps.forWidget(eggs))
+        val quests = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Monster Quest quests" }.design
+        assertEquals("mq-open:quests", Taps.forWidget(quests))
     }
 }

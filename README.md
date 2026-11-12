@@ -19,7 +19,7 @@ Download `AIWidgetMaker.apk` on your phone and open it.
   design**. Changes ("make it purple") work the same way.
 - **Free, no AI:** start from one of the ready-made designs: big clock, clock
   and weather, forecast, crypto ticker, commute, local news, nearby events,
-  up next (calendar), big date, day cookie, hourly weather, battery pill, agenda card, steps pill, activity, Monster Quest eggs, adventures and day, battery. Save it as it is, or change it with Claude.
+  up next (calendar), big date, day cookie, hourly weather, battery pill, agenda card, steps pill, activity, Monster Quest eggs, adventures, day, quests, progress and party, battery. Save it as it is, or change it with Claude.
 - **Automatic, paid per use:** add an Anthropic API key (from
   console.anthropic.com) in **Settings** and designs are made in the app, a few
   cents each. The key is stored only on the phone.
@@ -31,6 +31,18 @@ clock gains the battery when it's wider, then the weather, then an hourly
 forecast as it grows taller; a news widget shows more headlines the taller it
 is. Claude designs every widget this way (each element can say which sizes it
 appears at), and the app previews each design at 2×1, 2×2, 2×4, 4×2 and 4×4.
+
+## Monster Quest, both ways
+
+Monster Quest widgets don't just show the game, they can act in it:
+
+- a **✓** next to a quest completes it (and pays its reward),
+- **Claim** appears when an adventure is back, **Hatch** when an egg is ready.
+
+The game checks each tap against its rules, applies it right away if it's
+open (or the next time it starts), and the widget shows it as done at once.
+Tapping an egg, adventure or quest opens that screen in the game. Only this
+app can read the game's summary or ask it to act.
 
 ## Shapes and look
 
@@ -95,7 +107,7 @@ check it works:
 | Nearby events (up to 5) | Local news (Google News), or Ticketmaster | Your town. No account: event-like headlines first, crime and accident news left out, and dates read from headlines ("this weekend", "Sat", "Nov 14"). For exact listings, optionally add a free Ticketmaster key. |
 | Your calendar (next 7 days) | The calendars on your phone | Turn on **Your calendar** and allow access. Read on the phone only. |
 | Exercise & health: steps, heart rate, kcal, workouts, sleep, effort | Health Connect (Samsung Health, WHOOP, Google Fit, Fitbit, Garmin...) | Turn on **Exercise & health** and allow access. In Samsung Health: Settings → Health Connect. "Effort" is estimated from heart rate (WHOOP keeps its strain score private). |
-| Monster Quest: eggs, adventures, steps, sleep | The game itself | Install Monster Quest (3.23 or newer); widgets update whenever the game changes. |
+| Monster Quest: quests, eggs, adventures, party, bounty, torches, phone-free time, steps, sleep | The game itself | Install Monster Quest (3.24 or newer); widgets update whenever the game changes. |
 
 Then just ask for it, for example "my commute time and today's weather" or
 "a crypto ticker for my coins".

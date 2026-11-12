@@ -39,7 +39,7 @@ enum class Weight { light, normal, medium, bold }
  * Icons the widget can draw (each is a drawable in the app). "weather" is
  * live: it shows sun, moon, cloud, rain, snow or storm for the current weather.
  */
-enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, umbrella, pin, flame, egg, paw, steps, weather }
+enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, umbrella, pin, flame, egg, paw, steps, check, weather }
 
 @Serializable
 sealed interface Node {

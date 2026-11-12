@@ -648,15 +648,16 @@ object Starters {
               {"type":"row","verticalAlign":"center","show":{"minHeight":120,"ifSet":"{calendar.1}"},"children":[
                {"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},
                {"type":"text","text":" {calendar.1}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
-               {"type":"spacer","size":8},{"type":"text","text":"{calendar.1.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},
+               {"type":"spacer","size":8,"show":{"minWidth":230}},{"type":"text","text":"{calendar.1.when}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":230}}]},
+              {"type":"text","text":"     {calendar.1.when}","size":11,"color":"#99FFFFFF","maxLines":1,"show":{"maxWidth":229,"minHeight":120,"ifSet":"{calendar.1}"}},
               {"type":"row","verticalAlign":"center","show":{"minHeight":150,"ifSet":"{traffic.commute}"},"children":[
                {"type":"icon","name":"car","size":14,"color":"#FFFFB74D"},
                {"type":"text","text":" {traffic.commute} to {traffic.to}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
-               {"type":"spacer","size":8},{"type":"text","text":"{traffic.delay}","size":12,"color":"#99FFFFFF","maxLines":1}]},
+               {"type":"spacer","size":8,"show":{"minWidth":230}},{"type":"text","text":"{traffic.delay}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":230}}]},
               {"type":"row","verticalAlign":"center","show":{"minHeight":170,"ifSet":"{health.charge}"},"children":[
                {"type":"icon","name":"bolt","size":14,"color":"#FF2BE38A","levelOf":"{health.charge}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":34,"color":"#FFFFD54F"},{"from":67,"color":"#FF2BE38A"}]},
                {"type":"text","text":" Charge {health.charge}%","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
-               {"type":"spacer","size":8},{"type":"text","text":"{health.charge.label}","size":12,"color":"#99FFFFFF","maxLines":1}]}]},
+               {"type":"spacer","size":8,"show":{"minWidth":230}},{"type":"text","text":"{health.charge.label}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":230}}]}]},
              {"type":"column","show":{"ifEmpty":"{time.morning}"},"children":[
               {"type":"row","verticalAlign":"center","children":[
                {"type":"icon","name":"steps","size":18,"color":"#FF4CD137","levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]},

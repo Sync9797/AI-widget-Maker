@@ -103,6 +103,14 @@ fetches fresh data right away and redraws your widgets.
   - **Daily briefing:** weather, first event, commute and Charge in the morning; steps left and tomorrow later on.
   - **Countdown:** pick dates or calendar events in Settings.
   - **Smart stack:** shows your next event within the hour, otherwise what's playing, otherwise the weather.
+- **Bigger means more:** every starter shows more at 2×4 and 4×4, not just larger text:
+  - **Weather:** the next hours and days, plus feels-like, wind and rain chance.
+  - **Battery:** time left (worked out from how fast it's draining), drain per hour, temperature, and memory and storage use.
+  - **Sleep:** bedtime and wake time, resting heart rate, HRV and breathing rate, and a 7-night chart.
+  - **Clocks and dates:** weather and your next events.
+  - **Steps and Activity:** kcal, heart rate, active time, workout, Charge and last night's sleep stages.
+  - **Side Quest:** your quests.
+  - **Smart stack:** the next hours, a second event, or the song's progress.
 - **Music progress:** a live timer and progress bar.
 - **Change a widget from the home screen:** long-press it → Settings → **Change this design…**
 - **Pills:** slim like One UI's (about a third as tall as wide). The pill height in Widget look now applies to every pill. Steps, Battery bar and Music mini are regular widgets you can shrink to a pill with the Pill shape.

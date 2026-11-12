@@ -186,6 +186,7 @@ class AiWidget : GlanceAppWidget() {
                         runCatching { com.sidequest.widgetmaker.spec.Smart.Countdown(c.name, java.time.LocalDate.parse(c.date)) }.getOrNull()
                     }
                     values + com.sidequest.widgetmaker.music.Music.values(context) +
+                        com.sidequest.widgetmaker.feeds.Phone.values(context) +
                         com.sidequest.widgetmaker.spec.Smart.timeOfDay(LocalDateTime.now()) +
                         com.sidequest.widgetmaker.spec.Smart.calendarSoon(values, System.currentTimeMillis()) +
                         com.sidequest.widgetmaker.spec.Smart.countdowns(countdowns, java.time.LocalDate.now())

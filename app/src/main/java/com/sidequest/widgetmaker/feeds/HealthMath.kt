@@ -24,6 +24,10 @@ object HealthMath {
         val stages: List<com.sidequest.widgetmaker.spec.SleepStages.Part> = emptyList(),
         /** Your average over the last week, in minutes asleep. */
         val averageMinutes: Long? = null,
+        val bedtime: LocalDateTime? = null,
+        val wake: LocalDateTime? = null,
+        /** The last nights, oldest first, by the day you woke up: minutes asleep. */
+        val week: List<Pair<java.time.LocalDate, Long>> = emptyList(),
     )
 
     /** Readings NOOP (and other WHOOP-style apps) share: HRV and resting heart rate against your own baseline, and more. */
@@ -124,6 +128,16 @@ object HealthMath {
                 fun stage(c: Char) = it.stages.filter { p -> p.stage == c }.sumOf { p -> p.minutes }.toLong()
                 out["health.sleep.light"] = hoursMinutes(stage('L'))
                 out["health.sleep.awake"] = hoursMinutes(stage('A'))
+            }
+            val clock = java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.US)
+            it.bedtime?.let { t -> out["health.sleep.bed"] = t.format(clock) }
+            it.wake?.let { t -> out["health.sleep.wake"] = t.format(clock) }
+            // The last 7 nights, n1 oldest to n7 last night; pct against 9 hours, for bars.
+            it.week.takeLast(7).forEachIndexed { i, (day, minutes) ->
+                val n = i + 1
+                out["health.sleep.n$n.day"] = day.format(java.time.format.DateTimeFormatter.ofPattern("EEE", Locale.US))
+                out["health.sleep.n$n"] = hoursMinutes(minutes)
+                out["health.sleep.n$n.pct"] = (minutes * 100 / 540).coerceIn(0, 100).toString()
             }
             it.averageMinutes?.let { avg ->
                 out["health.sleep.avg"] = hoursMinutes(avg)

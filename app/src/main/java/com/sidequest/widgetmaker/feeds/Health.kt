@@ -149,11 +149,16 @@ object Health {
                     com.sidequest.widgetmaker.spec.SleepStages.Part(stageLetter(it.stage), Duration.between(it.startTime, it.endTime).toMinutes().toInt())
                 }
                 // A night per day: the longest, when an app split one.
-                val perNight = nights.groupBy { LocalDateTime.ofInstant(it.endTime, zone).toLocalDate() }.values.map { n -> n.maxOf(::asleep) }
+                val byDay = nights.groupBy { LocalDateTime.ofInstant(it.endTime, zone).toLocalDate() }
+                    .mapValues { (_, n) -> n.maxOf(::asleep) }.toSortedMap()
+                val perNight = byDay.values.toList()
                 HealthMath.Sleep(
                     asleep(r), mins(SleepSessionRecord.STAGE_TYPE_DEEP), mins(SleepSessionRecord.STAGE_TYPE_REM),
                     stages = stages,
                     averageMinutes = perNight.takeIf { it.size >= 3 }?.average()?.toLong(),
+                    bedtime = LocalDateTime.ofInstant(r.startTime, zone),
+                    wake = LocalDateTime.ofInstant(r.endTime, zone),
+                    week = byDay.entries.map { it.key to it.value },
                 )
             }
         } else null

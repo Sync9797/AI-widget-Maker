@@ -182,6 +182,7 @@ class StarterShots {
             "health.stepsLeft" to "4,492", "health.stepsLeft.text" to "4,492 steps to go", "health.sleep.rem" to "1h 35m",
             "health.sleep.light" to "4h 10m", "health.sleep.awake" to "22m", "health.sleep.avg" to "6h 54m",
             "health.sleep.vsAvg" to "18m more than usual", "health.sleep.stages" to "A10,L40,D35,L50,R25,L45,D30,R30,A6,L60,R40,L30",
+            "health.sleep.n1.day" to "Fri", "health.sleep.n1" to "6h 40m", "health.sleep.n1.pct" to "74", "health.sleep.n2.day" to "Sat", "health.sleep.n2" to "8h 5m", "health.sleep.n2.pct" to "90", "health.sleep.n3.day" to "Sun", "health.sleep.n3" to "7h 30m", "health.sleep.n3.pct" to "83", "health.sleep.n4.day" to "Mon", "health.sleep.n4" to "6h 10m", "health.sleep.n4.pct" to "69", "health.sleep.n5.day" to "Tue", "health.sleep.n5" to "7h 0m", "health.sleep.n5.pct" to "78", "health.sleep.n6.day" to "Wed", "health.sleep.n6" to "6h 54m", "health.sleep.n6.pct" to "77", "health.sleep.n7.day" to "Thu", "health.sleep.n7" to "7h 12m", "health.sleep.n7.pct" to "80", "health.sleep.bed" to "11:42 PM", "health.sleep.wake" to "7:05 AM",
             "calendar.tomorrow" to "Team standup", "calendar.tomorrow.when" to "9 AM",
             "countdown.1" to "Beach trip", "countdown.1.days" to "12", "countdown.1.unit" to "days", "countdown.1.text" to "12 days",
             "countdown.1.date" to "Nov 24", "countdown.2" to "Christmas", "countdown.2.text" to "43 days",

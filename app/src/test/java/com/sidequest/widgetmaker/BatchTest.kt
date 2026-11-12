@@ -153,3 +153,34 @@ class CategoriesTest {
         assertEquals(Starters.Category.health, Starters.all.first { it.title == "Sleep" }.category)
     }
 }
+
+class PhoneTest {
+    private val hour = 3_600_000L
+
+    @Test
+    fun batteryLifeFromDrain() {
+        val samples = listOf(
+            com.sidequest.widgetmaker.feeds.PhoneMath.Sample(0, 80),
+            com.sidequest.widgetmaker.feeds.PhoneMath.Sample(2 * hour, 72),
+        )
+        assertEquals(4.0, com.sidequest.widgetmaker.feeds.PhoneMath.drainPerHour(samples, 2 * hour)!!, 0.01)
+        val v = com.sidequest.widgetmaker.feeds.PhoneMath.values(
+            level = 72, charging = false, samples = samples, nowMs = 2 * hour, chargeLeftMs = null, tempTenthsC = 310,
+            fahrenheit = false, ramUsed = 5L * 1_073_741_824, ramTotal = 8L * 1_073_741_824, storageUsed = 100L * 1_073_741_824, storageTotal = 256L * 1_073_741_824,
+        )
+        assertEquals("About 18 h left", v["battery.left"])
+        assertEquals("4.0%/h", v["battery.drain"])
+        assertEquals("31°C", v["battery.temp"])
+        assertEquals("5.0 GB of 8.0 GB", v["phone.ram"])
+        assertEquals("62", v["phone.ramPct"])
+        assertEquals("100 GB of 256 GB", v["phone.storage"])
+    }
+
+    @Test
+    fun noGuessUntilItHasDrained() {
+        val v = com.sidequest.widgetmaker.feeds.PhoneMath.values(80, false, listOf(com.sidequest.widgetmaker.feeds.PhoneMath.Sample(0, 80)), 60_000, null, null, true, null, null, null, null)
+        assertEquals("Working out battery life…", v["battery.left"])
+        val charging = com.sidequest.widgetmaker.feeds.PhoneMath.values(50, true, emptyList(), 0, 40 * 60_000L, null, true, null, null, null, null)
+        assertEquals("Full in 40 min", charging["battery.left"])
+    }
+}

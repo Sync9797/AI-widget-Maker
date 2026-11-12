@@ -134,6 +134,14 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
 - Health extras: {health.stepsLeft} "4,492", {health.stepsLeft.text} "4,492 steps to go" or "Step goal
   reached!", {health.sleep.light}, {health.sleep.awake}, {health.sleep.avg} (7-day average),
   {health.sleep.vsAvg} "24m more than usual".
+- Phone: {battery.left} "About 9 h left" or "Full in 40 min", {battery.drain} "3.1%/h", {battery.temp},
+  {phone.ram} "5.2 GB of 8 GB", {phone.ramPct}, {phone.ramFree}, {phone.storage}, {phone.storagePct},
+  {phone.storageFree}.
+- Sleep extras: {health.sleep.bed} "11:42 PM", {health.sleep.wake} "7:05 AM"; the last 7 nights, N = 1
+  (oldest) to 7 (last night): {health.sleep.nN.day} "Mon", {health.sleep.nN} "7h 2m", {health.sleep.nN.pct}
+  (0-100, for a bar per night).
+Big widgets must show more information, not just bigger text: add sections from minHeight 230-300
+(next hours, the next days, more list items, related values) so 2x4 and 4x4 are full.
 - Calendar extras: {calendar.tomorrow} tomorrow's first event, {calendar.tomorrow.when} "9 AM";
   {calendar.soon} is set from an hour before the next event until it ends, {calendar.soon.in} "in 25 min".
 - Time of day: {time.morning}, {time.afternoon}, {time.evening}, {time.night}: the current one is set,

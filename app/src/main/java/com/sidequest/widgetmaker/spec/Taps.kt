@@ -80,6 +80,8 @@ object Taps {
 
     /** The kind of data a design shows most, by how many elements use it. */
     fun mainKind(design: WidgetDesign): TapKind? {
+        // A design that says what it opens (like a big clock with the weather under it) is that kind.
+        design.root.tap?.let { tap -> TapKind.entries.firstOrNull { it.name == tap } }?.let { return it }
         val counts = mutableMapOf<TapKind, Int>()
         fun add(kind: TapKind?) { if (kind != null) counts[kind] = (counts[kind] ?: 0) + 1 }
         fun visit(node: Node) {

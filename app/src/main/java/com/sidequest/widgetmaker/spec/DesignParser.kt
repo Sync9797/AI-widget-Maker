@@ -55,6 +55,7 @@ object DesignParser {
 
     private fun sanitize(design: WidgetDesign) = design.copy(
         name = design.name.take(40).ifBlank { "My widget" },
+        fill = sanitize(design.fill),
         background = Colors.orDefault(design.background, "#E61E1E2E"),
         cornerRadius = design.cornerRadius.coerceIn(0, 40),
         padding = design.padding.coerceIn(0, 32),
@@ -69,6 +70,15 @@ object DesignParser {
             maxHeight = it.maxHeight.coerceIn(0, 1000),
             ifSet = it.ifSet?.take(60),
             ifEmpty = it.ifEmpty?.take(80),
+        )
+    }
+
+    private fun sanitize(fill: Fill?): Fill? = fill?.let {
+        Fill(
+            value = it.value.take(60),
+            color = Colors.orDefault(it.color, "#FFFFFFFF"),
+            levels = sanitize(it.levels),
+            levelsUpTo = it.levelsUpTo?.coerceIn(0f, 100f),
         )
     }
 

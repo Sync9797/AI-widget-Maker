@@ -112,6 +112,7 @@ fetches fresh data right away and redraws your widgets.
   - **Steps and Activity:** kcal, heart rate, active time, workout, Charge and last night's sleep stages.
   - **Side Quest:** your quests.
   - **Smart stack:** the next hours, a second event, or the song's progress.
+- **Battery fill:** the battery widget is glass that fills with your charge in your style's accent color (your wallpaper color on One UI, your phone's color on Material 3), and turns orange, then red, when low. Any design can fill this way with "fill".
 - **Music progress:** a live timer and progress bar.
 - **Change a widget from the home screen:** long-press it → Settings → **Change this design…**
 - **Pills:** slim like One UI's (about a third as tall as wide). The pill height in Widget look now applies to every pill. Steps, Battery bar and Music mini are regular widgets you can shrink to a pill with the Pill shape.

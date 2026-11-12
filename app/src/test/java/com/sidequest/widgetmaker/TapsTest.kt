@@ -63,7 +63,7 @@ class TapsTest {
             "Big date" to TapKind.calendar,
             "Day cookie" to TapKind.calendar,
             "Hourly weather" to TapKind.weather,
-            "Battery bar" to TapKind.battery,
+            "Battery fill" to TapKind.battery,
             "Agenda card" to TapKind.calendar,
             "Steps" to TapKind.health,
             "Activity" to TapKind.health,

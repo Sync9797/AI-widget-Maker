@@ -204,3 +204,26 @@ class MyDesignsTest {
         assertTrue(loaded[0].madeByYou)
     }
 }
+
+class FillTest {
+    private fun tokens(battery: Int?) = Tokens(LocalDateTime.of(2026, 11, 12, 8, 0), battery, false)
+    private val fill = com.sidequest.widgetmaker.spec.Fill(
+        "{battery}", "#FF9FD8CF", listOf(Level(0f, "#FFFF5C5C"), Level(16f, "#FFFFB74D")), levelsUpTo = 30f,
+    )
+
+    @Test
+    fun fillsToTheLevelInTheAccentUntilLow() {
+        val (full, color) = com.sidequest.widgetmaker.spec.fillLevel(fill, tokens(80))
+        assertEquals(0.8f, full, 0.001f)
+        assertEquals(com.sidequest.widgetmaker.spec.Role.Accent to "#FF9FD8CF", color)
+        assertEquals(com.sidequest.widgetmaker.spec.Role.Level to "#FFFFB74D", com.sidequest.widgetmaker.spec.fillLevel(fill, tokens(25)).second)
+        assertEquals(com.sidequest.widgetmaker.spec.Role.Level to "#FFFF5C5C", com.sidequest.widgetmaker.spec.fillLevel(fill, tokens(9)).second)
+    }
+
+    @Test
+    fun theBatteryStarterFills() {
+        val design = Starters.all.first { it.title == "Battery fill" }.design
+        assertEquals("{battery}", design.fill?.value)
+        assertEquals(design, DesignParser.parse(DesignParser.encode(design)))
+    }
+}

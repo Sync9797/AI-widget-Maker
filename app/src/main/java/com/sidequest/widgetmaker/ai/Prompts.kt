@@ -84,6 +84,12 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"art","size":56,"cornerRadius":12}   the album art of what's playing (music widgets)
 - {"type":"timer","of":"music","size":12,"color":color}   how far into the song, counting live
 - {"type":"sleep","height":14}   last night's sleep as a bar of colored stages (awake, light, deep, REM)
+A widget can fill up like a battery: add "fill":{"value":"{battery}","color":"#FF9FD8CF",
+"levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"}],"levelsUpTo":30} next to "root".
+The whole panel fills from the left up to the value (0-100) in the style's accent (the wallpaper color
+on One UI, the phone's color on Material 3, frosted white on Glass), with the levels' colors at or
+below levelsUpTo. Use it instead of a progress bar when the widget is about one level (battery, steps
+to goal, Charge).
 Colors that mean something: text, icons and progress bars can take "levelOf":"{value}" and
 "levels":[{"from":0,"color":"#FFFF5C5C"},{"from":34,"color":"#FFFFD54F"},{"from":67,"color":"#FF2BE38A"}]:
 the color of the highest step the number reaches (red/yellow/green Charge, red low battery, bluer

@@ -133,6 +133,16 @@ fun DesignPreview(
                         contentScale = ContentScale.FillBounds,
                         colorFilter = if (art.tinted) ColorFilter.tint(paint(Role.Background, design.background)) else null,
                     )
+                    design.fill?.let { fill ->
+                        val (fraction, color) = com.sidequest.widgetmaker.spec.fillLevel(fill, tokens)
+                        val level = remember(panel, fraction) { com.sidequest.widgetmaker.widget.FillArt.build(context, panel, fraction)?.asImageBitmap() }
+                        level?.let {
+                            Image(
+                                it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
+                                colorFilter = ColorFilter.tint(paint(color.first, color.second)),
+                            )
+                        }
+                    }
                     art.edge?.let {
                         Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
                     }

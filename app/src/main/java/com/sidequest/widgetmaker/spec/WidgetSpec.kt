@@ -19,7 +19,24 @@ data class WidgetDesign(
     val padding: Int = 14,
     /** The panel's outline: rounded, pill, circle, squircle, arch or cookie. */
     val shape: WidgetShape = WidgetShape.rounded,
+    /** The whole widget fills up to a value, like a battery (see [Fill]). */
+    val fill: Fill? = null,
     val root: Node,
+)
+
+/**
+ * The panel fills from left to right up to [value] (0-100, like "{battery}"),
+ * in the theme's accent: the wallpaper color on One UI, the phone's primary
+ * color on Material 3, frosted white on Glass, [color] in Original. While the
+ * value is at or below [levelsUpTo], [levels] color it instead (orange, then red,
+ * for a low battery).
+ */
+@Serializable
+data class Fill(
+    val value: String,
+    val color: String = "#FFFFFFFF",
+    val levels: List<Level>? = null,
+    val levelsUpTo: Float? = null,
 )
 
 /** A saved design plus what it was made from. */
@@ -221,6 +238,14 @@ data class ArtNode(
  */
 @Serializable
 data class Level(val from: Float, val color: String)
+
+/** How full a [Fill] is (0-1), and its color: a level color (role Level) or its accent. */
+fun fillLevel(fill: Fill, tokens: Tokens): Pair<Float, Pair<Role, String>> {
+    val fraction = tokens.progress(fill.value)
+    val upTo = fill.levelsUpTo
+    val low = if (upTo == null || fraction * 100 <= upTo) levelColor(fill.value, fill.levels, tokens) else null
+    return fraction to (low?.let { Role.Level to it } ?: (Role.Accent to fill.color))
+}
 
 /** The color for [value] on [levels]: the highest step it reaches, or null (no number, or no steps). */
 fun levelColor(value: String?, levels: List<Level>?, tokens: Tokens): String? {

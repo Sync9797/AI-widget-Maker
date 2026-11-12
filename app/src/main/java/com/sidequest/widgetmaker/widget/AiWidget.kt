@@ -305,6 +305,19 @@ private fun DesignWidget(
                 contentScale = ContentScale.FillBounds,
                 colorFilter = if (art.tinted) ColorFilter.tint(paint(Role.Background, design.background)) else null,
             )
+            // A design that fills (like a battery): the panel's shape up to the level, in the theme's accent.
+            design.fill?.let { fill ->
+                val (fraction, color) = com.sidequest.widgetmaker.spec.fillLevel(fill, tokens)
+                FillArt.build(context, panel, fraction)?.let {
+                    Image(
+                        provider = ImageProvider(it),
+                        contentDescription = null,
+                        modifier = GlanceModifier.fillMaxSize(),
+                        contentScale = ContentScale.FillBounds,
+                        colorFilter = ColorFilter.tint(paint(color.first, color.second)),
+                    )
+                }
+            }
             art.edge?.let {
                 Image(ImageProvider(it), contentDescription = null, modifier = GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
             }

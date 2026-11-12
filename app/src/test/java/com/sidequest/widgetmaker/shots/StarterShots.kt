@@ -53,6 +53,9 @@ class StarterShots {
         File(context.filesDir, "feeds.json").writeText(
             DesignParser.json.encodeToString(FeedSnapshot.serializer(), FeedSnapshot(SAMPLE, System.currentTimeMillis())),
         )
+        // A battery level, so battery widgets (and the battery fill) have something to show.
+        org.robolectric.Shadows.shadowOf(context.getSystemService(android.os.BatteryManager::class.java))
+            .setIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY, 64)
         // Previews refresh on a timer; drive the clock by hand so the test can settle.
         compose.mainClock.autoAdvance = false
         val shots = WidgetTheme.entries.flatMap { theme -> Starters.all.mapIndexed { i, s -> Triple(theme, i, s) } }

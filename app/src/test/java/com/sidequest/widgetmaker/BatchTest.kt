@@ -184,3 +184,23 @@ class PhoneTest {
         assertEquals("Full in 40 min", charging["battery.left"])
     }
 }
+
+class MyDesignsTest {
+    private val design = Starters.all.first().design
+
+    @Test
+    fun yoursVersusReadyMade() {
+        assertTrue(com.sidequest.widgetmaker.spec.SavedDesign("1", "a cozy rainy-day clock", design, 0).madeByYou)
+        assertFalse(com.sidequest.widgetmaker.spec.SavedDesign("2", Starters.all.first().title, design, 0).madeByYou)
+        assertTrue(com.sidequest.widgetmaker.spec.SavedDesign("3", Starters.all.first().title, design, 0, custom = true).madeByYou)
+    }
+
+    @Test
+    fun olderSavesStillLoad() {
+        val list = kotlinx.serialization.builtins.ListSerializer(com.sidequest.widgetmaker.spec.SavedDesign.serializer())
+        val old = """[{"id":"x","prompt":"neon clock","design":${DesignParser.encode(design)},"createdAt":5}]"""
+        val loaded = DesignParser.json.decodeFromString(list, old)
+        assertNull(loaded[0].custom)
+        assertTrue(loaded[0].madeByYou)
+    }
+}

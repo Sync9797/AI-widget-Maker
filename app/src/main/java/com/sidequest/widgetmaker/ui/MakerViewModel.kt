@@ -38,6 +38,8 @@ data class Draft(
     val id: String?,
     val prompt: String,
     val design: WidgetDesign,
+    /** Made (or changed) with Claude, for My designs. */
+    val custom: Boolean = false,
 )
 
 /** A design being made in the Claude app: waiting for its reply to be pasted back. */
@@ -172,7 +174,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val design = WidgetDesigner(key).design(text, previous?.design, feeds.settings.summary())
                 val prompt = if (previous == null) text else previous.prompt + "\n→ " + text
-                _state.update { it.copy(busy = false, draft = Draft(previous?.id, prompt, design)) }
+                _state.update { it.copy(busy = false, draft = Draft(previous?.id, prompt, design, custom = true)) }
             } catch (e: WidgetDesigner.DesignFailed) {
                 _state.update { it.copy(busy = false, error = e.message) }
             } catch (e: Exception) {
@@ -202,7 +204,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         try {
             val design = DesignParser.parse(text)
             val prompt = if (chat.previous == null) chat.description else chat.previous.prompt + "\n→ " + chat.description
-            _state.update { it.copy(chat = null, draft = Draft(chat.previous?.id, prompt, design)) }
+            _state.update { it.copy(chat = null, draft = Draft(chat.previous?.id, prompt, design, custom = true)) }
         } catch (e: DesignParser.InvalidDesign) {
             _state.update {
                 it.copy(chat = chat.copy(problem = e.message ?: "That doesn't look like a widget design.", fixable = true))
@@ -243,7 +245,12 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun edit(saved: SavedDesign) {
-        _state.update { it.copy(draft = Draft(saved.id, saved.prompt, saved.design), error = null, message = null) }
+        _state.update { it.copy(draft = Draft(saved.id, saved.prompt, saved.design, custom = saved.madeByYou), error = null, message = null) }
+    }
+
+    /** One of your designs as the start of a new one: saving it makes another, leaving the original as it is. */
+    fun useAgain(saved: SavedDesign) {
+        _state.update { it.copy(draft = Draft(null, saved.prompt, saved.design, custom = true), error = null, message = null) }
     }
 
     /** Changes the draft's shape (the preview follows; saved with the design). */
@@ -263,6 +270,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
             prompt = draft.prompt,
             design = draft.design,
             createdAt = System.currentTimeMillis(),
+            custom = draft.custom,
         )
         viewModelScope.launch {
             withContext(Dispatchers.IO) { store.save(saved) }

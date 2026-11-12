@@ -192,6 +192,7 @@ private fun CreatePane(state: MakerState, viewModel: MakerViewModel, columns: In
         )
     } else if (draft == null) {
         DescribeCard(busy = state.busy, free = !state.hasApiKey, onGenerate = viewModel::generate)
+        MyDesigns(state.saved.filter { it.madeByYou }, state.theme, columns, onPick = viewModel::useAgain)
         StarterSections(theme = state.theme, columns = columns, onPick = viewModel::useStarter)
     } else {
         DraftCard(
@@ -278,6 +279,41 @@ private fun Collapsible(title: String, summary: String, startOpen: Boolean, cont
                 Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     content()
                 }
+            }
+        }
+    }
+}
+
+/** The designs you made with Claude, as a gallery to start new widgets from (kept even when not on the home screen). */
+@Composable
+private fun MyDesigns(mine: List<SavedDesign>, theme: WidgetTheme, columns: Int, onPick: (SavedDesign) -> Unit) {
+    Collapsible(
+        "My designs",
+        if (mine.isEmpty()) "Widgets you make with Claude are kept here" else "${mine.size} made by you · tap one to make another from it",
+        startOpen = mine.isNotEmpty(),
+    ) {
+        if (mine.isEmpty()) {
+            Text(
+                "Describe a widget above (or change a ready-made one with Claude) and save it: it's kept here to use again, " +
+                    "even after you take it off your home screen.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        mine.chunked(columns).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { saved ->
+                    Card(
+                        Modifier.weight(1f).clickable { onPick(saved) },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                    ) {
+                        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            DesignPreview(saved.design, PreviewSize.Square, theme, Modifier.fillMaxWidth())
+                            Text(saved.design.name, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                            Text(saved.prompt, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                        }
+                    }
+                }
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

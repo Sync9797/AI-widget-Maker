@@ -29,7 +29,12 @@ data class SavedDesign(
     val prompt: String,
     val design: WidgetDesign,
     val createdAt: Long,
-)
+    /** Made with Claude (described, changed or pasted), not a ready-made design saved as is. Null in older saves. */
+    val custom: Boolean? = null,
+) {
+    /** Whether you made it: older saves count as yours unless they're named after a ready-made design. */
+    val madeByYou: Boolean get() = custom ?: Starters.all.none { it.title == prompt }
+}
 
 enum class HAlign { start, center, end }
 enum class VAlign { top, center, bottom }

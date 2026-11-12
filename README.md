@@ -94,6 +94,7 @@ fetches fresh data right away and redraws your widgets.
 
 ## New in 0.9
 
+- **My designs:** widgets you make with Claude are kept in their own gallery section. Tap one to start a new widget from it (the original stays as it is). They stay there even after you take them off the home screen.
 - **The app is organized by section:** ready-made designs are grouped (Everyday, Weather, Health & fitness, Music...). Tap a group to open its grid. Your widgets sit in a fold-away **Active widgets** list. Widgets you remove from the home screen leave that list by themselves, and designs not on the home screen go under **Saved designs**.
 - **Foldables and tablets:** with the screen open, the app splits in two, with making widgets on one side and your widgets on the other.
 - **Update frequency:** every 15 or 30 minutes, or every hour (Settings).

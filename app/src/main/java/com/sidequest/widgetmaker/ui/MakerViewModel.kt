@@ -80,6 +80,9 @@ data class SourcesForm(
     val ticketmasterKey: String,
     val radiusMiles: String,
     val calendar: Boolean,
+    val health: Boolean,
+    val stepGoal: String,
+    val monsterQuest: Boolean,
 ) {
     companion object {
         fun from(s: FeedSettings) = SourcesForm(
@@ -94,6 +97,9 @@ data class SourcesForm(
             ticketmasterKey = s.ticketmasterKey,
             radiusMiles = s.eventsRadiusMiles.toString(),
             calendar = s.calendar,
+            health = s.health,
+            stepGoal = s.stepGoal.toString(),
+            monsterQuest = s.monsterQuest,
         )
     }
 }
@@ -314,6 +320,9 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
                 ticketmasterKey = form.ticketmasterKey.trim(),
                 eventsRadiusMiles = form.radiusMiles.trim().toIntOrNull()?.coerceIn(1, 200) ?: 25,
                 calendar = form.calendar,
+                health = form.health,
+                stepGoal = form.stepGoal.trim().replace(",", "").toIntOrNull()?.coerceIn(500, 100_000) ?: 8000,
+                monsterQuest = form.monsterQuest,
             )
             feeds.settings = settings
             FeedWorker.schedule(getApplication())

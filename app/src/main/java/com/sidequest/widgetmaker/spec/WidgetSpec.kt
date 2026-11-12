@@ -61,14 +61,23 @@ data class Show(
     val minHeight: Int = 0,
     val maxWidth: Int = 0,
     val maxHeight: Int = 0,
+    /** Only when this value has data, like "{mq.egg.4}" (so a list shows only the items there are). */
+    val ifSet: String? = null,
 ) {
     fun fits(width: Int, height: Int) =
         width >= minWidth && height >= minHeight &&
             (maxWidth == 0 || width <= maxWidth) && (maxHeight == 0 || height <= maxHeight)
+
+    fun has(tokens: Tokens?): Boolean {
+        val token = ifSet ?: return true
+        val value = tokens?.fill(token)?.trim() ?: return true
+        return value.isNotEmpty() && value != "--" && !value.contains('{')
+    }
 }
 
-/** Whether [node] appears in a widget this size. */
-fun visible(node: Node, width: Int, height: Int) = node.show?.fits(width, height) ?: true
+/** Whether [node] appears in a widget this size (and, with [tokens], whether its data is there). */
+fun visible(node: Node, width: Int, height: Int, tokens: Tokens? = null) =
+    node.show?.let { it.fits(width, height) && it.has(tokens) } ?: true
 
 @Serializable
 @SerialName("column")

@@ -53,7 +53,8 @@ mostly shows. Set it only to change that, for example "tap":"weather" on a clock
 Widgets are responsive: people resize them, and a bigger widget should show more. Every element
 may set "show": {"minWidth":dp,"minHeight":dp,"maxWidth":dp,"maxHeight":dp} (leave out any
 limit) so it only appears when the whole widget is that size; an element without "show" always
-appears. Typical sizes: 2x1 is about 160x80, 2x2 160x160, 4x1 320x80, 4x2 320x160, 2x4 160x320,
+appears; "ifSet":"{value}" in "show" also hides it while that value has no data (use it on list items
+like the 3rd egg or 4th headline, so short lists don't show empty rows). Typical sizes: 2x1 is about 160x80, 2x2 160x160, 4x1 320x80, 4x2 320x160, 2x4 160x320,
 4x4 320x320. Design every widget this way: the essentials fit 2x1; more appear in steps as it
 grows wider (minWidth 250: things beside the main content) and taller (minHeight 150, 230, 300:
 more rows, more forecast hours or days, more headlines). Use maxWidth or maxHeight to swap a
@@ -102,6 +103,17 @@ Live data from the internet (refreshed about every 30 minutes; each request says
 - Your calendar (the user's own events, next 7 days): {calendar.1} to {calendar.5} titles,
   {calendar.1.when} "Now", "Today 3 PM", "Tomorrow" or "Sat 9 AM", {calendar.1.where} the place
   (often empty), and {calendar.today} like "2 more today".
+- Exercise & health (Health Connect: Samsung Health, WHOOP, Fit...): {health.steps} "3,508",
+  {health.stepGoal}, {health.stepsPct} (0-100, for a progress bar), {health.kcal} active kcal today,
+  {health.totalKcal}, {health.heart} latest bpm, {health.restingHeart}, {health.heartMax} today's max,
+  {health.effort} "8.4" (0-21, estimated from heart rate, like WHOOP strain), {health.exercise} "45 min",
+  {health.workout} "Run", {health.workout.when}, {health.workout.duration}, {health.sleep} "7h 12m",
+  {health.sleep.deep}, {health.sleep.rem}. Icons: steps, heart, flame, moon.
+- Monster Quest (the user's game): {mq.hero}, {mq.level}, {mq.steps}, {mq.torches}, {mq.gold},
+  eggs: {mq.eggs} count, {mq.eggs.ready}, and N = 1 to 5: {mq.egg.N} species, {mq.egg.N.progress} (0-100),
+  {mq.egg.N.left} "1.2 km to go" or "Ready to hatch!"; adventures: {mq.adventures} count, N = 1 to 3:
+  {mq.adv.N} title, {mq.adv.N.place}, {mq.adv.N.team} monster names, {mq.adv.N.left} "1 h 20 min left",
+  {mq.adv.N.progress} (0-100); {mq.sleep}, {mq.sleep.deep}. Icons: egg, paw, steps, moon.
 - {updated}: when the data was last refreshed, like "8:42 AM".
 A value that isn't available shows as "--". If asked for data that isn't set up, design it anyway
 with the values above; the user can set it up later.

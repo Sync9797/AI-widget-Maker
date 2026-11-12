@@ -54,8 +54,11 @@ class Feeds(private val context: Context) {
         tmp.renameTo(snapshotFile)
     }
 
-    /** Fetches every feed that's set up, in parallel, and saves what came back. */
-    suspend fun refresh(): FeedSnapshot = withContext(Dispatchers.IO) {
+    /**
+     * Fetches every feed that's set up, in parallel, and saves what came back.
+     * [only] limits it to some feeds (the rest keep their last values).
+     */
+    suspend fun refresh(only: Set<String>? = null): FeedSnapshot = withContext(Dispatchers.IO) {
         val s = settings
         val previous = snapshot()
         coroutineScope {
@@ -66,8 +69,11 @@ class Feeds(private val context: Context) {
                 if (s.newsReady) "news" to async { runCatching { news(s) } } else null,
                 if (s.eventsReady) "events" to async { runCatching { events(s) } } else null,
                 if (s.calendarReady) "calendar" to async { runCatching { calendar() } } else null,
-            )
-            val values = mutableMapOf<String, String>()
+                if (s.healthReady) "health" to async { runCatching { Health.read(context, s.stepGoal) } } else null,
+                if (s.monsterQuest && MonsterQuest.installed(context)) "mq" to async { runCatching { MonsterQuest.read(context) } } else null,
+            ).filter { only == null || it.first in only }
+            // Feeds not refreshed this time keep their last values.
+            val values = if (only == null) mutableMapOf() else previous.values.filterKeys { k -> only.none { k.startsWith("$it.") } }.toMutableMap()
             val errors = mutableMapOf<String, String>()
             jobs.forEach { (name, job) ->
                 job.await()

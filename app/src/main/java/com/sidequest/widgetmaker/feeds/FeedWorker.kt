@@ -18,10 +18,10 @@ class FeedWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     override suspend fun doWork(): Result {
         val feeds = Feeds(applicationContext)
         val s = feeds.settings
-        if (!(s.weatherReady || s.cryptoReady || s.trafficReady || s.newsReady || s.eventsReady || s.calendarReady)) {
+        if (!(s.weatherReady || s.cryptoReady || s.trafficReady || s.newsReady || s.eventsReady || s.calendarReady || s.healthReady || s.monsterQuest)) {
             return Result.success()
         }
-        feeds.refresh()
+        feeds.refresh(inputData.getStringArray(ONLY)?.toSet())
         AiWidget.refreshAll(applicationContext)
         return Result.success()
     }
@@ -29,6 +29,15 @@ class FeedWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     companion object {
         private const val PERIODIC = "feeds-periodic"
         private const val NOW = "feeds-now"
+        private const val ONLY = "only"
+
+        /** Refreshes just some feeds soon (like Monster Quest when the game saves). */
+        fun refreshSoon(context: Context, only: Set<String>) {
+            val request = OneTimeWorkRequestBuilder<FeedWorker>()
+                .setInputData(androidx.work.workDataOf(ONLY to only.toTypedArray()))
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork("$NOW-${only.sorted().joinToString("-")}", ExistingWorkPolicy.REPLACE, request)
+        }
         private val online = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
         /** Every 30 minutes while online (Android allows 15 at the most often). */

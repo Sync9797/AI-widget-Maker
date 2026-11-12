@@ -26,19 +26,19 @@ object Starters {
          {"type":"text","text":" {weather.d$n.low}","size":13,"color":"#99FFFFFF"}]}"""
 
     private fun headline(n: Int, minHeight: Int) = """
-        {"type":"column","show":{"minHeight":$minHeight},"children":[
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{news.$n}"},"children":[
          {"type":"spacer","size":8},
          {"type":"text","text":"{news.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":2},
          {"type":"text","text":"{news.$n.source}","size":11,"color":"#80FFFFFF","maxLines":1}]}"""
 
     private fun event(n: Int, minHeight: Int) = """
-        {"type":"column","show":{"minHeight":$minHeight},"children":[
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{events.$n}"},"children":[
          {"type":"spacer","size":8},
          {"type":"text","text":"{events.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
          {"type":"text","text":"{events.$n.when} · {events.$n.venue}","size":11,"color":"#99FFFFFF","maxLines":1}]}"""
 
     private fun appointment(n: Int, minHeight: Int) = """
-        {"type":"row","show":{"minHeight":$minHeight},"children":[
+        {"type":"row","show":{"minHeight":$minHeight,"ifSet":"{calendar.$n}"},"children":[
          {"type":"column","grow":true,"children":[
           {"type":"spacer","size":8},
           {"type":"text","text":"{calendar.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
@@ -59,6 +59,24 @@ object Starters {
 
     private const val DIVIDER_GAP =
         """,{"type":"spacer","size":5},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":5}"""
+
+    private fun egg(n: Int, minHeight: Int) = """
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{mq.egg.$n}"},"children":[
+         {"type":"spacer","size":8},
+         {"type":"row","verticalAlign":"center","children":[
+          {"type":"icon","name":"egg","size":14,"color":"#FFFFE1A8"},
+          {"type":"text","text":"  {mq.egg.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","grow":true,"maxLines":1},
+          {"type":"text","text":"{mq.egg.$n.left}","size":11,"color":"#B3FFFFFF","maxLines":1}]},
+         {"type":"spacer","size":4},
+         {"type":"progress","value":"{mq.egg.$n.progress}","color":"#FFFFC857","trackColor":"#26FFFFFF","height":5}]}"""
+
+    private fun adventure(n: Int, minHeight: Int) = """
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{mq.adv.$n}"},"children":[
+         {"type":"spacer","size":10},
+         {"type":"text","text":"{mq.adv.$n}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+         {"type":"text","text":"{mq.adv.$n.team} · {mq.adv.$n.left}","size":12,"color":"#B3FFFFFF","maxLines":1},
+         {"type":"spacer","size":4},
+         {"type":"progress","value":"{mq.adv.$n.progress}","color":"#FF8FE3B0","trackColor":"#26FFFFFF","height":5}]}"""
 
     private fun coin(symbol: String, minHeight: Int) = """
         {"type":"row","show":{"minHeight":$minHeight},"children":[
@@ -255,6 +273,115 @@ object Starters {
              {"type":"spacer","size":14},
              {"type":"progress","value":"{battery}","color":"#FFFFFFFF","trackColor":"#40FFFFFF","height":12,"grow":true},
              {"type":"text","text":"  {charging}","size":12,"color":"#CCFFFFFF","show":{"minWidth":260}}]}}""",
+        ),
+        Triple(
+            "Agenda card", "Monster Quest's date card: what's next at the top, today's date big at the bottom.",
+            """{"name":"Agenda card","background":"#E61C2433","cornerRadius":28,"padding":16,"root":
+            {"type":"column","children":[
+             {"type":"text","text":"{calendar.1}","size":18,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"show":{"maxHeight":179}},
+             {"type":"text","text":"{calendar.1}","size":18,"color":"#FFFFFFFF","weight":"bold","maxLines":2,"show":{"minHeight":180}},
+             {"type":"text","text":"{calendar.1.when}","size":13,"color":"#FF8AB4F8","maxLines":1,"show":{"minHeight":100}},
+             {"type":"text","text":"{calendar.2} · {calendar.2.when}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":230,"ifSet":"{calendar.2}"}},
+             {"type":"text","text":"{calendar.3} · {calendar.3.when}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":270,"ifSet":"{calendar.3}"}},
+             {"type":"spacer","grow":true},
+             {"type":"clock","format":"d","size":40,"color":"#FFFFFFFF","weight":"bold","show":{"minHeight":140,"maxHeight":199}},
+             {"type":"clock","format":"d","size":52,"color":"#FFFFFFFF","weight":"bold","show":{"minHeight":200}},
+             {"type":"clock","format":"EEEE, MMM d","size":14,"color":"#FFFFFFFF","weight":"bold","show":{"maxHeight":139}},
+             {"type":"clock","format":"EEEE, MMM","size":14,"color":"#FFFFFFFF","weight":"bold","show":{"minHeight":140}}]}}""",
+        ),
+        Triple(
+            "Steps pill", "Today's steps and a bar to your goal, as an oval like One UI's. Turn on Exercise & health in Settings.",
+            """{"name":"Steps pill","background":"#E62A1B12","cornerRadius":40,"padding":12,"shape":"pill","root":
+            {"type":"column","align":"center","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"bottom","children":[
+              {"type":"text","text":"{health.steps}","size":22,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"text","text":" Steps","size":13,"color":"#CCFFFFFF","weight":"medium"},
+              {"type":"text","text":" of {health.stepGoal}","size":13,"color":"#99FFFFFF","show":{"minWidth":250}}]},
+             {"type":"spacer","size":6},
+             {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#40FFFFFF","height":10}]}}""",
+        ),
+        Triple(
+            "Activity", "Steps, kcal, heart rate and effort today; your last workout when wider, and sleep when taller.",
+            """{"name":"Activity","background":"#E6141C1A","cornerRadius":26,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"row","verticalAlign":"center","children":[
+                {"type":"icon","name":"steps","size":14,"color":"#FF4CD137"},
+                {"type":"text","text":" {health.steps}","size":20,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+               {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#26FFFFFF","height":4,"show":{"minHeight":100}}]},
+              {"type":"spacer","size":12},
+              {"type":"column","align":"end","show":{"minWidth":250},"children":[
+               {"type":"text","text":"{health.workout} · {health.workout.duration}","size":12,"color":"#E6FFFFFF","maxLines":1},
+               {"type":"text","text":"{health.workout.when}","size":11,"color":"#99FFFFFF","maxLines":1}]}]},
+             {"type":"spacer","size":10,"show":{"minHeight":120}},
+             {"type":"row","show":{"minHeight":120},"children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"icon","name":"flame","size":16,"color":"#FFFF8A50"},
+               {"type":"text","text":"{health.kcal}","size":16,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"kcal","size":11,"color":"#99FFFFFF"}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"icon","name":"heart","size":16,"color":"#FFFF5C7A"},
+               {"type":"text","text":"{health.heart}","size":16,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"bpm","size":11,"color":"#99FFFFFF"}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"icon","name":"bolt","size":16,"color":"#FF7FB3FF"},
+               {"type":"text","text":"{health.effort}","size":16,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"effort","size":11,"color":"#99FFFFFF"}]}]},
+             {"type":"spacer","size":10,"show":{"minHeight":220}},
+             {"type":"divider","show":{"minHeight":220}},
+             {"type":"spacer","size":10,"show":{"minHeight":220}},
+             {"type":"row","verticalAlign":"center","show":{"minHeight":220},"children":[
+              {"type":"icon","name":"moon","size":16,"color":"#FFC3B5FF"},
+              {"type":"text","text":"  Slept {health.sleep}","size":14,"color":"#FFFFFFFF","grow":true,"maxLines":1},
+              {"type":"text","text":"deep {health.sleep.deep}","size":12,"color":"#99FFFFFF","show":{"minWidth":250}}]}]}}""",
+        ),
+        Triple(
+            "Monster Quest eggs", "Your eggs and how far to walk until they hatch; more eggs the taller it is.",
+            """{"name":"Monster Quest eggs","background":"#E6241B33","cornerRadius":26,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"egg","size":18,"color":"#FFFFC857"},
+              {"type":"text","text":"  {mq.eggs} eggs","size":15,"color":"#FFFFFFFF","weight":"bold","grow":true},
+              {"type":"text","text":"{mq.eggs.ready} ready","size":12,"color":"#FFFFC857","show":{"minWidth":200}}]},
+             ${egg(1, 100)},
+             ${egg(2, 170)},
+             ${egg(3, 230)},
+             ${egg(4, 290)}]}}""",
+        ),
+        Triple(
+            "Monster Quest adventures", "Monsters out on adventures: where, who, and how long until they're back.",
+            """{"name":"Monster Quest adventures","background":"#E6122A24","cornerRadius":26,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"paw","size":18,"color":"#FF8FE3B0"},
+              {"type":"text","text":"  {mq.adventures} away","size":15,"color":"#FFFFFFFF","weight":"bold","grow":true,"maxLines":1}]},
+             ${adventure(1, 100)},
+             ${adventure(2, 190)},
+             ${adventure(3, 260)}]}}""",
+        ),
+        Triple(
+            "Monster Quest day", "Your hero, today's steps and torches, and last night's sleep.",
+            """{"name":"Monster Quest day","background":"#E61E1A2E","cornerRadius":26,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"text","text":"{mq.hero} · Level {mq.level}","size":13,"color":"#B3FFFFFF","weight":"medium","maxLines":1,"show":{"minHeight":120}},
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"steps","size":18,"color":"#FFFFC857"},
+              {"type":"text","text":" {mq.steps}","size":22,"color":"#FFFFFFFF","weight":"bold","grow":true,"maxLines":1},
+              {"type":"icon","name":"moon","size":16,"color":"#FFC3B5FF","show":{"minWidth":250}},
+              {"type":"text","text":" {mq.sleep}","size":16,"color":"#FFFFFFFF","weight":"bold","show":{"minWidth":250}}]},
+             {"type":"text","text":"steps today","size":11,"color":"#99FFFFFF","show":{"minHeight":100}},
+             {"type":"spacer","size":10,"show":{"minHeight":160}},
+             {"type":"row","show":{"minHeight":160},"children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{mq.torches}","size":16,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"torches","size":11,"color":"#99FFFFFF"}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{mq.sleep}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+               {"type":"text","text":"sleep","size":11,"color":"#99FFFFFF"}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{mq.eggs}","size":16,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"eggs","size":11,"color":"#99FFFFFF"}]}]}]}}""",
         ),
         Triple(
             "Battery", "Your battery level with a bar; the time and date when it's bigger.",

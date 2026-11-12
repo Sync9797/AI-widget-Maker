@@ -245,7 +245,7 @@ private fun DesignWidget(
             Box(
                 GlanceModifier.fillMaxSize().padding(start = panel.padH.dp, end = panel.padH.dp, top = panel.padTop.dp, bottom = panel.padV.dp),
             ) {
-                val fit = Fit(panel.width, panel.height)
+                val fit = Fit(panel.width, panel.height, tokens)
                 if (fit.shows(design.root)) GlanceNode(design.root, tokens, paint, fit, GlanceModifier.fillMaxSize())
             }
         }
@@ -384,8 +384,8 @@ fun textColor(node: TextNode, tokens: Tokens): Pair<Role, String> = when (node.t
 }
 
 /** A widget size, in dp. */
-data class Fit(val width: Int, val height: Int) {
-    fun shows(node: Node) = visible(node, width, height)
+data class Fit(val width: Int, val height: Int, val tokens: Tokens? = null) {
+    fun shows(node: Node) = visible(node, width, height, tokens)
 }
 
 /**

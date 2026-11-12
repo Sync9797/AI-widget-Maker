@@ -67,6 +67,7 @@ object DesignParser {
             minHeight = it.minHeight.coerceIn(0, 1000),
             maxWidth = it.maxWidth.coerceIn(0, 1000),
             maxHeight = it.maxHeight.coerceIn(0, 1000),
+            ifSet = it.ifSet?.take(60),
         )
     }
 

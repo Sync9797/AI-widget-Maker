@@ -88,7 +88,7 @@ class DesignParserTest {
 
     @Test
     fun rejectsTooManyElements() {
-        val children = (1..60).joinToString(",") { """{"type":"text","text":"$it"}""" }
+        val children = (1..DesignParser.MAX_NODES).joinToString(",") { """{"type":"text","text":"$it"}""" }
         assertThrows(DesignParser.InvalidDesign::class.java) {
             DesignParser.parse("""{"root":{"type":"column","children":[$children]}}""")
         }

@@ -14,7 +14,7 @@ object Starters {
     /** One forecast hour; hours 4 and 5 only fit on wide widgets. */
     private fun hour(n: Int) = """
         {"type":"column","align":"center","grow":true,${if (n > 3) "\"show\":{\"minWidth\":250}," else ""}"children":[
-         {"type":"text","text":"{weather.h$n.time}","size":11,"color":"#99FFFFFF","align":"center"},
+         {"type":"text","text":"{weather.h$n.time}","size":11,"color":"#99FFFFFF","align":"center","maxLines":1},
          {"type":"icon","name":"sun","live":"{weather.h$n.icon}","size":20,"color":"#FFFFD27A"},
          {"type":"text","text":"{weather.h$n.temp}","size":13,"color":"#FFFFFFFF","align":"center"}]}"""
 
@@ -155,22 +155,25 @@ object Starters {
              {"type":"row","show":{"minHeight":200},"children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]}]}}""",
         ),
         Triple(
-            "Weather forecast", "Now, the next hours, and the next 3 days on a big widget.",
-            """{"name":"Weather forecast","background":"#E6123A5C","cornerRadius":26,"padding":16,"root":
+            "Weather forecast", "Like One UI's weather: now, the outlook and your town at 2x2; the next hours when wider; the next 3 days when taller.",
+            """{"name":"Weather forecast","background":"#F2163170","cornerRadius":30,"padding":16,"root":
             {"type":"column","children":[
-             {"type":"row","children":[
-              {"type":"icon","name":"weather","size":36,"color":"#FFFFD27A"},
-              {"type":"column","grow":true,"padding":8,"children":[
-               {"type":"text","text":"{weather.temp}","size":30,"color":"#FFFFFFFF","weight":"light","maxLines":1},
-               {"type":"text","text":"{weather.condition}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minHeight":110}}]},
-              {"type":"column","align":"end","show":{"minWidth":230},"children":[
-               {"type":"text","text":"{weather.place}","size":13,"color":"#FFFFFFFF","weight":"medium","align":"end","maxLines":1},
-               {"type":"text","text":"H {weather.high}  L {weather.low}","size":12,"color":"#B3FFFFFF","align":"end"},
-               {"type":"text","text":"Rain {weather.rain}","size":12,"color":"#B3FFFFFF","align":"end"}]}]},
-             {"type":"spacer","size":12,"show":{"minHeight":150}},
-             {"type":"row","show":{"minHeight":150},"children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)},${hour(5)}]},
-             {"type":"spacer","size":12,"show":{"minHeight":260}},
-             {"type":"column","show":{"minHeight":260},"children":[${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
+             {"type":"row","grow":true,"children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"row","show":{"minHeight":150},"children":[
+                {"type":"spacer","grow":true},
+                {"type":"icon","name":"weather","size":52,"color":"#FFC9DDE6"}]},
+               {"type":"spacer","grow":true},
+               {"type":"text","text":"{weather.temp}","size":30,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
+               {"type":"text","text":"{weather.outlook}","size":13,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100}},
+               {"type":"row","show":{"minHeight":120},"children":[
+                {"type":"icon","name":"pin","size":13,"color":"#B3FFFFFF"},
+                {"type":"text","text":" {weather.place}","size":13,"color":"#B3FFFFFF","maxLines":1}]}]},
+              {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
+               ${hourRow(1, 0)},${hourRow(2, 0)},${hourRow(3, 140)},${hourRow(4, 140, divider = false)}]}]},
+             {"type":"column","show":{"minHeight":300},"children":[
+              {"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},
+              ${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
         ),
         Triple(
             "Crypto ticker", "Bitcoin's price and change; more coins as it grows taller. Set your coins in Settings.",

@@ -54,7 +54,10 @@ Widgets are responsive: people resize them, and a bigger widget should show more
 may set "show": {"minWidth":dp,"minHeight":dp,"maxWidth":dp,"maxHeight":dp} (leave out any
 limit) so it only appears when the whole widget is that size; an element without "show" always
 appears; "ifSet":"{value}" in "show" also hides it while that value has no data (use it on list items
-like the 3rd egg or 4th headline, so short lists don't show empty rows). Typical sizes: 2x1 is about 160x80, 2x2 160x160, 4x1 320x80, 4x2 320x160, 2x4 160x320,
+like the 3rd egg or 4th headline, so short lists don't show empty rows); "ifEmpty":"{a}{b}" shows it
+only while all those values are empty (for "otherwise" parts: a smart widget can show the next event
+with "ifSet":"{calendar.soon}", music with "ifSet":"{music.playing}","ifEmpty":"{calendar.soon}", and
+the weather with "ifEmpty":"{calendar.soon}{music.playing}"). Typical sizes: 2x1 is about 160x80, 2x2 160x160, 4x1 320x80, 4x2 320x160, 2x4 160x320,
 4x4 320x320. Design every widget this way: the essentials fit 2x1; more appear in steps as it
 grows wider (minWidth 250: things beside the main content) and taller (minHeight 150, 230, 300:
 more rows, more forecast hours or days, more headlines). Use maxWidth or maxHeight to swap a
@@ -79,13 +82,25 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"spacer","size":8}   empty space; with "grow":true it pushes things apart
 - {"type":"divider","color":"#26FFFFFF","thickness":1}   a thin line between rows (lists, forecasts)
 - {"type":"art","size":56,"cornerRadius":12}   the album art of what's playing (music widgets)
+- {"type":"timer","of":"music","size":12,"color":color}   how far into the song, counting live
+- {"type":"sleep","height":14}   last night's sleep as a bar of colored stages (awake, light, deep, REM)
+A widget can fill up like a battery: add "fill":{"value":"{battery}","color":"#FF9FD8CF",
+"levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"}],"levelsUpTo":30} next to "root".
+The whole panel fills from the left up to the value (0-100) in the style's accent (the wallpaper color
+on One UI, the phone's color on Material 3, frosted white on Glass), with the levels' colors at or
+below levelsUpTo. Use it instead of a progress bar when the widget is about one level (battery, steps
+to goal, Charge).
+Colors that mean something: text, icons and progress bars can take "levelOf":"{value}" and
+"levels":[{"from":0,"color":"#FFFF5C5C"},{"from":34,"color":"#FFFFD54F"},{"from":67,"color":"#FF2BE38A"}]:
+the color of the highest step the number reaches (red/yellow/green Charge, red low battery, bluer
+rain chances). These keep their colors in every widget style.
 
 Text can include these live values, written in braces: ${Tokens.NAMES.joinToString(", ") { "{$it}" }}.
 {greeting} is "Good morning/afternoon/evening/night"; {battery} is the percentage without the
-% sign; {charging} is "Charging" or empty. These refresh about every 30 minutes, so they suit
+% sign; {charging} is "Charging" or empty. These refresh every 15 to 60 minutes, so they suit
 dates and greetings, not the time.
 
-Live data from the internet (refreshed about every 30 minutes; each request says which are set up):
+Live data from the internet (refreshed every 15 to 60 minutes, as set in Settings; each request says which are set up):
 - Weather: {weather.temp} "18°", {weather.feelsLike}, {weather.high}, {weather.low},
   {weather.condition} "Partly cloudy", {weather.rain} "40%" (chance today), {weather.wind} "9 mph",
   {weather.place} the town name. The icon "weather" shows the current conditions.
@@ -120,7 +135,26 @@ Live data from the internet (refreshed about every 30 minutes; each request says
   "Playing" or "Paused". The element {"type":"art","size":56,"cornerRadius":12} shows the album art
   (size 24-200). Buttons: icons "previous", "play" with "live":"{music.playIcon}" (shows pause while
   playing) and "next", with "tap" set to "music:prev", "music:toggle" and "music:next".
-- Monster Quest (the user's game): {mq.hero}, {mq.level}, {mq.steps}, {mq.torches}, {mq.gold},
+  {music.progress} (0-100, for a progress bar), {music.length} "3:45", {music.elapsed}; {music.playing}
+  is set only while something plays.
+- Health extras: {health.stepsLeft} "4,492", {health.stepsLeft.text} "4,492 steps to go" or "Step goal
+  reached!", {health.sleep.light}, {health.sleep.awake}, {health.sleep.avg} (7-day average),
+  {health.sleep.vsAvg} "24m more than usual".
+- Phone: {battery.left} "About 9 h left" or "Full in 40 min", {battery.drain} "3.1%/h", {battery.temp},
+  {phone.ram} "5.2 GB of 8 GB", {phone.ramPct}, {phone.ramFree}, {phone.storage}, {phone.storagePct},
+  {phone.storageFree}.
+- Sleep extras: {health.sleep.bed} "11:42 PM", {health.sleep.wake} "7:05 AM"; the last 7 nights, N = 1
+  (oldest) to 7 (last night): {health.sleep.nN.day} "Mon", {health.sleep.nN} "7h 2m", {health.sleep.nN.pct}
+  (0-100, for a bar per night).
+Big widgets must show more information, not just bigger text: add sections from minHeight 230-300
+(next hours, the next days, more list items, related values) so 2x4 and 4x4 are full.
+- Calendar extras: {calendar.tomorrow} tomorrow's first event, {calendar.tomorrow.when} "9 AM";
+  {calendar.soon} is set from an hour before the next event until it ends, {calendar.soon.in} "in 25 min".
+- Time of day: {time.morning}, {time.afternoon}, {time.evening}, {time.night}: the current one is set,
+  the others empty, so with "ifSet" a widget can change through the day.
+- Countdowns (set in Settings), N = 1 to 5, soonest first: {countdown.N} name, {countdown.N.days} "12",
+  {countdown.N.unit} "days", {countdown.N.text} "12 days", "Tomorrow" or "Today!", {countdown.N.date} "Dec 25".
+- Side Quest (the user's game): {mq.hero}, {mq.level}, {mq.steps}, {mq.torches}, {mq.gold},
   eggs: {mq.eggs} count, {mq.eggs.ready}, and N = 1 to 5: {mq.egg.N} species, {mq.egg.N.progress} (0-100),
   {mq.egg.N.left} "1.2 km to go" or "Ready to hatch!"; adventures: {mq.adventures} count, N = 1 to 3:
   {mq.adv.N} title, {mq.adv.N.place}, {mq.adv.N.team} monster names, {mq.adv.N.left} "1 h 20 min left",

@@ -14,7 +14,7 @@ object DesignParser {
     }
 
     /** Widgets get slow and launchers refuse them past a few dozen views. */
-    const val MAX_NODES = 80
+    const val MAX_NODES = 100
     const val MAX_DEPTH = 7
 
     class InvalidDesign(message: String) : Exception(message)
@@ -55,6 +55,7 @@ object DesignParser {
 
     private fun sanitize(design: WidgetDesign) = design.copy(
         name = design.name.take(40).ifBlank { "My widget" },
+        fill = sanitize(design.fill),
         background = Colors.orDefault(design.background, "#E61E1E2E"),
         cornerRadius = design.cornerRadius.coerceIn(0, 40),
         padding = design.padding.coerceIn(0, 32),
@@ -68,8 +69,21 @@ object DesignParser {
             maxWidth = it.maxWidth.coerceIn(0, 1000),
             maxHeight = it.maxHeight.coerceIn(0, 1000),
             ifSet = it.ifSet?.take(60),
+            ifEmpty = it.ifEmpty?.take(80),
         )
     }
+
+    private fun sanitize(fill: Fill?): Fill? = fill?.let {
+        Fill(
+            value = it.value.take(60),
+            color = Colors.orDefault(it.color, "#FFFFFFFF"),
+            levels = sanitize(it.levels),
+            levelsUpTo = it.levelsUpTo?.coerceIn(0f, 100f),
+        )
+    }
+
+    private fun sanitize(levels: List<Level>?): List<Level>? =
+        levels?.filter { Colors.parseOrNull(it.color) != null }?.take(6)?.takeIf { it.isNotEmpty() }
 
     private fun sanitize(node: Node): Node = when (node) {
         is ColumnNode -> node.copy(
@@ -90,6 +104,8 @@ object DesignParser {
         )
         is TextNode -> node.copy(
             show = sanitize(node.show),
+            levelOf = node.levelOf?.take(60),
+            levels = sanitize(node.levels),
             tap = node.tap?.take(80),
             text = node.text.take(200),
             size = node.size.coerceIn(8, 72),
@@ -108,6 +124,8 @@ object DesignParser {
         )
         is IconNode -> node.copy(
             show = sanitize(node.show),
+            levelOf = node.levelOf?.take(60),
+            levels = sanitize(node.levels),
             tap = node.tap?.take(80),
             live = node.live?.take(60),
             size = node.size.coerceIn(10, 64),
@@ -115,6 +133,8 @@ object DesignParser {
         )
         is ProgressNode -> node.copy(
             show = sanitize(node.show),
+            levelOf = node.levelOf?.take(60),
+            levels = sanitize(node.levels),
             tap = node.tap?.take(80),
             color = Colors.orDefault(node.color, "#FF7CF29C"),
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
@@ -126,6 +146,14 @@ object DesignParser {
             color = Colors.orDefault(node.color, "#26FFFFFF"),
             thickness = node.thickness.coerceIn(1, 4),
         )
+        is TimerNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            of = node.of.take(20),
+            size = node.size.coerceIn(8, 48),
+            color = Colors.orDefault(node.color, "#B3FFFFFF"),
+        )
+        is SleepNode -> node.copy(show = sanitize(node.show), tap = node.tap?.take(80), height = node.height.coerceIn(4, 48))
         is ArtNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),

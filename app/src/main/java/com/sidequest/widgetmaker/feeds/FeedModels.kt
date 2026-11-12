@@ -6,6 +6,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Place(val name: String, val lat: Double, val lon: Double)
 
+/** A countdown: a name and a day ("2026-12-25"). */
+@Serializable
+data class Countdown(val name: String, val date: String)
+
 /** What the user set up in Data sources. */
 @Serializable
 data class FeedSettings(
@@ -37,7 +41,13 @@ data class FeedSettings(
     val health: Boolean = false,
     val stepGoal: Int = 8000,
 
-    /** Monster Quest (the game), when it's installed. */
+    /** How often data refreshes in the background, in minutes: 15, 30 or 60. */
+    val refreshMinutes: Int = 30,
+
+    /** Countdowns to dates you pick (or calendar events). */
+    val countdowns: List<Countdown> = emptyList(),
+
+    /** Side Quest (the game), when it's installed. */
     val monsterQuest: Boolean = true,
 ) {
     val weatherReady get() = place != null

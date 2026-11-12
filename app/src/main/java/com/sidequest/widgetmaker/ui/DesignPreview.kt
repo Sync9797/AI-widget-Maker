@@ -4,6 +4,9 @@ import androidx.compose.foundation.Image
 import com.sidequest.widgetmaker.R
 import androidx.compose.runtime.remember
 import com.sidequest.widgetmaker.spec.ArtNode
+import com.sidequest.widgetmaker.spec.SleepNode
+import com.sidequest.widgetmaker.spec.TimerNode
+import com.sidequest.widgetmaker.widget.accentColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -130,6 +133,16 @@ fun DesignPreview(
                         contentScale = ContentScale.FillBounds,
                         colorFilter = if (art.tinted) ColorFilter.tint(paint(Role.Background, design.background)) else null,
                     )
+                    design.fill?.let { fill ->
+                        val (fraction, color) = com.sidequest.widgetmaker.spec.fillLevel(fill, tokens)
+                        val level = remember(panel, fraction) { com.sidequest.widgetmaker.widget.FillArt.build(context, panel, fraction)?.asImageBitmap() }
+                        level?.let {
+                            Image(
+                                it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
+                                colorFilter = ColorFilter.tint(paint(color.first, color.second)),
+                            )
+                        }
+                    }
                     art.edge?.let {
                         Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
                     }
@@ -200,16 +213,30 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             painter = painterResource(iconRes(node, tokens)),
             contentDescription = null,
             modifier = modifier.size(node.size.dp),
-            colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)),
+            colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
         )
         is ProgressNode -> LinearProgressIndicator(
             progress = { tokens.progress(node.value) },
             modifier = modifier.fillMaxWidth().height(node.height.dp).clip(RoundedCornerShape(node.height.dp)),
-            color = paint(Role.Accent, node.color),
+            color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
             trackColor = paint(Role.Track, node.trackColor),
             gapSize = 0.dp,
             drawStopIndicator = {},
         )
+        is TimerNode -> Text(
+            text = tokens.feeds["music.elapsed"] ?: "0:00",
+            modifier = modifier,
+            color = paint(Role.Text, node.color),
+            fontSize = node.size.sp,
+            fontWeight = weight(node.weight),
+            maxLines = 1,
+        )
+        is SleepNode -> {
+            val bar = remember(tokens.feeds["health.sleep.stages"], node.height) {
+                com.sidequest.widgetmaker.widget.SleepBar.draw(tokens.feeds["health.sleep.stages"], heightPx = node.height * 3).asImageBitmap()
+            }
+            Image(bar, null, modifier.fillMaxWidth().height(node.height.dp), contentScale = ContentScale.FillBounds)
+        }
         is ArtNode -> {
             val context = LocalContext.current
             val cover = remember { com.sidequest.widgetmaker.music.Music.art(context)?.asImageBitmap() }

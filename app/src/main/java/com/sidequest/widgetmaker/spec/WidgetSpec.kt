@@ -19,7 +19,24 @@ data class WidgetDesign(
     val padding: Int = 14,
     /** The panel's outline: rounded, pill, circle, squircle, arch or cookie. */
     val shape: WidgetShape = WidgetShape.rounded,
+    /** The whole widget fills up to a value, like a battery (see [Fill]). */
+    val fill: Fill? = null,
     val root: Node,
+)
+
+/**
+ * The panel fills from left to right up to [value] (0-100, like "{battery}"),
+ * in the theme's accent: the wallpaper color on One UI, the phone's primary
+ * color on Material 3, frosted white on Glass, [color] in Original. While the
+ * value is at or below [levelsUpTo], [levels] color it instead (orange, then red,
+ * for a low battery).
+ */
+@Serializable
+data class Fill(
+    val value: String,
+    val color: String = "#FFFFFFFF",
+    val levels: List<Level>? = null,
+    val levelsUpTo: Float? = null,
 )
 
 /** A saved design plus what it was made from. */
@@ -29,7 +46,12 @@ data class SavedDesign(
     val prompt: String,
     val design: WidgetDesign,
     val createdAt: Long,
-)
+    /** Made with Claude (described, changed or pasted), not a ready-made design saved as is. Null in older saves. */
+    val custom: Boolean? = null,
+) {
+    /** Whether you made it: older saves count as yours unless they're named after a ready-made design. */
+    val madeByYou: Boolean get() = custom ?: Starters.all.none { it.title == prompt }
+}
 
 enum class HAlign { start, center, end }
 enum class VAlign { top, center, bottom }
@@ -63,14 +85,22 @@ data class Show(
     val maxHeight: Int = 0,
     /** Only when this value has data, like "{mq.egg.4}" (so a list shows only the items there are). */
     val ifSet: String? = null,
+    /** Only when these values are all empty, like "{calendar.soon}{music.playing}" (for "otherwise" parts). */
+    val ifEmpty: String? = null,
 ) {
     fun fits(width: Int, height: Int) =
         width >= minWidth && height >= minHeight &&
             (maxWidth == 0 || width <= maxWidth) && (maxHeight == 0 || height <= maxHeight)
 
     fun has(tokens: Tokens?): Boolean {
-        val token = ifSet ?: return true
-        val value = tokens?.fill(token)?.trim() ?: return true
+        tokens ?: return true
+        if (ifSet != null && !set(tokens.fill(ifSet))) return false
+        if (ifEmpty != null && set(tokens.fill(ifEmpty).replace("--", ""))) return false
+        return true
+    }
+
+    private fun set(filled: String): Boolean {
+        val value = filled.trim()
         return value.isNotEmpty() && value != "--" && !value.contains('{')
     }
 }
@@ -124,6 +154,9 @@ data class TextNode(
     val trendOf: String? = null,
     val upColor: String = "#FF4ADE80",
     val downColor: String = "#FFF87171",
+    /** Colors it by a number's level, like "{health.charge}": see [Level]. Wins over [trendOf]. */
+    val levelOf: String? = null,
+    val levels: List<Level>? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -153,6 +186,9 @@ data class IconNode(
     val live: String? = null,
     val size: Int = 20,
     val color: String = "#FFFFFFFF",
+    /** Colors it by a number's level, like "{battery}": see [Level]. */
+    val levelOf: String? = null,
+    val levels: List<Level>? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -166,6 +202,9 @@ data class ProgressNode(
     val color: String = "#FF7CF29C",
     val trackColor: String = "#33FFFFFF",
     val height: Int = 6,
+    /** Colors it by a number's level, like "{battery}": see [Level]. */
+    val levelOf: String? = null,
+    val levels: List<Level>? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -188,6 +227,54 @@ data class DividerNode(
 data class ArtNode(
     val size: Int = 56,
     val cornerRadius: Int = 12,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/**
+ * One step of a color scale: the color for values from [from] up (to the next
+ * step). For example Charge: 0 red, 34 yellow, 67 green.
+ */
+@Serializable
+data class Level(val from: Float, val color: String)
+
+/** How full a [Fill] is (0-1), and its color: a level color (role Level) or its accent. */
+fun fillLevel(fill: Fill, tokens: Tokens): Pair<Float, Pair<Role, String>> {
+    val fraction = tokens.progress(fill.value)
+    val upTo = fill.levelsUpTo
+    val low = if (upTo == null || fraction * 100 <= upTo) levelColor(fill.value, fill.levels, tokens) else null
+    return fraction to (low?.let { Role.Level to it } ?: (Role.Accent to fill.color))
+}
+
+/** The color for [value] on [levels]: the highest step it reaches, or null (no number, or no steps). */
+fun levelColor(value: String?, levels: List<Level>?, tokens: Tokens): String? {
+    if (value == null || levels.isNullOrEmpty()) return null
+    val number = Regex("-?[0-9]+(\\.[0-9]+)?").find(tokens.fill(value).replace(",", ""))?.value?.toFloatOrNull() ?: return null
+    return levels.sortedBy { it.from }.lastOrNull { number >= it.from }?.color ?: levels.minByOrNull { it.from }?.color
+}
+
+/**
+ * Time counting live, kept up to date by the system without redrawing:
+ * "music" is how far into the song you are (it stops while paused).
+ */
+@Serializable
+@SerialName("timer")
+data class TimerNode(
+    val of: String = "music",
+    val size: Int = 12,
+    val color: String = "#B3FFFFFF",
+    val weight: Weight = Weight.normal,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/** Last night's sleep as a bar of stages (awake, light, deep, REM), [height] dp tall. */
+@Serializable
+@SerialName("sleep")
+data class SleepNode(
+    val height: Int = 14,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

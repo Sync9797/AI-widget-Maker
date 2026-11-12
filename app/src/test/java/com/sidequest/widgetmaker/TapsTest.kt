@@ -63,19 +63,22 @@ class TapsTest {
             "Big date" to TapKind.calendar,
             "Day cookie" to TapKind.calendar,
             "Hourly weather" to TapKind.weather,
-            "Battery pill" to TapKind.battery,
+            "Battery fill" to TapKind.battery,
             "Agenda card" to TapKind.calendar,
-            "Steps pill" to TapKind.health,
+            "Steps" to TapKind.health,
             "Activity" to TapKind.health,
             "NOOP recovery" to TapKind.health,
             "Now playing" to TapKind.music,
-            "Music pill" to TapKind.music,
-            "Monster Quest eggs" to TapKind.game,
-            "Monster Quest adventures" to TapKind.game,
-            "Monster Quest day" to TapKind.game,
-            "Monster Quest quests" to TapKind.game,
-            "Monster Quest progress" to TapKind.game,
-            "Monster Quest party" to TapKind.game,
+            "Music mini" to TapKind.music,
+            "Sleep" to TapKind.health,
+            "Daily briefing" to TapKind.weather,
+            "Smart stack" to TapKind.weather,
+            "Side Quest eggs" to TapKind.game,
+            "Side Quest adventures" to TapKind.game,
+            "Side Quest day" to TapKind.game,
+            "Side Quest quests" to TapKind.game,
+            "Side Quest progress" to TapKind.game,
+            "Side Quest party" to TapKind.game,
             "Battery" to TapKind.battery,
         )
         Starters.all.forEach { s -> assertEquals(s.title, expected[s.title], Taps.mainKind(s.design)) }
@@ -127,9 +130,9 @@ class GameBridgeTest {
         assertNull(Taps.resolve("{mq.egg.2.hatch}", tokens))
         assertNull(Taps.resolve("mq-action:explode:x", tokens))
         // Game widgets open the screen they're about.
-        val eggs = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Monster Quest eggs" }.design
+        val eggs = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Side Quest eggs" }.design
         assertEquals("mq-open:eggs", Taps.forWidget(eggs))
-        val quests = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Monster Quest quests" }.design
+        val quests = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Side Quest quests" }.design
         assertEquals("mq-open:quests", Taps.forWidget(quests))
     }
 }

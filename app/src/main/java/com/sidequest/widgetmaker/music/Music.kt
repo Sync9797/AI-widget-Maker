@@ -59,10 +59,14 @@ object Music {
             packageName = pkg,
             appName = p.getString("app", "").orEmpty(),
             playing = p.getBoolean("playing", false),
+            positionMs = p.getLong("position", 0),
+            updatedAt = p.getLong("updatedAt", 0),
+            durationMs = p.getLong("duration", 0),
         )
     }
 
-    fun values(context: Context): Map<String, String> = MusicMath.values(current(context), hasAccess(context))
+    fun values(context: Context): Map<String, String> =
+        MusicMath.values(current(context), hasAccess(context), SystemClock.elapsedRealtime())
 
     /** The album art, if what's playing has one. */
     fun art(context: Context): Bitmap? {
@@ -94,6 +98,9 @@ object Music {
                 packageName = it.packageName,
                 appName = label(context, it.packageName),
                 playing = it.playbackState?.state in setOf(PlaybackState.STATE_PLAYING, PlaybackState.STATE_BUFFERING),
+                positionMs = it.playbackState?.position?.coerceAtLeast(0) ?: 0,
+                updatedAt = it.playbackState?.lastPositionUpdateTime?.takeIf { t -> t > 0 } ?: SystemClock.elapsedRealtime(),
+                durationMs = meta?.getLong(MediaMetadata.METADATA_KEY_DURATION)?.coerceAtLeast(0) ?: 0,
             )
         }
         if (now == current(context)) return
@@ -101,7 +108,9 @@ object Music {
         if (now == null) p.edit().clear().apply() else p.edit()
             .putString("title", now.title).putString("artist", now.artist).putString("album", now.album)
             .putString("package", now.packageName).putString("app", now.appName).putBoolean("playing", now.playing)
+            .putLong("position", now.positionMs).putLong("updatedAt", now.updatedAt).putLong("duration", now.durationMs)
             .apply()
+        tick(context, now?.playing == true)
         if (trackChanged) saveArt(context, meta)
         redrawSoon(context)
     }
@@ -124,6 +133,29 @@ object Music {
         pending = scope.launch {
             delay(400)
             AiWidget.refreshAll(app)
+        }
+    }
+
+    private var ticker: Job? = null
+
+    /**
+     * While music plays, moves music progress bars along every 20 seconds
+     * (only widgets that show one; a timer element counts by itself).
+     */
+    private fun tick(context: Context, playing: Boolean) {
+        ticker?.cancel()
+        if (!playing) return
+        val app = context.applicationContext
+        ticker = scope.launch {
+            while (true) {
+                delay(20_000)
+                val store = com.sidequest.widgetmaker.data.DesignStore(app)
+                val manager = androidx.glance.appwidget.GlanceAppWidgetManager(app)
+                manager.getGlanceIds(AiWidget::class.java).forEach { id ->
+                    val design = store.designFor(manager.getAppWidgetId(id))?.design ?: return@forEach
+                    if (com.sidequest.widgetmaker.spec.DesignParser.encode(design).contains("music.progress")) AiWidget.refresh(app, id)
+                }
+            }
         }
     }
 

@@ -16,7 +16,19 @@ import kotlin.math.roundToInt
 object HealthMath {
     data class Pulse(val timeMs: Long, val bpm: Int)
     data class Workout(val name: String, val start: LocalDateTime, val minutes: Long)
-    data class Sleep(val asleepMinutes: Long, val deepMinutes: Long, val remMinutes: Long)
+    data class Sleep(
+        val asleepMinutes: Long,
+        val deepMinutes: Long,
+        val remMinutes: Long,
+        /** The night's stages in order (see [com.sidequest.widgetmaker.spec.SleepStages]). */
+        val stages: List<com.sidequest.widgetmaker.spec.SleepStages.Part> = emptyList(),
+        /** Your average over the last week, in minutes asleep. */
+        val averageMinutes: Long? = null,
+        val bedtime: LocalDateTime? = null,
+        val wake: LocalDateTime? = null,
+        /** The last nights, oldest first, by the day you woke up: minutes asleep. */
+        val week: List<Pair<java.time.LocalDate, Long>> = emptyList(),
+    )
 
     /** Readings NOOP (and other WHOOP-style apps) share: HRV and resting heart rate against your own baseline, and more. */
     data class Extras(
@@ -77,6 +89,9 @@ object HealthMath {
             out["health.steps"] = count.format(it)
             out["health.stepGoal"] = count.format(stepGoal)
             out["health.stepsPct"] = (it * 100 / max(1, stepGoal)).coerceAtMost(100).toString()
+            val left = (stepGoal - it).coerceAtLeast(0)
+            out["health.stepsLeft"] = count.format(left)
+            out["health.stepsLeft.text"] = if (left == 0L) "Step goal reached!" else "${count.format(left)} steps to go"
         }
         activeKcal?.let { out["health.kcal"] = count.format(it.roundToInt()) }
         totalKcal?.let { out["health.totalKcal"] = count.format(it.roundToInt()) }
@@ -108,6 +123,32 @@ object HealthMath {
             out["health.sleep"] = hoursMinutes(it.asleepMinutes)
             out["health.sleep.deep"] = hoursMinutes(it.deepMinutes)
             out["health.sleep.rem"] = hoursMinutes(it.remMinutes)
+            if (it.stages.isNotEmpty()) {
+                out["health.sleep.stages"] = com.sidequest.widgetmaker.spec.SleepStages.encode(it.stages)
+                fun stage(c: Char) = it.stages.filter { p -> p.stage == c }.sumOf { p -> p.minutes }.toLong()
+                out["health.sleep.light"] = hoursMinutes(stage('L'))
+                out["health.sleep.awake"] = hoursMinutes(stage('A'))
+            }
+            val clock = java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.US)
+            it.bedtime?.let { t -> out["health.sleep.bed"] = t.format(clock) }
+            it.wake?.let { t -> out["health.sleep.wake"] = t.format(clock) }
+            // The last 7 nights, n1 oldest to n7 last night; pct against 9 hours, for bars.
+            it.week.takeLast(7).forEachIndexed { i, (day, minutes) ->
+                val n = i + 1
+                out["health.sleep.n$n.day"] = day.format(java.time.format.DateTimeFormatter.ofPattern("EEE", Locale.US))
+                out["health.sleep.n$n"] = hoursMinutes(minutes)
+                out["health.sleep.n$n.pct"] = (minutes * 100 / 540).coerceIn(0, 100).toString()
+            }
+            it.averageMinutes?.let { avg ->
+                out["health.sleep.avg"] = hoursMinutes(avg)
+                val diff = it.asleepMinutes - avg
+                out["health.sleep.vsAvg"] = when {
+                    kotlin.math.abs(diff) < 5 -> "About your average"
+                    diff > 0 -> "${hoursMinutes(diff)} more than usual"
+                    else -> "${hoursMinutes(-diff)} less than usual"
+                }
+                out["health.sleep.score"] = (it.asleepMinutes * 100 / 480).coerceIn(0, 100).toString()
+            }
         }
         return out
     }

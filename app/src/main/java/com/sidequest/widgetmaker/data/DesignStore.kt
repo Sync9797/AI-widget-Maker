@@ -49,6 +49,19 @@ class DesignStore(context: Context) {
         prefs.edit().putString(widgetKey(appWidgetId), designId).apply()
     }
 
+    /**
+     * Which designs are on the home screen, and on how many widgets, given the
+     * widgets that are there now ([liveIds]). Settings kept for widgets that
+     * have since been removed are cleared on the way (in case the launcher
+     * didn't say it removed them).
+     */
+    fun placed(liveIds: IntArray): Map<String, Int> {
+        val live = liveIds.toSet()
+        prefs.all.keys.mapNotNull { key -> WIDGET_KEY.matchEntire(key)?.groupValues?.get(1)?.toIntOrNull() }
+            .filter { it !in live }.distinct().forEach(::forget)
+        return live.mapNotNull { designFor(it)?.id }.groupingBy { it }.eachCount()
+    }
+
     fun forget(appWidgetId: Int) {
         prefs.edit().remove(widgetKey(appWidgetId)).remove("widget_theme_$appWidgetId")
             .remove("widget_shape_$appWidgetId").remove("widget_bounds_$appWidgetId").apply()
@@ -126,5 +139,6 @@ class DesignStore(context: Context) {
 
     private companion object {
         val LOCK = Any()
+        val WIDGET_KEY = Regex("widget_(?:theme_|shape_|bounds_)?(-?\\d+)")
     }
 }

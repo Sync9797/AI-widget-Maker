@@ -46,11 +46,15 @@ data class Look(
 data class Panel(val width: Int, val height: Int, val shape: WidgetShape, val radius: Int, val padH: Int, val padV: Int, val padTop: Int)
 
 object Shapes {
-    /** Widgets up to this tall count as one row. */
-    const val ONE_ROW_MAX = 110
+    /** Widgets up to this tall count as one row (Samsung reports 2×1 cells up to about 125 dp tall). */
+    const val ONE_ROW_MAX = 130
 
-    /** The tallest a pill gets. */
-    const val PILL_MAX = 96
+    /** The tallest a pill gets (unless set in Settings), and the shortest. */
+    const val PILL_MAX = 72
+    const val PILL_MIN = 40
+
+    /** A pill's height for its width, like One UI's oval widgets. */
+    const val PILL_RATIO = 0.32
 
     private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.arch)
 
@@ -64,17 +68,15 @@ object Shapes {
         var h = max(24, height - 2 * look.inset)
         var shape = shapeOverride ?: design.shape
         val maxH = look.pillMaxHeight
-        if (maxH != null && height <= ONE_ROW_MAX) {
-            h = min(h, maxH)
-            shape = WidgetShape.pill
-        }
+        if (maxH != null && height <= ONE_ROW_MAX) shape = WidgetShape.pill
         // A squarish cell (2×2, 4×4) gets a square panel; 4×2 and 2×4 keep their shape.
         if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX && w.toFloat() / h in 0.6f..1.67f) {
             w = min(w, h)
             h = w
         }
-        // A pill stays pill-height on taller widgets, centered (like One UI's oval widgets).
-        if (shape == WidgetShape.pill) h = min(h, max(56, min(PILL_MAX, w / 2)))
+        // A pill is a slim oval, centered in its cell like One UI's: about a third as tall as it is wide,
+        // or the height set in Settings → Widget look (which applies to every pill, whatever its cell).
+        if (shape == WidgetShape.pill) h = min(h, maxH ?: (w * PILL_RATIO).roundToInt().coerceIn(PILL_MIN, PILL_MAX))
         // A circle or cookie is as big as the shorter side allows.
         if (shape == WidgetShape.circle || shape == WidgetShape.cookie) {
             w = min(w, h)

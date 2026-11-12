@@ -204,6 +204,31 @@ class Feeds(private val context: Context) {
         context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
 
     /** The next week's events from the phone's visible calendars. */
+    /** Upcoming events for countdowns: one per title, soonest first (empty without calendar access). */
+    fun upcomingEvents(days: Int): List<Countdown> {
+        if (!canReadCalendar()) return emptyList()
+        val now = System.currentTimeMillis()
+        val uri = CalendarContract.Instances.CONTENT_URI.buildUpon().also {
+            ContentUris.appendId(it, now)
+            ContentUris.appendId(it, now + days * 24 * 3600_000L)
+        }.build()
+        val out = LinkedHashMap<String, Countdown>()
+        runCatching {
+            context.contentResolver.query(
+                uri, arrayOf(CalendarContract.Instances.TITLE, CalendarContract.Instances.BEGIN, CalendarContract.Instances.ALL_DAY),
+                "${CalendarContract.Instances.VISIBLE} = 1", null, "${CalendarContract.Instances.BEGIN} ASC",
+            )?.use { c ->
+                while (c.moveToNext() && out.size < 60) {
+                    val title = c.getString(0).orEmpty().ifBlank { continue }
+                    val zone = if (c.getInt(2) == 1) ZoneOffset.UTC else ZoneId.systemDefault()
+                    val date = Instant.ofEpochMilli(c.getLong(1)).atZone(zone).toLocalDate()
+                    out.putIfAbsent(title, Countdown(title, date.toString()))
+                }
+            }
+        }
+        return out.values.toList()
+    }
+
     private fun calendar(): Map<String, String> {
         if (!canReadCalendar()) throw IOException("Calendar permission is off. Turn it on in Settings.")
         val now = System.currentTimeMillis()

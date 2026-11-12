@@ -171,10 +171,10 @@ object AppOpener {
         }
     }
 
-    /** Opens Monster Quest on a screen (eggs, adventures, quests), whether or not it's already open. */
+    /** Opens Side Quest on a screen (eggs, adventures, quests), whether or not it's already open. */
     fun openGame(context: Context, screen: String?): Boolean {
         val launch = context.packageManager.getLaunchIntentForPackage(MonsterQuest.PACKAGE) ?: run {
-            android.widget.Toast.makeText(context, "Monster Quest isn't installed.", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, "Side Quest isn't installed.", android.widget.Toast.LENGTH_SHORT).show()
             return false
         }
         launch.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -192,7 +192,7 @@ object AppOpener {
             context.contentResolver.call(Uri.parse("content://com.monsterquest.app.summary"), action.action, action.id, null)
         }.getOrNull()
         val message = result?.getString("message")
-            ?: "Update Monster Quest to the latest version to use widget buttons."
+            ?: "Update Side Quest to the latest version to use widget buttons."
         android.widget.Toast.makeText(context.applicationContext, message, android.widget.Toast.LENGTH_SHORT).show()
         if (result?.getBoolean("ok") == true) com.sidequest.widgetmaker.feeds.FeedWorker.refreshSoon(context, setOf("mq"))
     }

@@ -21,6 +21,7 @@ import com.sidequest.widgetmaker.spec.SavedDesign
 import com.sidequest.widgetmaker.spec.Starters
 import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.spec.WidgetTheme
+import com.sidequest.widgetmaker.spec.Look
 import com.sidequest.widgetmaker.widget.AiWidget
 import com.sidequest.widgetmaker.widget.AiWidgetReceiver
 import com.sidequest.widgetmaker.widget.PinnedReceiver
@@ -122,6 +123,12 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val apiKey: String get() = store.apiKey
+
+    /** Saves the widget look and redraws widgets (quietly, as the sliders move). */
+    fun setLook(look: Look) {
+        store.look = look
+        viewModelScope.launch { AiWidget.refreshAll(getApplication()) }
+    }
 
     /** Switches every widget's theme right away. */
     fun setTheme(theme: WidgetTheme) {

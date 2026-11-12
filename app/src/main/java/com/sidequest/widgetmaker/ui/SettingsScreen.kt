@@ -44,6 +44,16 @@ import com.sidequest.widgetmaker.feeds.FeedSnapshot
 import com.sidequest.widgetmaker.data.DesignStore
 import com.sidequest.widgetmaker.spec.MaterialSlot
 import com.sidequest.widgetmaker.spec.TapKind
+import com.sidequest.widgetmaker.spec.Look
+import com.sidequest.widgetmaker.spec.Starters
+import com.sidequest.widgetmaker.widget.OneUiBackdrop
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Surface
 import androidx.compose.ui.window.Dialog
@@ -84,7 +94,7 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Section("Widget style", "Restyles the colors of all your widgets. Layouts stay as designed.") {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     WidgetTheme.entries.forEach { theme ->
                         FilterChip(state.theme == theme, { viewModel.setTheme(theme) }, { Text(theme.label) })
                     }
@@ -94,11 +104,19 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                         WidgetTheme.glass -> "Smoky see-through glass with white text. Icons and bars keep their colors."
                         WidgetTheme.material -> "Your phone's colors (wallpaper or One UI color palette, Android 12+), light or dark with your phone."
                         WidgetTheme.original -> "The colors Claude chose for each design."
+                        WidgetTheme.oneui -> "Like Samsung One UI: your wallpaper behind each widget, blurred and frosted, with " +
+                            "text that turns dark or light to suit it and accents in your color palette."
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
+                if (state.theme == WidgetTheme.oneui) OneUiBlurControls(onChanged = viewModel::refreshWidgets)
                 if (state.theme == WidgetTheme.material) MaterialSwatches()
             }
+
+            Section(
+                "Widget look",
+                "Shape and size for all your widgets. Each widget can also pick its own shape in its settings (long-press it).",
+            ) { LookControls(state.theme, onChange = viewModel::setLook) }
 
             Section(
                 "When you tap a widget",
@@ -334,5 +352,92 @@ private fun TapChoices() {
                 )
             }
         }
+    }
+}
+
+/** One UI blur: where the wallpaper comes from, and how to make the blur real. */
+@Composable
+private fun OneUiBlurControls(onChanged: () -> Unit) {
+    val context = LocalContext.current
+    var version by remember { mutableStateOf(0) }
+    val source = remember(version) { OneUiBackdrop.source(context) }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null && OneUiBackdrop.savePicked(context, uri)) {
+            version++
+            onChanged()
+        }
+    }
+    Text(source.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+            Text(if (source == OneUiBackdrop.Source.Picked) "Pick again" else "Pick my wallpaper picture")
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && source != OneUiBackdrop.Source.System) {
+            OutlinedButton(onClick = {
+                runCatching {
+                    context.startActivity(
+                        Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:${context.packageName}")),
+                    )
+                }
+            }) { Text("Allow wallpaper access") }
+        }
+        if (source == OneUiBackdrop.Source.Picked) {
+            TextButton(onClick = { OneUiBackdrop.forgetPicked(context); version++; onChanged() }) { Text("Forget picture") }
+        }
+    }
+    Text(
+        "Pick the same picture as your home screen wallpaper (or allow wallpaper access, which reads it directly and " +
+            "follows when you change it). Then tap an empty spot on each widget once: it learns where it sits, " +
+            "so the blur lines up with what's behind it.",
+        style = MaterialTheme.typography.bodySmall,
+    )
+}
+
+/** Corner radius, edge, size and 1-row ovals, with a live preview. */
+@Composable
+private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
+    val context = LocalContext.current
+    var look by remember { mutableStateOf(DesignStore(context).look) }
+    fun update(new: Look) {
+        look = new
+        onChange(new)
+    }
+    val samples = remember { Starters.all }
+    val wide = samples.first { it.title == "Battery" }.design
+    val square = samples.first { it.title == "Clock and weather" }.design
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        DesignPreview(wide, PreviewSize.Strip, theme, look = look)
+        DesignPreview(square, PreviewSize.Square, theme, look = look)
+    }
+
+    LookSlider(
+        "Corner radius", look.cornerRadius?.let { "$it" } ?: "Design's", (look.cornerRadius ?: 24).toFloat(), 0f..40f, 40,
+    ) { update(look.copy(cornerRadius = it.toInt())) }
+    if (look.cornerRadius != null) TextButton(onClick = { update(look.copy(cornerRadius = null)) }) { Text("Use each design's radius") }
+    LookSlider("Edge", "%.1f".format(look.edge), look.edge, 0f..3f, 12) { update(look.copy(edge = it)) }
+    LookSlider("Size", if (look.inset == 0) "Full" else "-${look.inset}", (16 - look.inset).toFloat(), 0f..16f, 16) {
+        update(look.copy(inset = 16 - it.toInt()))
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Oval 1-row widgets", style = MaterialTheme.typography.bodyLarge)
+            Text("2×1 and 4×1 widgets become pills, no taller than the max height.", style = MaterialTheme.typography.bodySmall)
+        }
+        Switch(checked = look.pillMaxHeight != null, onCheckedChange = { update(look.copy(pillMaxHeight = if (it) 64 else null)) })
+    }
+    look.pillMaxHeight?.let { maxH ->
+        LookSlider("Max height", "$maxH", maxH.toFloat(), 40f..110f, 70) { update(look.copy(pillMaxHeight = it.toInt())) }
+    }
+}
+
+@Composable
+private fun LookSlider(label: String, value: String, current: Float, range: ClosedFloatingPointRange<Float>, steps: Int, onChange: (Float) -> Unit) {
+    Column {
+        Row {
+            Text(label, modifier = Modifier.weight(1f))
+            Text(value, style = MaterialTheme.typography.titleSmall)
+        }
+        Slider(value = current, onValueChange = onChange, valueRange = range, steps = steps - 1)
     }
 }

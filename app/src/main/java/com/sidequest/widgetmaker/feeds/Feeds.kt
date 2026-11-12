@@ -114,7 +114,7 @@ class Feeds(private val context: Context) {
             .addQueryParameter("latitude", place.lat.toString())
             .addQueryParameter("longitude", place.lon.toString())
             .addQueryParameter("current", "temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m")
-            .addQueryParameter("hourly", "temperature_2m,weather_code,is_day")
+            .addQueryParameter("hourly", "temperature_2m,weather_code,is_day,precipitation_probability")
             .addQueryParameter("forecast_hours", "7")
             .addQueryParameter("daily", "temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code")
             .addQueryParameter("timezone", "auto")

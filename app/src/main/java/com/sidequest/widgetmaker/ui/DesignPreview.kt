@@ -50,11 +50,19 @@ import com.sidequest.widgetmaker.spec.Node
 import com.sidequest.widgetmaker.spec.ProgressNode
 import com.sidequest.widgetmaker.spec.RowNode
 import com.sidequest.widgetmaker.spec.SpacerNode
+import com.sidequest.widgetmaker.spec.DividerNode
 import com.sidequest.widgetmaker.spec.TextNode
 import com.sidequest.widgetmaker.spec.Tokens
 import com.sidequest.widgetmaker.spec.VAlign
 import com.sidequest.widgetmaker.spec.Weight
 import com.sidequest.widgetmaker.spec.Role
+import com.sidequest.widgetmaker.spec.Look
+import com.sidequest.widgetmaker.spec.Shapes
+import com.sidequest.widgetmaker.spec.WidgetShape
+import com.sidequest.widgetmaker.data.DesignStore
+import com.sidequest.widgetmaker.widget.PanelArt
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import com.sidequest.widgetmaker.spec.Styler
 import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.spec.WidgetTheme
@@ -68,6 +76,7 @@ import java.util.Calendar
 /** Home-screen sizes to preview a design at (about 2x1, 2x2 and 4x2 cells). */
 enum class PreviewSize(val label: String, val width: Dp, val height: Dp) {
     Small("2×1", 160.dp, 80.dp),
+    Strip("4×1", 320.dp, 80.dp),
     Square("2×2", 160.dp, 160.dp),
     Tall("2×4", 160.dp, 320.dp),
     Wide("4×2", 320.dp, 160.dp),
@@ -79,10 +88,16 @@ enum class PreviewSize(val label: String, val width: Dp, val height: Dp) {
  * rules, same live values), so you can see it before adding it.
  */
 @Composable
-fun DesignPreview(design: WidgetDesign, size: PreviewSize, theme: WidgetTheme, modifier: Modifier = Modifier) {
+fun DesignPreview(
+    design: WidgetDesign,
+    size: PreviewSize,
+    theme: WidgetTheme,
+    modifier: Modifier = Modifier,
+    /** The look to preview; null for the saved one (Settings → Widget look). */
+    look: Look? = null,
+    shape: WidgetShape? = null,
+) {
     val context = LocalContext.current
-    val styler = remember(theme) { AiWidget.styler(context, theme) }
-    val paint = PreviewPaint(styler, isSystemInDarkTheme())
     var tokens by remember { mutableStateOf(AiWidget.currentTokens(context)) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -90,30 +105,35 @@ fun DesignPreview(design: WidgetDesign, size: PreviewSize, theme: WidgetTheme, m
             tokens = AiWidget.currentTokens(context)
         }
     }
-    val shape = RoundedCornerShape(design.cornerRadius.dp)
-    val surface = if (theme == WidgetTheme.glass) {
-        // Same layers as the widget's glass drawable.
-        Modifier
-            .background(Brush.verticalGradient(listOf(Color(0x7A1C2333), Color(0x590B0F1A))))
-            .background(Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x08FFFFFF), Color(0x00FFFFFF))))
-            .border(1.dp, Color(0x4DFFFFFF), shape)
-    } else {
-        Modifier.background(paint(Role.Background, design.background))
-    }
+    val usedLook = look ?: remember { DesignStore(context).look }
+    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, usedLook, shape)
+    // The same panel the home screen widget gets (in the preview, One UI assumes the middle of the screen).
+    val art = remember(theme, panel, usedLook) { PanelArt.build(context, theme, panel, usedLook, null) }
+    val paint = PreviewPaint(art.styler, isSystemInDarkTheme())
     // Shrinks to fit narrow screens, drawn exactly as at full size.
     BoxWithConstraints(modifier) {
         val scale = minOf(1f, maxWidth / size.width)
         Box(Modifier.size(size.width * scale, size.height * scale), contentAlignment = Alignment.Center) {
             Box(
-                Modifier
-                    .requiredSize(size.width, size.height)
-                    .graphicsLayer(scaleX = scale, scaleY = scale)
-                    .clip(shape)
-                    .then(surface)
-                    .padding(design.padding.dp),
+                Modifier.requiredSize(size.width, size.height).graphicsLayer(scaleX = scale, scaleY = scale),
+                contentAlignment = Alignment.Center,
             ) {
-        val fit = Fit(size.width.value.toInt(), size.height.value.toInt())
-                if (fit.shows(design.root)) PreviewNode(design.root, tokens, paint, fit, Modifier.fillMaxSize())
+                Box(Modifier.size(panel.width.dp, panel.height.dp)) {
+                    Image(
+                        bitmap = art.fill.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.FillBounds,
+                        colorFilter = if (art.tinted) ColorFilter.tint(paint(Role.Background, design.background)) else null,
+                    )
+                    art.edge?.let {
+                        Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+                    }
+                    Box(Modifier.fillMaxSize().padding(start = panel.padH.dp, end = panel.padH.dp, top = panel.padTop.dp, bottom = panel.padV.dp)) {
+                        val fit = Fit(panel.width, panel.height)
+                        if (fit.shows(design.root)) PreviewNode(design.root, tokens, paint, fit, Modifier.fillMaxSize())
+                    }
+                }
             }
         }
     }
@@ -187,6 +207,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             drawStopIndicator = {},
         )
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size(node.size.dp))
+        is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color)))
     }
 }
 

@@ -60,6 +60,10 @@ class TapsTest {
             "Local news" to TapKind.news,
             "Nearby events" to TapKind.events,
             "Up next" to TapKind.calendar,
+            "Big date" to TapKind.calendar,
+            "Day cookie" to TapKind.calendar,
+            "Hourly weather" to TapKind.weather,
+            "Battery pill" to TapKind.battery,
             "Battery" to TapKind.battery,
         )
         Starters.all.forEach { s -> assertEquals(s.title, expected[s.title], Taps.mainKind(s.design)) }

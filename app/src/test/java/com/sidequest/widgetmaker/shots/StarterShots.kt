@@ -35,6 +35,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.sidequest.widgetmaker.feeds.FeedSnapshot
 import com.sidequest.widgetmaker.spec.DesignParser
+import com.sidequest.widgetmaker.spec.Look
+import com.sidequest.widgetmaker.spec.WidgetShape
 
 /** Draws every starter at every size and theme into build/screenshots, for looking at by eye. */
 @RunWith(RobolectricTestRunner::class)
@@ -92,16 +94,65 @@ class StarterShots {
         }
     }
 
+    /** Every shape, and the oval 1-row look, in each theme. */
+    @Test
+    fun shapes() {
+        val out = File("build/screenshots").apply { mkdirs() }
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        File(context.filesDir, "feeds.json").writeText(
+            DesignParser.json.encodeToString(FeedSnapshot.serializer(), FeedSnapshot(SAMPLE, System.currentTimeMillis())),
+        )
+        compose.mainClock.autoAdvance = false
+        val clock = Starters.all.first { it.title == "Clock and weather" }.design
+        val pill = Starters.all.first { it.title == "Battery" }.design
+        var theme by mutableStateOf(WidgetTheme.glass)
+        compose.setContent {
+            Column(
+                Modifier.testTag("shot")
+                    .background(Brush.linearGradient(listOf(Color(0xFF4B6CB7), Color(0xFFE1A95F))))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("Shapes · ${theme.label}", color = Color.White)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    WidgetShape.entries.forEach { DesignPreview(clock, PreviewSize.Square, theme, shape = it) }
+                }
+                Text("Oval 1-row widgets, max height 64 · edge 1.5 · radius 32", color = Color.White)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    val look = Look(cornerRadius = 32, edge = 1.5f, pillMaxHeight = 64)
+                    DesignPreview(pill, PreviewSize.Strip, theme, look = look)
+                    DesignPreview(pill, PreviewSize.Small, theme, look = look)
+                    DesignPreview(clock, PreviewSize.Square, theme, look = look)
+                }
+            }
+        }
+        WidgetTheme.entries.forEach { t ->
+            compose.runOnUiThread { theme = t }
+            compose.mainClock.advanceTimeBy(500)
+            compose.waitForIdle()
+            val view = compose.activity.window.decorView
+            val full = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(full))
+            compose.mainClock.advanceTimeBy(500)
+            compose.waitForIdle()
+            full.eraseColor(0)
+            view.draw(Canvas(full))
+            val bounds = compose.onNodeWithTag("shot").fetchSemanticsNode().boundsInRoot
+            val bitmap = Bitmap.createBitmap(full, 0, 0, bounds.right.toInt().coerceAtMost(full.width), bounds.bottom.toInt().coerceAtMost(full.height))
+            File(out, "shapes-${t.name}.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+    }
+
     private companion object {
         val SAMPLE = mapOf(
             "weather.temp" to "72°", "weather.feelsLike" to "70°", "weather.high" to "78°", "weather.low" to "55°",
             "weather.rain" to "40%", "weather.wind" to "9 mph", "weather.condition" to "Partly cloudy",
             "weather.icon" to "cloud", "weather.place" to "Austin",
-            "weather.h1.time" to "3 PM", "weather.h1.temp" to "73°", "weather.h1.icon" to "sun",
-            "weather.h2.time" to "4 PM", "weather.h2.temp" to "74°", "weather.h2.icon" to "cloud",
-            "weather.h3.time" to "5 PM", "weather.h3.temp" to "71°", "weather.h3.icon" to "rain",
-            "weather.h4.time" to "6 PM", "weather.h4.temp" to "68°", "weather.h4.icon" to "rain",
-            "weather.h5.time" to "7 PM", "weather.h5.temp" to "64°", "weather.h5.icon" to "moon",
+            "weather.h1.time" to "3 PM", "weather.h1.temp" to "73°", "weather.h1.rain" to "10%", "weather.h1.icon" to "sun",
+            "weather.h2.time" to "4 PM", "weather.h2.temp" to "74°", "weather.h2.rain" to "20%", "weather.h2.icon" to "cloud",
+            "weather.h3.time" to "5 PM", "weather.h3.temp" to "71°", "weather.h3.rain" to "60%", "weather.h3.icon" to "rain",
+            "weather.h4.time" to "6 PM", "weather.h4.temp" to "68°", "weather.h4.rain" to "80%", "weather.h4.icon" to "rain",
+            "weather.h5.time" to "7 PM", "weather.h5.temp" to "64°", "weather.h5.rain" to "30%", "weather.h5.icon" to "moon",
             "weather.d1.day" to "Thu", "weather.d1.high" to "75°", "weather.d1.low" to "52°", "weather.d1.icon" to "sun",
             "weather.d2.day" to "Fri", "weather.d2.high" to "68°", "weather.d2.low" to "49°", "weather.d2.icon" to "storm",
             "weather.d3.day" to "Sat", "weather.d3.high" to "70°", "weather.d3.low" to "50°", "weather.d3.icon" to "cloud",

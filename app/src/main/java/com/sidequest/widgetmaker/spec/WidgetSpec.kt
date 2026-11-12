@@ -17,6 +17,8 @@ data class WidgetDesign(
     val background: String = "#E61E1E2E",
     val cornerRadius: Int = 24,
     val padding: Int = 14,
+    /** The panel's outline: rounded, pill, circle, squircle, arch or cookie. */
+    val shape: WidgetShape = WidgetShape.rounded,
     val root: Node,
 )
 
@@ -37,7 +39,7 @@ enum class Weight { light, normal, medium, bold }
  * Icons the widget can draw (each is a drawable in the app). "weather" is
  * live: it shows sun, moon, cloud, rain, snow or storm for the current weather.
  */
-enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, weather }
+enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, umbrella, pin, flame, egg, paw, steps, weather }
 
 @Serializable
 sealed interface Node {
@@ -155,6 +157,17 @@ data class ProgressNode(
     val color: String = "#FF7CF29C",
     val trackColor: String = "#33FFFFFF",
     val height: Int = 6,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/** A thin line between rows, [thickness] dp. */
+@Serializable
+@SerialName("divider")
+data class DividerNode(
+    val color: String = "#26FFFFFF",
+    val thickness: Int = 1,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

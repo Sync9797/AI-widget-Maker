@@ -19,7 +19,7 @@ Download `AIWidgetMaker.apk` on your phone and open it.
   design**. Changes ("make it purple") work the same way.
 - **Free, no AI:** start from one of the ready-made designs: big clock, clock
   and weather, forecast, crypto ticker, commute, local news, nearby events,
-  up next (calendar), battery. Save it as it is, or change it with Claude.
+  up next (calendar), big date, day cookie, hourly weather, battery pill, battery. Save it as it is, or change it with Claude.
 - **Automatic, paid per use:** add an Anthropic API key (from
   console.anthropic.com) in **Settings** and designs are made in the app, a few
   cents each. The key is stored only on the phone.
@@ -31,6 +31,16 @@ clock gains the battery when it's wider, then the weather, then an hourly
 forecast as it grows taller; a news widget shows more headlines the taller it
 is. Claude designs every widget this way (each element can say which sizes it
 appears at), and the app previews each design at 2×1, 2×2, 2×4, 4×2 and 4×4.
+
+## Shapes and look
+
+Widgets come in six shapes: rounded, pill, circle, squircle, arch (round top)
+and Material 3 Expressive's scalloped cookie. A design picks one, and each
+widget can pick its own in its settings.
+
+**Settings → Widget look** sets, for all widgets: corner radius, edge
+thickness, size (how much room around the panel), and **oval 1-row widgets**
+with a max height, like One UI's "Adjust height for 2x1 & 4x1".
 
 ## Tap to open
 
@@ -59,6 +69,12 @@ layout always stays as designed:
   launcher looks the colors up itself each time it draws the widget, so they
   match the phone's current palette; Settings shows them as swatches.
 - **Original colors**: the palette Claude chose for each design.
+- **One UI**: like Samsung One UI 9. The part of your wallpaper behind each
+  widget, blurred and frosted, with text that turns dark or light to suit it
+  and accents in your color palette. Launchers don't let widgets blur, so the
+  app does it: pick your wallpaper picture once in Settings (or allow
+  wallpaper access), then tap an empty spot on each widget once so it learns
+  where it sits and the blur lines up.
 
 Each widget can also have its own style: long-press it, tap its settings, and
 pick one (or keep "App default"). The same screen has **Refresh now**, which

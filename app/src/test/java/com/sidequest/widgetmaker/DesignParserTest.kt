@@ -150,3 +150,54 @@ class WidgetThemeTest {
         assertTrue(!glass.followsDarkMode)
     }
 }
+
+class ShapesAndBlurTest {
+    private val design = DesignParser.parse("""{"cornerRadius":20,"padding":14,"root":{"type":"text","text":"x"}}""")
+
+    @Test
+    fun ovalOneRowWidgets() {
+        val look = com.sidequest.widgetmaker.spec.Look(pillMaxHeight = 64)
+        val p = com.sidequest.widgetmaker.spec.Shapes.panel(320, 90, design, look)
+        assertEquals(com.sidequest.widgetmaker.spec.WidgetShape.pill, p.shape)
+        assertEquals(64, p.height)
+        assertEquals(32, p.radius)
+        // Taller widgets keep their shape.
+        assertEquals(com.sidequest.widgetmaker.spec.WidgetShape.rounded, com.sidequest.widgetmaker.spec.Shapes.panel(320, 160, design, look).shape)
+    }
+
+    @Test
+    fun lookOverridesRadiusAndInset() {
+        val look = com.sidequest.widgetmaker.spec.Look(cornerRadius = 36, inset = 8)
+        val p = com.sidequest.widgetmaker.spec.Shapes.panel(160, 160, design, look)
+        assertEquals(144, p.width)
+        assertEquals(36, p.radius)
+        assertEquals(20, com.sidequest.widgetmaker.spec.Shapes.panel(160, 160, design, com.sidequest.widgetmaker.spec.Look()).radius)
+    }
+
+    @Test
+    fun circlesAreSquare() {
+        val p = com.sidequest.widgetmaker.spec.Shapes.panel(320, 160, design, com.sidequest.widgetmaker.spec.Look(), com.sidequest.widgetmaker.spec.WidgetShape.circle)
+        assertEquals(p.width, p.height)
+        assertEquals(80, p.radius)
+    }
+
+    @Test
+    fun wallpaperAreaUnderAWidget() {
+        val B = com.sidequest.widgetmaker.spec.Backdrop
+        // A 2000x2000 wallpaper on a 1000x2000 screen is scaled 1x and centered: 500 px cut off each side.
+        val area = B.wallpaperArea(2000, 2000, 1000, 2000, com.sidequest.widgetmaker.spec.Backdrop.Box(100, 200, 300, 400))
+        assertEquals(com.sidequest.widgetmaker.spec.Backdrop.Box(600, 200, 800, 400), area)
+    }
+
+    @Test
+    fun blurSmoothsAndBrightnessPicksTextColor() {
+        val B = com.sidequest.widgetmaker.spec.Backdrop
+        val w = 20; val h = 20
+        val px = IntArray(w * h) { i -> if ((i % w) < 10) 0xFF000000.toInt() else 0xFFFFFFFF.toInt() }
+        B.blur(px, w, h, radius = 3)
+        val mid = (px[10 * w + 9] shr 16) and 0xFF
+        assertTrue("edge is blended: $mid", mid in 60..200)
+        assertTrue(B.luminance(IntArray(16) { 0xFFF0F0F0.toInt() }) > B.LIGHT_ABOVE)
+        assertTrue(B.luminance(IntArray(16) { 0xFF202020.toInt() }) < B.LIGHT_ABOVE)
+    }
+}

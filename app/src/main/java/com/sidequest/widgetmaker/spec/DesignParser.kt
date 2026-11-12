@@ -119,6 +119,12 @@ object DesignParser {
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
             height = node.height.coerceIn(2, 24),
         )
+        is DividerNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            color = Colors.orDefault(node.color, "#26FFFFFF"),
+            thickness = node.thickness.coerceIn(1, 4),
+        )
         is SpacerNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),size = node.size.coerceIn(0, 64))

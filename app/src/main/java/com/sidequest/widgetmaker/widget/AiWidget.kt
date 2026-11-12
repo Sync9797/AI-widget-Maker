@@ -58,6 +58,7 @@ import com.sidequest.widgetmaker.spec.Node
 import com.sidequest.widgetmaker.spec.ProgressNode
 import com.sidequest.widgetmaker.spec.RowNode
 import com.sidequest.widgetmaker.spec.SpacerNode
+import com.sidequest.widgetmaker.spec.DividerNode
 import com.sidequest.widgetmaker.spec.TextNode
 import com.sidequest.widgetmaker.spec.Tokens
 import com.sidequest.widgetmaker.spec.VAlign
@@ -71,6 +72,12 @@ import com.sidequest.widgetmaker.spec.WidgetDesign
 import com.sidequest.widgetmaker.ui.MainActivity
 import com.sidequest.widgetmaker.ui.TapIntents
 import com.sidequest.widgetmaker.spec.Taps
+import com.sidequest.widgetmaker.spec.Backdrop
+import com.sidequest.widgetmaker.spec.Baseline
+import com.sidequest.widgetmaker.spec.Look
+import com.sidequest.widgetmaker.spec.Shapes
+import com.sidequest.widgetmaker.spec.WidgetShape
+import androidx.glance.layout.ContentScale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -86,16 +93,19 @@ class AiWidget : GlanceAppWidget() {
         val store = DesignStore(context)
         val saved = withContext(Dispatchers.IO) { store.designFor(appWidgetId) }
         val tokens = currentTokens(context)
-        val styler = styler(context, store.themeFor(appWidgetId))
+        val theme = store.themeFor(appWidgetId)
+        val look = store.look
+        val shape = store.shapeFor(appWidgetId)
+        val onScreen = store.boundsFor(appWidgetId)
         provideContent {
-            val openApp = GlanceModifier.clickable(actionStartActivity<MainActivity>())
             if (saved == null) {
-                EmptyWidget(openApp)
+                EmptyWidget(GlanceModifier.clickable(actionStartActivity<MainActivity>()))
             } else {
                 // The widget as a whole opens the app for what it shows (or this app, if nothing fits).
+                // It goes through the tap screen, which also learns where the widget is (for the One UI blur).
                 val whole = Taps.forWidget(saved.design)?.let { Taps.resolve(it, tokens) }
-                val open = whole?.let { GlanceModifier.clickable(actionStartActivity(TapIntents.intent(context, it))) } ?: openApp
-                DesignWidget(saved.design, tokens, styler, open)
+                val open = GlanceModifier.clickable(actionStartActivity(TapIntents.root(context, appWidgetId, whole)))
+                DesignWidget(saved.design, tokens, theme, look, shape, onScreen, open)
             }
         }
     }
@@ -108,8 +118,24 @@ class AiWidget : GlanceAppWidget() {
          * from the same resources the widget hands to the launcher (used for
          * the in-app preview; the widget itself never resolves them).
          */
-        fun styler(context: Context, theme: WidgetTheme): Styler =
-            Styler(theme) { slot, _ -> context.getColor(materialRes(slot)) }
+        fun styler(context: Context, theme: WidgetTheme, backdropLight: Boolean = false): Styler =
+            if (theme == WidgetTheme.oneui) {
+                Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
+            } else {
+                Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) })
+            }
+
+        /**
+         * One UI's accents: the phone's palette in a tone that reads over the
+         * frosted panel (darker over light, lighter over dark), whatever the
+         * phone's light or dark mode.
+         */
+        private fun oneUiTone(context: Context, slot: MaterialSlot, dark: Boolean): Int {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && slot == MaterialSlot.Primary) {
+                return context.getColor(if (dark) android.R.color.system_accent1_200 else android.R.color.system_accent1_600)
+            }
+            return Baseline.color(slot, dark)
+        }
 
         /** The color resource for a Material 3 slot (res/color*, per Android version and light or dark). */
         fun materialRes(slot: MaterialSlot): Int = when (slot) {
@@ -188,24 +214,41 @@ private fun EmptyWidget(modifier: GlanceModifier) {
 }
 
 @Composable
-private fun DesignWidget(design: WidgetDesign, tokens: Tokens, styler: Styler, modifier: GlanceModifier) {
-    val paint = Paint(styler)
-    val surface = if (styler.theme == WidgetTheme.glass) {
-        // Glass: a translucent tint with a highlight and a bright edge, drawn from a drawable.
-        modifier.background(ImageProvider(R.drawable.widget_glass))
-    } else {
-        modifier.background(paint(Role.Background, design.background))
-    }
-    Box(
-        modifier = surface
-            .fillMaxSize()
-            .cornerRadius(design.cornerRadius.dp)
-            .padding(design.padding.dp),
-    ) {
-        // The widget's size right now: elements with size rules appear or hide as it's resized.
-        val size = LocalSize.current
-        val fit = Fit(size.width.value.toInt(), size.height.value.toInt())
-        if (fit.shows(design.root)) GlanceNode(design.root, tokens, paint, fit, GlanceModifier.fillMaxSize())
+private fun DesignWidget(
+    design: WidgetDesign,
+    tokens: Tokens,
+    theme: WidgetTheme,
+    look: Look,
+    shape: WidgetShape?,
+    onScreen: Backdrop.Box?,
+    open: GlanceModifier,
+) {
+    val context = androidx.glance.LocalContext.current
+    // The widget's size right now: its panel, and the elements with size rules, follow it.
+    val size = LocalSize.current
+    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, look, shape)
+    val art = PanelArt.build(context, theme, panel, look, onScreen)
+    val paint = Paint(art.styler)
+    Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(GlanceModifier.size(panel.width.dp, panel.height.dp).then(open)) {
+            // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.
+            Image(
+                provider = ImageProvider(art.fill),
+                contentDescription = null,
+                modifier = GlanceModifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds,
+                colorFilter = if (art.tinted) ColorFilter.tint(paint(Role.Background, design.background)) else null,
+            )
+            art.edge?.let {
+                Image(ImageProvider(it), contentDescription = null, modifier = GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+            }
+            Box(
+                GlanceModifier.fillMaxSize().padding(start = panel.padH.dp, end = panel.padH.dp, top = panel.padTop.dp, bottom = panel.padV.dp),
+            ) {
+                val fit = Fit(panel.width, panel.height)
+                if (fit.shows(design.root)) GlanceNode(design.root, tokens, paint, fit, GlanceModifier.fillMaxSize())
+            }
+        }
     }
 }
 
@@ -283,6 +326,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             backgroundColor = paint(Role.Track, node.trackColor),
         )
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size(node.size.dp))
+        is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color))) {}
     }
 }
 
@@ -373,5 +417,11 @@ fun iconRes(name: IconName): Int = when (name) {
     IconName.news -> R.drawable.icon_news
     IconName.ticket -> R.drawable.icon_ticket
     IconName.coin -> R.drawable.icon_coin
+    IconName.umbrella -> R.drawable.icon_umbrella
+    IconName.pin -> R.drawable.icon_pin
+    IconName.flame -> R.drawable.icon_flame
+    IconName.egg -> R.drawable.icon_egg
+    IconName.paw -> R.drawable.icon_paw
+    IconName.steps -> R.drawable.icon_steps
     IconName.weather -> R.drawable.icon_sun
 }

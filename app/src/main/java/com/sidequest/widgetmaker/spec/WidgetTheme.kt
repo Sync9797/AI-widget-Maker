@@ -11,6 +11,12 @@ enum class WidgetTheme(val label: String) {
     material("Material 3"),
     /** The colors Claude chose for each design. */
     original("Original colors"),
+    /**
+     * Samsung One UI's look: the wallpaper behind the widget, blurred and
+     * frosted, big rounded corners, text that's dark or light to suit what's
+     * behind it, and accents in the phone's color palette.
+     */
+    oneui("One UI"),
 }
 
 /** What a color is used for, so a theme knows what to replace it with. */
@@ -46,6 +52,8 @@ object Baseline {
 class Styler(
     val theme: WidgetTheme,
     private val material: (MaterialSlot, Boolean) -> Int = Baseline::color,
+    /** One UI: whether the frosted wallpaper behind this widget is light (so text is dark). */
+    val backdropLight: Boolean = false,
 ) {
 
     /** Whether light and dark mode can give different colors (only Material 3 follows the phone). */
@@ -80,6 +88,17 @@ class Styler(
                 Role.Accent, Role.TrendUp, Role.TrendDown -> original
             }
             WidgetTheme.material -> material(materialSlot(role, design), dark)
+            WidgetTheme.oneui -> when (role) {
+                Role.Background -> if (backdropLight) 0x8CF4F4F6.toInt() else 0x73202024
+                Role.Container -> if (backdropLight) 0x47FFFFFF else 0x24FFFFFF
+                // Text suits what's behind it, keeping the design's fade.
+                Role.Text -> withAlpha(if (backdropLight) 0x111114 else 0xFFFFFF, alphaOf(original).coerceAtLeast(0xA6))
+                // Accents in the phone's palette (One UI's color palette): darker over light, lighter over dark.
+                Role.Accent -> material(MaterialSlot.Primary, !backdropLight)
+                Role.Track -> withAlpha(material(MaterialSlot.Primary, !backdropLight), 0x40)
+                Role.TrendUp -> material(MaterialSlot.Up, !backdropLight)
+                Role.TrendDown -> material(MaterialSlot.Down, !backdropLight)
+            }
         }
     }
 

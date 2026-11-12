@@ -63,11 +63,13 @@ object FeedParsers {
         val temps = hourly["temperature_2m"] as? JsonArray
         val codes = hourly["weather_code"] as? JsonArray
         val days = hourly["is_day"] as? JsonArray
+        val rain = hourly["precipitation_probability"] as? JsonArray
         // The first hour returned is the current one; the forecast starts at the next.
         for (i in 1..5) {
             val time = times.getOrNull(i)?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() } ?: break
             out["weather.h$i.time"] = time.format(DateTimeFormatter.ofPattern("h a", Locale.US))
             out["weather.h$i.temp"] = degrees(temps?.at(i))
+            out["weather.h$i.rain"] = rain?.at(i)?.roundToInt()?.let { "$it%" } ?: "--"
             out["weather.h$i.icon"] = weatherIcon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
         }
         val daily = root["daily"].obj()

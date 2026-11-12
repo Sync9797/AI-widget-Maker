@@ -61,7 +61,7 @@ object Taps {
                 is ClockNode -> add(if (node.format.contains('h', ignoreCase = true)) TapKind.clock else TapKind.calendar)
                 is IconNode -> add(if (node.name == IconName.weather || node.live?.contains("weather.") == true) TapKind.weather else null)
                 is ProgressNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
-                is SpacerNode -> Unit
+                is SpacerNode, is DividerNode -> Unit
             }
         }
         visit(design.root)

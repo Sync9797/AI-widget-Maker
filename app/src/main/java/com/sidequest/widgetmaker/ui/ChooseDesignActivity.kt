@@ -35,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.Alignment
 import com.sidequest.widgetmaker.spec.WidgetTheme
+import com.sidequest.widgetmaker.spec.WidgetShape
 import com.sidequest.widgetmaker.widget.updateWidget
 import kotlinx.coroutines.launch
 
@@ -61,6 +62,7 @@ class ChooseDesignActivity : ComponentActivity() {
             // null: follow the app's theme (Settings → Widget style).
             var own by remember { mutableStateOf(if (store.hasOwnTheme(appWidgetId)) store.themeFor(appWidgetId) else null) }
             var picked by remember { mutableStateOf(store.designFor(appWidgetId)?.id) }
+            var shape by remember { mutableStateOf(store.shapeFor(appWidgetId)) }
             val theme = own ?: store.theme
 
             var refreshing by remember { mutableStateOf(false) }
@@ -122,6 +124,22 @@ class ChooseDesignActivity : ComponentActivity() {
                             }
                         }
 
+                        Text("Shape", style = MaterialTheme.typography.titleMedium)
+                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(shape == null, {
+                                shape = null
+                                store.setShapeFor(appWidgetId, null)
+                                apply()
+                            }, { Text("Design's") })
+                            WidgetShape.entries.forEach { s ->
+                                FilterChip(shape == s, {
+                                    shape = s
+                                    store.setShapeFor(appWidgetId, s)
+                                    apply()
+                                }, { Text(s.label) })
+                            }
+                        }
+
                         Text("Design", style = MaterialTheme.typography.titleMedium)
                         if (designs.isEmpty()) {
                             Text("You haven't saved one yet. Make one in the app (or pick a ready-made one) and it will show up here.")
@@ -144,7 +162,7 @@ class ChooseDesignActivity : ComponentActivity() {
                                     style = MaterialTheme.typography.titleMedium,
                                     color = if (saved.id == picked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 )
-                                DesignPreview(saved.design, PreviewSize.Square, theme)
+                                DesignPreview(saved.design, PreviewSize.Square, theme, shape = shape)
                             }
                         }
                         Button(onClick = { apply(finishAfter = true) }, modifier = Modifier.fillMaxWidth()) { Text("Done") }

@@ -166,6 +166,9 @@ object OneUiBackdrop {
         return bitmap
     }
 
+    /** Which screen this is, like "1080x2400" (a foldable's cover and inner screens differ). */
+    fun screenKey(context: Context): String = screenSize(context).let { (w, h) -> "${w}x$h" }
+
     private fun screenSize(context: Context): Pair<Int, Int> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val bounds = context.getSystemService(WindowManager::class.java).maximumWindowMetrics.bounds

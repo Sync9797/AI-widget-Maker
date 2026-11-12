@@ -284,7 +284,7 @@ private class Inputs(
                 },
                 look = store.look,
                 shape = store.shapeFor(appWidgetId),
-                onScreen = store.boundsFor(appWidgetId),
+                onScreen = store.boundsFor(appWidgetId, OneUiBackdrop.screenKey(context)),
                 art = store.designFor(appWidgetId)?.design?.let { if (usesArt(it.root)) com.sidequest.widgetmaker.music.Music.art(context) else null },
             )
         }

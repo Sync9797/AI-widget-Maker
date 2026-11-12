@@ -138,6 +138,20 @@ class ChooseDesignActivity : ComponentActivity() {
                             }
                         }
 
+                        // One UI and Ambient blur the wallpaper behind the widget: say whether this one knows where it is.
+                        if (theme.frosted) {
+                            val known = store.knowsPlace(appWidgetId, com.sidequest.widgetmaker.widget.OneUiBackdrop.screenKey(this@ChooseDesignActivity))
+                            Text(
+                                if (known) {
+                                    "Blur lined up with your wallpaper on this screen. Moved the widget? Tap it once to line it up again."
+                                } else {
+                                    "Blur not lined up yet on this screen: tap the widget once and it learns where it sits. " +
+                                        "(Android only tells apps where a widget is when it's tapped. On a foldable, do this once on each screen.)"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+
                         Text("Shape", style = MaterialTheme.typography.titleMedium)
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(shape == null, {

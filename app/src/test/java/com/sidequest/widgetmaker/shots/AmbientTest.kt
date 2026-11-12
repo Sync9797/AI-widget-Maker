@@ -50,3 +50,22 @@ class AmbientTest {
         assertFalse(WidgetTheme.ambient in WidgetTheme.everywhere)
     }
 }
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class PlacePerScreenTest {
+    @Test
+    fun eachScreenKeepsItsOwnPlace() {
+        val store = com.sidequest.widgetmaker.data.DesignStore(ApplicationProvider.getApplicationContext())
+        val cover = com.sidequest.widgetmaker.spec.Backdrop.Box(40, 900, 400, 1260)
+        val inner = com.sidequest.widgetmaker.spec.Backdrop.Box(100, 700, 700, 1100)
+        assertFalse(store.knowsPlace(7, "1080x2520"))
+        assertTrue(store.setBoundsFor(7, cover, "1080x2520"))
+        assertFalse(store.setBoundsFor(7, cover, "1080x2520"))
+        assertTrue(store.setBoundsFor(7, inner, "2160x1856"))
+        assertEquals(cover, store.boundsFor(7, "1080x2520"))
+        assertEquals(inner, store.boundsFor(7, "2160x1856"))
+        store.forget(7)
+        assertFalse(store.knowsPlace(7, "2160x1856"))
+    }
+}

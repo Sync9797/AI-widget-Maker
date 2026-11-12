@@ -63,8 +63,10 @@ class DesignStore(context: Context) {
     }
 
     fun forget(appWidgetId: Int) {
-        prefs.edit().remove(widgetKey(appWidgetId)).remove("widget_theme_$appWidgetId")
-            .remove("widget_shape_$appWidgetId").remove("widget_bounds_$appWidgetId").apply()
+        val edit = prefs.edit().remove(widgetKey(appWidgetId)).remove("widget_theme_$appWidgetId")
+            .remove("widget_shape_$appWidgetId").remove("widget_bounds_$appWidgetId")
+        prefs.all.keys.filter { it.startsWith("widget_bounds_${appWidgetId}_") }.forEach { edit.remove(it) }
+        edit.apply()
     }
 
     /** How every widget is colored (Settings). */
@@ -114,14 +116,25 @@ class DesignStore(context: Context) {
     }
 
     /** Where a widget's panel is on the home screen, in pixels (learned when it's tapped), for the One UI blur. */
-    fun boundsFor(appWidgetId: Int): Backdrop.Box? =
-        prefs.getString("widget_bounds_$appWidgetId", null)?.split(',')?.mapNotNull { it.toIntOrNull() }
-            ?.takeIf { it.size == 4 }?.let { Backdrop.Box(it[0], it[1], it[2], it[3]) }
+    /**
+     * Where a widget is on [screen] (like "1080x2400"), learned from a tap.
+     * Each screen keeps its own (a foldable's cover and inner screens differ);
+     * a place saved before screens were told apart is used until a tap
+     * teaches this screen's.
+     */
+    fun boundsFor(appWidgetId: Int, screen: String? = null): Backdrop.Box? {
+        val raw = screen?.let { prefs.getString("widget_bounds_${appWidgetId}_$it", null) }
+            ?: prefs.getString("widget_bounds_$appWidgetId", null)
+        return raw?.split(',')?.mapNotNull { it.toIntOrNull() }?.takeIf { it.size == 4 }?.let { Backdrop.Box(it[0], it[1], it[2], it[3]) }
+    }
 
-    /** Saves a widget's place; true if it changed. */
-    fun setBoundsFor(appWidgetId: Int, box: Backdrop.Box): Boolean {
-        if (boundsFor(appWidgetId) == box) return false
-        prefs.edit().putString("widget_bounds_$appWidgetId", "${box.left},${box.top},${box.right},${box.bottom}").apply()
+    /** Whether this widget's place on [screen] was learned (else the blur guesses the middle of the screen). */
+    fun knowsPlace(appWidgetId: Int, screen: String) = prefs.contains("widget_bounds_${appWidgetId}_$screen")
+
+    /** Saves a widget's place on [screen]; true if it changed. */
+    fun setBoundsFor(appWidgetId: Int, box: Backdrop.Box, screen: String): Boolean {
+        if (knowsPlace(appWidgetId, screen) && boundsFor(appWidgetId, screen) == box) return false
+        prefs.edit().putString("widget_bounds_${appWidgetId}_$screen", "${box.left},${box.top},${box.right},${box.bottom}").apply()
         return true
     }
 
@@ -139,6 +152,6 @@ class DesignStore(context: Context) {
 
     private companion object {
         val LOCK = Any()
-        val WIDGET_KEY = Regex("widget_(?:theme_|shape_|bounds_)?(-?\\d+)")
+        val WIDGET_KEY = Regex("widget_(?:theme_|shape_|bounds_)?(-?\\d+)(?:_\\d+x\\d+)?")
     }
 }

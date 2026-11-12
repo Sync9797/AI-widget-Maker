@@ -1,5 +1,6 @@
 package com.sidequest.widgetmaker.ui
 
+import com.sidequest.widgetmaker.widget.OneUiBackdrop
 import android.content.ActivityNotFoundException
 import android.content.ContentUris
 import android.content.Context
@@ -104,7 +105,7 @@ private fun TapActivity.learnPlace() {
     val bounds = intent?.sourceBounds ?: return
     if (id < 0 || bounds.width() < 8 || bounds.height() < 8) return
     val store = DesignStore(this)
-    val moved = store.setBoundsFor(id, Backdrop.Box(bounds.left, bounds.top, bounds.right, bounds.bottom))
+    val moved = store.setBoundsFor(id, Backdrop.Box(bounds.left, bounds.top, bounds.right, bounds.bottom), OneUiBackdrop.screenKey(this))
     if (moved && store.themeFor(id).frosted) {
         val app = applicationContext
         CoroutineScope(Dispatchers.Default).launch { runCatching { updateWidget(app, id) } }

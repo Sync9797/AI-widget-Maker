@@ -64,6 +64,12 @@ class TapsTest {
             "Day cookie" to TapKind.calendar,
             "Hourly weather" to TapKind.weather,
             "Battery pill" to TapKind.battery,
+            "Agenda card" to TapKind.calendar,
+            "Steps pill" to TapKind.health,
+            "Activity" to TapKind.health,
+            "Monster Quest eggs" to TapKind.game,
+            "Monster Quest adventures" to TapKind.game,
+            "Monster Quest day" to TapKind.game,
             "Battery" to TapKind.battery,
         )
         Starters.all.forEach { s -> assertEquals(s.title, expected[s.title], Taps.mainKind(s.design)) }

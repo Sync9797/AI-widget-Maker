@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.sidequest.widgetmaker.data.DesignStore
 import com.sidequest.widgetmaker.feeds.Feeds
+import com.sidequest.widgetmaker.feeds.MonsterQuest
 import com.sidequest.widgetmaker.spec.TapAction
 import com.sidequest.widgetmaker.spec.TapKind
 import com.sidequest.widgetmaker.spec.Backdrop
@@ -190,10 +191,11 @@ object AppOpener {
                 Intent(Intent.ACTION_VIEW, Uri.parse("geo:${it.lat},${it.lon}?q=${it.lat},${it.lon}(${Uri.encode(label)})"))
             }
         }
-        TapKind.weather, TapKind.crypto, TapKind.news, TapKind.events -> null
+        TapKind.game -> context.packageManager.getLaunchIntentForPackage(MonsterQuest.PACKAGE)
+        TapKind.weather, TapKind.crypto, TapKind.news, TapKind.events, TapKind.health -> null
     }
 
-    fun hasSystemDefault(kind: TapKind) = kind in setOf(TapKind.clock, TapKind.calendar, TapKind.battery, TapKind.commute)
+    fun hasSystemDefault(kind: TapKind) = kind in setOf(TapKind.clock, TapKind.calendar, TapKind.battery, TapKind.commute, TapKind.game)
 
     fun openChoice(context: Context, kind: TapKind, choice: String): Boolean {
         if (choice == WEB) return start(context, Intent(Intent.ACTION_VIEW, Uri.parse(webPage(context, kind))))
@@ -214,6 +216,8 @@ object AppOpener {
             TapKind.clock -> search("time")
             TapKind.commute -> "https://www.google.com/maps"
             TapKind.battery -> search("battery tips")
+            TapKind.health -> "https://health.google/health-connect-android/"
+            TapKind.game -> "https://github.com/Sync9797/Side-Quest-/releases/latest"
         }
     }
 
@@ -251,6 +255,8 @@ object AppOpener {
         TapKind.clock to listOf("clock", "alarm"),
         TapKind.commute to listOf("maps", "waze", "navigation", "transit", "citymapper", "here we go"),
         TapKind.battery to listOf("battery", "device care", "settings"),
+        TapKind.health to listOf("health", "whoop", "fit", "fitbit", "garmin", "strava", "oura", "polar", "zepp", "samsung health"),
+        TapKind.game to listOf("monster quest", "side quest", "monsterquest"),
     )
 
     private fun fits(kind: TapKind, app: App): Boolean {

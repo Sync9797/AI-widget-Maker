@@ -173,6 +173,17 @@ class StarterShots {
             "calendar.2" to "Team standup", "calendar.2.when" to "Tomorrow 9 AM",
             "calendar.3" to "Mom's birthday", "calendar.3.when" to "Fri",
             "calendar.4" to "Soccer practice", "calendar.4.when" to "Sat 10 AM", "calendar.today" to "1 more today",
+            "health.steps" to "3,508", "health.stepsPct" to "44", "health.stepGoal" to "8,000", "health.kcal" to "412",
+            "health.heart" to "72", "health.effort" to "8.4", "health.workout" to "Run", "health.workout.duration" to "32 min",
+            "health.workout.when" to "Today 7 AM", "health.sleep" to "7h 12m", "health.sleep.deep" to "1h 24m",
+            "mq.hero" to "Aaron", "mq.level" to "23", "mq.steps" to "3,508", "mq.torches" to "4", "mq.sleep" to "7h 12m",
+            "mq.eggs" to "3", "mq.eggs.ready" to "1",
+            "mq.egg.1" to "Ember Pup", "mq.egg.1.progress" to "100", "mq.egg.1.left" to "Ready to hatch!",
+            "mq.egg.2" to "Tide Sprite", "mq.egg.2.progress" to "62", "mq.egg.2.left" to "1.2 km to go",
+            "mq.egg.3" to "Gale Finch", "mq.egg.3.progress" to "15", "mq.egg.3.left" to "4.3 km to go",
+            "mq.adventures" to "2",
+            "mq.adv.1" to "Clear the cellar", "mq.adv.1.team" to "Ember, Pip", "mq.adv.1.left" to "1 h 20 min left", "mq.adv.1.progress" to "40",
+            "mq.adv.2" to "Scout the river", "mq.adv.2.team" to "Tide", "mq.adv.2.left" to "Done! Collect your loot", "mq.adv.2.progress" to "100",
             "updated" to "3:12 PM",
         )
     }

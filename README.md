@@ -19,7 +19,7 @@ Download `AIWidgetMaker.apk` on your phone and open it.
   design**. Changes ("make it purple") work the same way.
 - **Free, no AI:** start from one of the ready-made designs: big clock, clock
   and weather, forecast, crypto ticker, commute, local news, nearby events,
-  up next (calendar), big date, day cookie, hourly weather, battery pill, battery. Save it as it is, or change it with Claude.
+  up next (calendar), big date, day cookie, hourly weather, battery pill, agenda card, steps pill, activity, Monster Quest eggs, adventures and day, battery. Save it as it is, or change it with Claude.
 - **Automatic, paid per use:** add an Anthropic API key (from
   console.anthropic.com) in **Settings** and designs are made in the app, a few
   cents each. The key is stored only on the phone.
@@ -94,6 +94,8 @@ check it works:
 | Commute time with live traffic | TomTom | Free key from [developer.tomtom.com](https://developer.tomtom.com), plus home and work addresses. |
 | Nearby events (up to 5) | Local news (Google News), or Ticketmaster | Your town. No account: event-like headlines first, crime and accident news left out, and dates read from headlines ("this weekend", "Sat", "Nov 14"). For exact listings, optionally add a free Ticketmaster key. |
 | Your calendar (next 7 days) | The calendars on your phone | Turn on **Your calendar** and allow access. Read on the phone only. |
+| Exercise & health: steps, heart rate, kcal, workouts, sleep, effort | Health Connect (Samsung Health, WHOOP, Google Fit, Fitbit, Garmin...) | Turn on **Exercise & health** and allow access. In Samsung Health: Settings → Health Connect. "Effort" is estimated from heart rate (WHOOP keeps its strain score private). |
+| Monster Quest: eggs, adventures, steps, sleep | The game itself | Install Monster Quest (3.23 or newer); widgets update whenever the game changes. |
 
 Then just ask for it, for example "my commute time and today's weather" or
 "a crypto ticker for my coins".

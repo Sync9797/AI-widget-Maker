@@ -130,7 +130,7 @@ fun DesignPreview(
                         Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
                     }
                     Box(Modifier.fillMaxSize().padding(start = panel.padH.dp, end = panel.padH.dp, top = panel.padTop.dp, bottom = panel.padV.dp)) {
-                        val fit = Fit(panel.width, panel.height)
+                        val fit = Fit(panel.width, panel.height, tokens)
                         if (fit.shows(design.root)) PreviewNode(design.root, tokens, paint, fit, Modifier.fillMaxSize())
                     }
                 }

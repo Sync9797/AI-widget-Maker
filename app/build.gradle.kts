@@ -15,8 +15,8 @@ android {
         applicationId = "com.sidequest.widgetmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
     }
 
     signingConfigs {
@@ -82,6 +82,8 @@ dependencies {
     // Live data: background refresh and HTTP for weather, crypto, traffic, news and events.
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Exercise and health: Samsung Health, WHOOP, Google Fit and others share through Health Connect.
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
 
     // Claude, which designs the widgets.
     implementation("com.anthropic:anthropic-java:3.8.0")

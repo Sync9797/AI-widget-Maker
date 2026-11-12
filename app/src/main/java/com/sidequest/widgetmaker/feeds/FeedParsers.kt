@@ -209,7 +209,11 @@ object FeedParsers {
 
     fun duration(seconds: Int): String {
         val minutes = (seconds / 60.0).roundToInt()
-        return if (minutes < 60) "$minutes min" else "${minutes / 60} h ${minutes % 60} min"
+        return when {
+            minutes < 60 -> "$minutes min"
+            minutes % 60 == 0 -> "${minutes / 60} h"
+            else -> "${minutes / 60} h ${minutes % 60} min"
+        }
     }
 
     // ---- News (Google News RSS) ----

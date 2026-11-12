@@ -5,12 +5,24 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Optional: your upcoming calendar events, for "up next" widgets. Asked for only when you turn it on. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Optional: exercise and health from Health Connect (Samsung Health, WHOOP, Google Fit...), asked when you turn it on. -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
     <!-- Optional, for the One UI theme's blur: reading the wallpaper itself needs "All files access" on recent Android. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <!-- Lets the app see whether the Claude app is installed, to hand it a widget request. -->
     <queries>
         <package android:name="com.anthropic.claude" />
+        <!-- Health Connect, and Monster Quest (the game shares a summary for its widgets). -->
+        <package android:name="com.google.android.apps.healthdata" />
+        <package android:name="com.monsterquest.app" />
         <!-- To list your apps when you pick which one a widget tap opens. -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -33,7 +45,32 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Health Connect (Android 13 and older) shows why the app wants health data. -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
         </activity>
+
+        <!-- Health Connect (Android 14+) links here from its permission screen. -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+            android:targetActivity=".ui.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Monster Quest says when the game changes, so its widgets update right away. -->
+        <receiver
+            android:name=".feeds.GameChangedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.sidequest.widgetmaker.GAME_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Picks which saved design a placed widget shows (on add, and from the widget's settings later). -->
         <activity

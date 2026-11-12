@@ -44,6 +44,10 @@ import com.sidequest.widgetmaker.feeds.FeedSnapshot
 import com.sidequest.widgetmaker.data.DesignStore
 import com.sidequest.widgetmaker.spec.MaterialSlot
 import com.sidequest.widgetmaker.spec.TapKind
+import com.sidequest.widgetmaker.feeds.Health
+import com.sidequest.widgetmaker.feeds.MonsterQuest
+import androidx.health.connect.client.PermissionController
+import androidx.compose.runtime.LaunchedEffect
 import com.sidequest.widgetmaker.spec.Look
 import com.sidequest.widgetmaker.spec.Starters
 import com.sidequest.widgetmaker.widget.OneUiBackdrop
@@ -181,6 +185,23 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                         },
                     )
                 }
+            }
+
+            Section(
+                "Exercise & health",
+                "Steps, heart rate, kcal burned, workouts and sleep from Health Connect, where Samsung Health, WHOOP, " +
+                    "Google Fit, Fitbit and others share their data (in Samsung Health: Settings → Health Connect). " +
+                    "Read on the phone only. WHOOP keeps its strain score to itself, so \"effort\" is estimated from your heart rate.",
+            ) {
+                HealthControls(form.health) { form = form.copy(health = it) }
+                Field("Daily step goal", form.stepGoal, "8000", KeyboardType.Number) { form = form.copy(stepGoal = it) }
+            }
+
+            Section(
+                "Monster Quest",
+                "Widgets for the game: your eggs and how far to hatch, monsters out on adventures, and your steps and sleep.",
+            ) {
+                MonsterQuestControls(form.monsterQuest) { form = form.copy(monsterQuest = it) }
             }
 
             Section(
@@ -440,4 +461,60 @@ private fun LookSlider(label: String, value: String, current: Float, range: Clos
         }
         Slider(value = current, onValueChange = onChange, valueRange = range, steps = steps - 1)
     }
+}
+
+/** Connects Health Connect: shows where it stands and asks for access. */
+@Composable
+private fun HealthControls(on: Boolean, onChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    var status by remember { mutableStateOf<Health.Status?>(null) }
+    var version by remember { mutableStateOf(0) }
+    LaunchedEffect(version) { status = Health.status(context) }
+    val ask = rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
+        onChange(granted.isNotEmpty())
+        version++
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("Show exercise & health", modifier = Modifier.weight(1f))
+        Switch(checked = on, onCheckedChange = { want ->
+            if (!want) onChange(false)
+            else when (status) {
+                Health.Status.Ready, Health.Status.Partly -> onChange(true)
+                Health.Status.NeedsPermission -> ask.launch(Health.permissions)
+                Health.Status.NeedsInstall -> runCatching { context.startActivity(Health.installIntent()) }
+                else -> Unit
+            }
+        })
+    }
+    Text(
+        when (status) {
+            Health.Status.Ready -> "Connected to Health Connect."
+            Health.Status.Partly -> "Connected, but some data isn't allowed. Tap below to allow the rest."
+            Health.Status.NeedsPermission -> "Turn it on to choose what to share from Health Connect."
+            Health.Status.NeedsInstall -> "Health Connect needs installing or updating first (turn it on to open the Play Store)."
+            Health.Status.Unavailable -> "Health Connect isn't available on this phone."
+            null -> "Checking Health Connect…"
+        },
+        style = MaterialTheme.typography.bodySmall,
+    )
+    if (status == Health.Status.Partly) TextButton(onClick = { ask.launch(Health.permissions) }) { Text("Allow the rest") }
+}
+
+/** Shows whether Monster Quest is there and sharing. */
+@Composable
+private fun MonsterQuestControls(on: Boolean, onChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    val status = remember { MonsterQuest.status(context) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("Show Monster Quest", modifier = Modifier.weight(1f))
+        Switch(checked = on, onCheckedChange = onChange)
+    }
+    Text(
+        when (status) {
+            MonsterQuest.Status.Ready -> "Found Monster Quest. Its widgets update whenever the game changes."
+            MonsterQuest.Status.NeedsUpdate -> "Update Monster Quest to the latest version so it can share with widgets."
+            MonsterQuest.Status.NotInstalled -> "Monster Quest isn't installed."
+        },
+        style = MaterialTheme.typography.bodySmall,
+    )
 }

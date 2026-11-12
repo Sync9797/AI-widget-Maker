@@ -10,6 +10,8 @@ enum class TapKind(val label: String) {
     clock("Clock"),
     commute("Commute (maps)"),
     battery("Battery"),
+    health("Health & fitness"),
+    game("Monster Quest"),
 }
 
 /** What a tap does once its values are filled in. */
@@ -77,6 +79,8 @@ object Taps {
         "calendar" -> TapKind.calendar
         "traffic" -> TapKind.commute
         "battery", "charging" -> TapKind.battery
+        "health" -> TapKind.health
+        "mq" -> TapKind.game
         else -> null
     }
 

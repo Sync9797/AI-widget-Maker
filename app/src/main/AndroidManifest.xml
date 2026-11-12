@@ -24,7 +24,7 @@
     <!-- Lets the app see whether the Claude app is installed, to hand it a widget request. -->
     <queries>
         <package android:name="com.anthropic.claude" />
-        <!-- Health Connect, and Monster Quest (the game shares a summary for its widgets). -->
+        <!-- Health Connect, and Side Quest (the game shares a summary for its widgets). -->
         <package android:name="com.google.android.apps.healthdata" />
         <package android:name="com.monsterquest.app" />
         <!-- NOOP (offline WHOOP companion): to open it from health widgets. -->
@@ -69,7 +69,7 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- Monster Quest says when the game changes, so its widgets update right away. -->
+        <!-- Side Quest says when the game changes, so its widgets update right away. -->
         <receiver
             android:name=".feeds.GameChangedReceiver"
             android:exported="true">

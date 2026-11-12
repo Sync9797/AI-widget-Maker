@@ -1,5 +1,6 @@
 package com.sidequest.widgetmaker.ui
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -72,7 +73,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         FeedWorker.schedule(this)
+        openFrom(intent)
         setContent { MakerTheme { MakerScreen(viewModel) } }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        openFrom(intent)
+    }
+
+    /** "Change this design" in a widget's settings opens it here, ready to change. */
+    private fun openFrom(intent: Intent?) {
+        intent?.getStringExtra(EXTRA_EDIT)?.let { viewModel.editById(it) }
+        intent?.removeExtra(EXTRA_EDIT)
+    }
+
+    companion object {
+        const val EXTRA_EDIT = "edit_design"
     }
 
     override fun onResume() {
@@ -129,69 +146,169 @@ private fun MakerScreen(viewModel: MakerViewModel) {
             )
         },
     ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            HealthAccessCard()
-            val draft = state.draft
-            val chat = state.chat
-            if (chat != null) {
-                ChatCard(
-                    chat = chat,
-                    onPaste = viewModel::pasteChatReply,
-                    onFix = viewModel::askClaudeToFix,
-                    onReopen = viewModel::reopenChat,
-                    onCancel = viewModel::cancelChat,
-                )
-            } else if (draft == null) {
-                DescribeCard(busy = state.busy, free = !state.hasApiKey, onGenerate = viewModel::generate)
-                StartersRow(theme = state.theme, onPick = viewModel::useStarter)
+        // An open foldable or a tablet gets two panes: making widgets on one side, yours on the other
+        // (split down the middle, where a book-style fold's hinge is).
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(padding).imePadding()) {
+            val twoPanes = maxWidth >= 600.dp
+            if (twoPanes) {
+                Row(Modifier.fillMaxSize()) {
+                    Pane(Modifier.weight(1f)) { CreatePane(state, viewModel, columns = 3) }
+                    androidx.compose.material3.VerticalDivider()
+                    Pane(Modifier.weight(1f)) { WidgetsPane(state, viewModel, startOpen = true) }
+                }
             } else {
-                DraftCard(
-                    draft = draft,
-                    busy = state.busy,
-                    onRefine = viewModel::refine,
-                    onSave = { viewModel.saveDraft(thenPin = false) },
-                    onSaveAndAdd = { viewModel.saveDraft(thenPin = true) },
-                    onDiscard = viewModel::discardDraft,
-                    theme = state.theme,
-                    free = !state.hasApiKey,
-                    onShape = viewModel::setDraftShape,
-                )
-            }
-
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            state.message?.let {
-                Text(it, color = MaterialTheme.colorScheme.primary)
-            }
-
-            if (state.saved.isNotEmpty()) {
-                Text("Your widgets", style = MaterialTheme.typography.titleLarge)
-                state.saved.forEach { saved ->
-                    SavedCard(
-                        saved = saved,
-                        onAdd = { viewModel.pin(saved) },
-                        onEdit = { viewModel.edit(saved) },
-                        onDelete = { viewModel.delete(saved) },
-                        theme = state.theme,
-                    )
+                Pane(Modifier.fillMaxSize()) {
+                    CreatePane(state, viewModel, columns = 2)
+                    WidgetsPane(state, viewModel, startOpen = false)
                 }
             }
+        }
+    }
+}
 
-            InfoCard(
-                title = "On your lock screen",
-                body = "The widget also offers itself to lock screens. On a Samsung phone: long-press " +
-                    "the lock screen, tap Widgets, and look for AI Widget Maker. If it isn't listed, " +
-                    "your One UI version only allows Samsung's own lock screen widgets for now; " +
-                    "it will still work on your home screen.",
+/** One scrolling column of the main screen. */
+@Composable
+private fun Pane(modifier: Modifier, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    Column(
+        modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        content = content,
+    )
+}
+
+/** Describing a widget, the draft being made, and the ready-made designs by section. */
+@Composable
+private fun CreatePane(state: MakerState, viewModel: MakerViewModel, columns: Int) {
+    HealthAccessCard()
+    val draft = state.draft
+    val chat = state.chat
+    if (chat != null) {
+        ChatCard(
+            chat = chat,
+            onPaste = viewModel::pasteChatReply,
+            onFix = viewModel::askClaudeToFix,
+            onReopen = viewModel::reopenChat,
+            onCancel = viewModel::cancelChat,
+        )
+    } else if (draft == null) {
+        DescribeCard(busy = state.busy, free = !state.hasApiKey, onGenerate = viewModel::generate)
+        StarterSections(theme = state.theme, columns = columns, onPick = viewModel::useStarter)
+    } else {
+        DraftCard(
+            draft = draft,
+            busy = state.busy,
+            onRefine = viewModel::refine,
+            onSave = { viewModel.saveDraft(thenPin = false) },
+            onSaveAndAdd = { viewModel.saveDraft(thenPin = true) },
+            onDiscard = viewModel::discardDraft,
+            theme = state.theme,
+            free = !state.hasApiKey,
+            onShape = viewModel::setDraftShape,
+        )
+    }
+    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    state.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+}
+
+/** Your widgets: the ones on the home screen, and saved designs that aren't, each in a fold-away list. */
+@Composable
+private fun WidgetsPane(state: MakerState, viewModel: MakerViewModel, startOpen: Boolean) {
+    val active = state.saved.filter { it.id in state.placed }
+    val others = state.saved.filter { it.id !in state.placed }
+    Collapsible("Active widgets", "${active.size} on your home screen", startOpen) {
+        if (active.isEmpty()) {
+            Text(
+                "None yet. Save a design and tap Add to home screen, or long-press your home screen → Widgets → AI Widget Maker. " +
+                    "Widgets you remove from the home screen leave this list by themselves.",
+                style = MaterialTheme.typography.bodySmall,
             )
-            Spacer(Modifier.height(24.dp))
+        }
+        active.forEach { saved ->
+            SavedCard(
+                saved = saved,
+                count = state.placed[saved.id] ?: 0,
+                onAdd = { viewModel.pin(saved) },
+                onEdit = { viewModel.edit(saved) },
+                onDelete = { viewModel.delete(saved) },
+                theme = state.theme,
+            )
+        }
+    }
+    if (others.isNotEmpty()) {
+        Collapsible("Saved designs", "${others.size} not on your home screen", false) {
+            others.forEach { saved ->
+                SavedCard(
+                    saved = saved,
+                    count = 0,
+                    onAdd = { viewModel.pin(saved) },
+                    onEdit = { viewModel.edit(saved) },
+                    onDelete = { viewModel.delete(saved) },
+                    theme = state.theme,
+                )
+            }
+        }
+    }
+    InfoCard(
+        title = "On your lock screen",
+        body = "The widget also offers itself to lock screens. On a Samsung phone: long-press " +
+            "the lock screen, tap Widgets, and look for AI Widget Maker. If it isn't listed, " +
+            "your One UI version only allows Samsung's own lock screen widgets for now; " +
+            "it will still work on your home screen.",
+    )
+    Spacer(Modifier.height(24.dp))
+}
+
+/** A titled card that opens and closes. */
+@Composable
+private fun Collapsible(title: String, summary: String, startOpen: Boolean, content: @Composable () -> Unit) {
+    var open by rememberSaveable(title) { mutableStateOf(startOpen) }
+    Card(Modifier.fillMaxWidth()) {
+        Column {
+            Row(
+                Modifier.fillMaxWidth().clickable { open = !open }.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(summary, style = MaterialTheme.typography.bodySmall)
+                }
+                Text(if (open) "▲" else "▼", style = MaterialTheme.typography.bodyMedium)
+            }
+            androidx.compose.animation.AnimatedVisibility(open) {
+                Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+/** Ready-made designs, grouped (Weather, Health...): tap a group to open its grid. */
+@Composable
+private fun StarterSections(theme: WidgetTheme, columns: Int, onPick: (Starters.Starter) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Or start from one of these", style = MaterialTheme.typography.titleMedium)
+        Starters.all.groupBy { it.category }.toSortedMap(compareBy { it.ordinal }).forEach { (category, starters) ->
+            Collapsible(category.label, "${starters.size} " + if (starters.size == 1) "design" else "designs", false) {
+                starters.chunked(columns).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        row.forEach { starter ->
+                            Card(
+                                Modifier.weight(1f).clickable { onPick(starter) },
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                            ) {
+                                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    DesignPreview(starter.design, PreviewSize.Square, theme, Modifier.fillMaxWidth())
+                                    Text(starter.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                                    Text(starter.about, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                }
+                            }
+                        }
+                        // Keep the last row's cards the same width as the others.
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
         }
     }
 }
@@ -314,26 +431,9 @@ private fun ChatCard(
 
 /** Ready-made designs: no AI needed. */
 @Composable
-private fun StartersRow(theme: WidgetTheme, onPick: (Starters.Starter) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Or start from one of these", style = MaterialTheme.typography.titleMedium)
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Starters.all.forEach { starter ->
-                Card(Modifier.width(184.dp).clickable { onPick(starter) }) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        DesignPreview(starter.design, PreviewSize.Square, theme)
-                        Text(starter.title, style = MaterialTheme.typography.titleSmall)
-                        Text(starter.about, style = MaterialTheme.typography.bodySmall, maxLines = 3)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun SavedCard(
     saved: SavedDesign,
+    count: Int,
     onAdd: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -343,6 +443,7 @@ private fun SavedCard(
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(saved.design.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            if (count > 1) Text("On $count widgets", style = MaterialTheme.typography.bodySmall)
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 DesignPreview(saved.design, PreviewSize.Wide, theme)
             }

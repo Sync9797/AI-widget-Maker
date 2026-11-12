@@ -5,7 +5,39 @@ package com.sidequest.widgetmaker.spec
  * Each is responsive (more appears as the widget grows) and suits every theme.
  */
 object Starters {
-    data class Starter(val title: String, val about: String, val design: WidgetDesign)
+    data class Starter(val title: String, val about: String, val design: WidgetDesign) {
+        val category: Category get() = categoryOf(this)
+    }
+
+    /** How the app groups ready-made designs. */
+    enum class Category(val label: String) {
+        everyday("Everyday"),
+        clock("Clock & date"),
+        weather("Weather"),
+        calendar("Calendar"),
+        health("Health & fitness"),
+        music("Music"),
+        info("Money, news & travel"),
+        battery("Battery"),
+        game("Side Quest"),
+    }
+
+    private val EVERYDAY = setOf("Daily briefing", "Smart stack", "Countdown")
+
+    fun categoryOf(s: Starter): Category {
+        if (s.title in EVERYDAY) return Category.everyday
+        return when (Taps.mainKind(s.design)) {
+            TapKind.weather -> Category.weather
+            TapKind.calendar -> if (s.design.root.let { DesignParser.encode(s.design).contains("calendar.") }) Category.calendar else Category.clock
+            TapKind.clock -> Category.clock
+            TapKind.health -> Category.health
+            TapKind.music -> Category.music
+            TapKind.crypto, TapKind.news, TapKind.events, TapKind.commute -> Category.info
+            TapKind.battery -> Category.battery
+            TapKind.game -> Category.game
+            null -> Category.everyday
+        }
+    }
 
     val all: List<Starter> by lazy {
         SOURCES.map { (title, about, json) -> Starter(title, about, DesignParser.parse(json)) }
@@ -53,7 +85,7 @@ object Starters {
          {"type":"row","verticalAlign":"center","children":[
           {"type":"text","text":"{weather.h$n.$time}","size":13,"color":"#B3FFFFFF","grow":true},
           {"type":"icon","name":"umbrella","size":12,"color":"#99FFFFFF"},
-          {"type":"text","text":" {weather.h$n.rain}","size":13,"color":"#B3FFFFFF","grow":true},
+          {"type":"text","text":" {weather.h$n.rain}","size":13,"color":"#B3FFFFFF","grow":true,"levelOf":"{weather.h$n.rain}","levels":[{"from":0,"color":"#B3FFFFFF"},{"from":30,"color":"#FF9CCBFF"},{"from":60,"color":"#FF5AA9FF"}]},
           {"type":"icon","name":"sun","live":"{weather.h$n.icon}","size":18,"color":"#FFDCE8FF"},
           {"type":"text","text":"{weather.h$n.temp}","size":14,"color":"#FFFFFFFF","weight":"bold","align":"end","grow":true}]}$line]}"""
     }
@@ -132,7 +164,7 @@ object Starters {
              {"type":"clock","format":"EEEE, MMMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120,"minWidth":250}},
              {"type":"spacer","size":12,"show":{"minHeight":200}},
              {"type":"row","show":{"minHeight":200},"children":[
-              {"type":"icon","name":"battery","size":14,"color":"#FF7CF29C"},
+              {"type":"icon","name":"battery","size":14,"color":"#FF7CF29C","levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FF7CF29C"}]},
               {"type":"text","text":" {battery}%  {charging}","size":13,"color":"#B3FFFFFF"}]}]}}""",
         ),
         Triple(
@@ -305,16 +337,23 @@ object Starters {
               ${hourRow(1, 0, clock24 = true)},${hourRow(2, 0, clock24 = true)},${hourRow(3, 140, clock24 = true)},${hourRow(4, 140, divider = false, clock24 = true)}]}]}}""",
         ),
         Triple(
-            "Battery pill", "An oval battery meter, like One UI's: the percentage and a bar.",
-            """{"name":"Battery pill","background":"#B3504A48","cornerRadius":40,"padding":12,"shape":"pill","root":
-            {"type":"row","verticalAlign":"center","children":[
-             {"type":"text","text":"{battery}%","size":18,"color":"#FFFFFFFF","weight":"bold"},
-             {"type":"spacer","size":14},
-             {"type":"progress","value":"{battery}","color":"#FFFFFFFF","trackColor":"#40FFFFFF","height":12,"grow":true},
-             {"type":"text","text":"  {charging}","size":12,"color":"#CCFFFFFF","show":{"minWidth":260}}]}}""",
+            "Battery bar", "Your battery percentage and a bar that turns orange, then red, when low. Pick the Pill shape for a slim oval.",
+            """{"name":"Battery bar","background":"#B3504A48","cornerRadius":26,"padding":14,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","show":{"minHeight":130},"children":[
+              {"type":"icon","name":"battery","size":16,"color":"#FFFFFFFF","levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FFFFFFFF"}]},
+              {"type":"text","text":" Battery","size":13,"color":"#CCFFFFFF","weight":"medium"}]},
+             {"type":"spacer","grow":true,"show":{"minHeight":130}},
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"text","text":"{battery}%","size":20,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"spacer","size":12,"show":{"maxHeight":129}},
+              {"type":"progress","value":"{battery}","color":"#FFFFFFFF","trackColor":"#40FFFFFF","height":12,"grow":true,"show":{"maxHeight":129},"levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FFFFFFFF"}]},
+              {"type":"text","text":"  {charging}","size":12,"color":"#CCFFFFFF","show":{"minWidth":260}}]},
+             {"type":"spacer","size":10,"show":{"minHeight":130}},
+             {"type":"progress","value":"{battery}","color":"#FFFFFFFF","trackColor":"#40FFFFFF","height":14,"show":{"minHeight":130},"levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FFFFFFFF"}]}]}}""",
         ),
         Triple(
-            "Agenda card", "Monster Quest's date card: what's next at the top, today's date big at the bottom.",
+            "Agenda card", "Side Quest's date card: what's next at the top, today's date big at the bottom.",
             """{"name":"Agenda card","background":"#E61C2433","cornerRadius":28,"padding":16,"root":
             {"type":"column","children":[
              {"type":"text","text":"{calendar.1}","size":18,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"show":{"maxHeight":179}},
@@ -329,15 +368,17 @@ object Starters {
              {"type":"clock","format":"EEEE, MMM","size":14,"color":"#FFFFFFFF","weight":"bold","show":{"minHeight":140}}]}}""",
         ),
         Triple(
-            "Steps pill", "Today's steps and a bar to your goal, as an oval like One UI's. Turn on Exercise & health in Settings.",
-            """{"name":"Steps pill","background":"#E62A1B12","cornerRadius":40,"padding":12,"shape":"pill","root":
-            {"type":"column","align":"center","verticalAlign":"center","children":[
+            "Steps", "Today's steps and a bar to your goal; how many are left when taller. Pick the Pill shape for a slim oval.",
+            """{"name":"Steps","background":"#E62A1B12","cornerRadius":26,"padding":14,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"text","text":"Steps","size":13,"color":"#CCFFFFFF","weight":"medium","show":{"minHeight":130}},
+             {"type":"spacer","grow":true,"show":{"minHeight":130}},
              {"type":"row","verticalAlign":"bottom","children":[
-              {"type":"text","text":"{health.steps}","size":22,"color":"#FFFFFFFF","weight":"bold"},
-              {"type":"text","text":" Steps","size":13,"color":"#CCFFFFFF","weight":"medium"},
-              {"type":"text","text":" of {health.stepGoal}","size":13,"color":"#99FFFFFF","show":{"minWidth":250}}]},
-             {"type":"spacer","size":6},
-             {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#40FFFFFF","height":10}]}}""",
+              {"type":"text","text":"{health.steps}","size":22,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+              {"type":"text","text":" /{health.stepGoal}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":200}}]},
+             {"type":"text","text":"{health.stepsLeft.text}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":130}},
+             {"type":"spacer","size":8,"show":{"minHeight":100}},
+             {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#40FFFFFF","height":10,"levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]}]}}""",
         ),
         Triple(
             "Activity", "Steps, kcal, heart rate and effort today; your last workout when wider, and sleep when taller.",
@@ -348,7 +389,7 @@ object Starters {
                {"type":"row","verticalAlign":"center","children":[
                 {"type":"icon","name":"steps","size":14,"color":"#FF4CD137"},
                 {"type":"text","text":" {health.steps}","size":20,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
-               {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#26FFFFFF","height":4,"show":{"minHeight":100}}]},
+               {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#26FFFFFF","height":4,"show":{"minHeight":100},"levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]}]},
               {"type":"spacer","size":12},
               {"type":"column","align":"end","show":{"minWidth":250},"children":[
                {"type":"text","text":"{health.workout} · {health.workout.duration}","size":12,"color":"#E6FFFFFF","maxLines":1},
@@ -376,8 +417,8 @@ object Starters {
               {"type":"text","text":"deep {health.sleep.deep}","size":12,"color":"#99FFFFFF","show":{"minWidth":250}}]}]}}""",
         ),
         Triple(
-            "Monster Quest eggs", "Your eggs and how far to walk until they hatch; more eggs the taller it is.",
-            """{"name":"Monster Quest eggs","background":"#E6241B33","cornerRadius":26,"padding":16,"root":
+            "Side Quest eggs", "Your eggs and how far to walk until they hatch; more eggs the taller it is.",
+            """{"name":"Side Quest eggs","background":"#E6241B33","cornerRadius":26,"padding":16,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"row","verticalAlign":"center","children":[
               {"type":"icon","name":"egg","size":18,"color":"#FFFFC857"},
@@ -389,8 +430,8 @@ object Starters {
              ${egg(4, 290)}]}}""",
         ),
         Triple(
-            "Monster Quest adventures", "Monsters out on adventures: where, who, and how long until they're back.",
-            """{"name":"Monster Quest adventures","background":"#E6122A24","cornerRadius":26,"padding":16,"root":
+            "Side Quest adventures", "Monsters out on adventures: where, who, and how long until they're back.",
+            """{"name":"Side Quest adventures","background":"#E6122A24","cornerRadius":26,"padding":16,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"row","verticalAlign":"center","children":[
               {"type":"icon","name":"paw","size":18,"color":"#FF8FE3B0"},
@@ -400,8 +441,8 @@ object Starters {
              ${adventure(3, 260)}]}}""",
         ),
         Triple(
-            "Monster Quest day", "Your hero, today's steps and torches, and last night's sleep.",
-            """{"name":"Monster Quest day","background":"#E61E1A2E","cornerRadius":26,"padding":16,"root":
+            "Side Quest day", "Your hero, today's steps and torches, and last night's sleep.",
+            """{"name":"Side Quest day","background":"#E61E1A2E","cornerRadius":26,"padding":16,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"text","text":"{mq.hero} · Level {mq.level}","size":13,"color":"#B3FFFFFF","weight":"medium","maxLines":1,"show":{"minHeight":120}},
              {"type":"row","verticalAlign":"center","children":[
@@ -423,8 +464,8 @@ object Starters {
                {"type":"text","text":"eggs","size":11,"color":"#99FFFFFF"}]}]}]}}""",
         ),
         Triple(
-            "Monster Quest quests", "Your next quests with a check button: tap it to complete the quest in the game.",
-            """{"name":"Monster Quest quests","background":"#E6182230","cornerRadius":26,"padding":16,"root":
+            "Side Quest quests", "Your next quests with a check button: tap it to complete the quest in the game.",
+            """{"name":"Side Quest quests","background":"#E6182230","cornerRadius":26,"padding":16,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"row","verticalAlign":"center","show":{"minHeight":120},"children":[
               {"type":"text","text":"Quests","size":15,"color":"#FFFFFFFF","weight":"bold","grow":true},
@@ -436,8 +477,8 @@ object Starters {
              ${quest(5, 300)}]}}""",
         ),
         Triple(
-            "Monster Quest progress", "Steps to your next torch, the weekly bounty, and a phone-free session's time left.",
-            """{"name":"Monster Quest progress","background":"#E6261A14","cornerRadius":26,"padding":16,"root":
+            "Side Quest progress", "Steps to your next torch, the weekly bounty, and a phone-free session's time left.",
+            """{"name":"Side Quest progress","background":"#E6261A14","cornerRadius":26,"padding":16,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"row","verticalAlign":"center","children":[
               {"type":"icon","name":"flame","size":16,"color":"#FFFF9F43"},
@@ -459,8 +500,8 @@ object Starters {
              ${bountyLine(3, 230)}]}}""",
         ),
         Triple(
-            "Monster Quest party", "Your party's monsters with their level and health.",
-            """{"name":"Monster Quest party","background":"#E6142618","cornerRadius":26,"padding":16,"root":
+            "Side Quest party", "Your party's monsters with their level and health.",
+            """{"name":"Side Quest party","background":"#E6142618","cornerRadius":26,"padding":16,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"row","verticalAlign":"center","children":[
               {"type":"icon","name":"paw","size":16,"color":"#FF4CD137"},
@@ -480,7 +521,7 @@ object Starters {
               {"type":"text","text":" {battery}%","size":30,"color":"#FFFFFFFF","weight":"bold","grow":true},
               {"type":"text","text":"{charging}","size":12,"color":"#FF7CF29C","show":{"minWidth":220}}]},
              {"type":"spacer","size":10},
-             {"type":"progress","value":"{battery}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":8},
+             {"type":"progress","value":"{battery}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":8,"levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FF7CF29C"}]},
              {"type":"spacer","size":14,"show":{"minHeight":180}},
              {"type":"row","show":{"minHeight":180},"children":[
               {"type":"clock","format":"h:mm","size":22,"color":"#FFFFFFFF","weight":"light","grow":true},
@@ -494,13 +535,13 @@ object Starters {
               {"type":"column","grow":true,"children":[
                {"type":"text","text":"Charge","size":12,"color":"#99FFFFFF","show":{"minHeight":100}},
                {"type":"row","verticalAlign":"bottom","children":[
-                {"type":"text","text":"{health.charge}%","size":28,"color":"#FF2BE38A","weight":"bold","maxLines":1},
+                {"type":"text","text":"{health.charge}%","size":28,"color":"#FF2BE38A","weight":"bold","maxLines":1,"levelOf":"{health.charge}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":34,"color":"#FFFFD54F"},{"from":67,"color":"#FF2BE38A"}]},
                 {"type":"text","text":" {health.charge.label}","size":13,"color":"#CCFFFFFF","maxLines":1}]}]},
               {"type":"column","align":"end","show":{"minWidth":250},"children":[
                {"type":"text","text":"Effort","size":12,"color":"#99FFFFFF","show":{"minHeight":100}},
                {"type":"text","text":"{health.effort}","size":24,"color":"#FF4FA3FF","weight":"bold"}]}]},
              {"type":"spacer","size":6,"show":{"minHeight":100}},
-             {"type":"progress","value":"{health.charge}","color":"#FF2BE38A","trackColor":"#26FFFFFF","height":6,"show":{"minHeight":100}},
+             {"type":"progress","value":"{health.charge}","color":"#FF2BE38A","trackColor":"#26FFFFFF","height":6,"show":{"minHeight":100},"levelOf":"{health.charge}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":34,"color":"#FFFFD54F"},{"from":67,"color":"#FF2BE38A"}]},
              {"type":"spacer","size":12,"show":{"minHeight":150}},
              {"type":"row","show":{"minHeight":150},"children":[
               {"type":"column","grow":true,"children":[
@@ -540,6 +581,13 @@ object Starters {
                {"type":"text","text":"{music.title}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
                {"type":"text","text":"{music.artist}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100}},
                {"type":"spacer","size":6,"show":{"minHeight":100}},
+               {"type":"row","verticalAlign":"center","show":{"minHeight":140,"ifSet":"{music.length}"},"children":[
+                {"type":"timer","of":"music","size":11,"color":"#99FFFFFF"},
+                {"type":"spacer","size":8},
+                {"type":"progress","value":"{music.progress}","color":"#FFFFFFFF","trackColor":"#33FFFFFF","height":4,"grow":true},
+                {"type":"spacer","size":8},
+                {"type":"text","text":"{music.length}","size":11,"color":"#99FFFFFF","maxLines":1}]},
+               {"type":"spacer","size":6,"show":{"minHeight":140,"ifSet":"{music.length}"}},
                {"type":"row","verticalAlign":"center","children":[
                 {"type":"icon","name":"previous","size":24,"color":"#E6FFFFFF","tap":"music:prev"},
                 {"type":"spacer","size":16},
@@ -550,15 +598,136 @@ object Starters {
                 {"type":"text","text":"{music.app}","size":11,"color":"#80FFFFFF","maxLines":1,"show":{"minWidth":300}}]}]}]}]}}""",
         ),
         Triple(
-            "Music pill", "What's playing in an oval, with play/pause (and next when wider).",
-            """{"name":"Music pill","background":"#E6202124","cornerRadius":40,"padding":10,"shape":"pill","root":
-            {"type":"row","verticalAlign":"center","children":[
-             {"type":"art","size":36,"cornerRadius":18,"show":{"minWidth":200}},
-             {"type":"spacer","size":10,"show":{"minWidth":200}},
-             {"type":"text","text":"{music.line}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1,"grow":true},
-             {"type":"icon","name":"play","live":"{music.playIcon}","size":26,"color":"#FFFFFFFF","tap":"music:toggle"},
-             {"type":"spacer","size":10,"show":{"minWidth":240}},
-             {"type":"icon","name":"next","size":22,"color":"#CCFFFFFF","tap":"music:next","show":{"minWidth":240}}]}}""",
+            "Music mini", "What's playing with play/pause (and next when wider); the album art and artist when bigger. Pick the Pill shape for a slim oval.",
+            """{"name":"Music mini","background":"#E6202124","cornerRadius":26,"padding":12,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"art","size":64,"cornerRadius":14,"show":{"minHeight":150}},
+             {"type":"spacer","size":8,"show":{"minHeight":150}},
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"art","size":36,"cornerRadius":18,"show":{"minWidth":200,"maxHeight":149}},
+              {"type":"spacer","size":10,"show":{"minWidth":200,"maxHeight":149}},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{music.title}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
+               {"type":"text","text":"{music.artist}","size":11,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":130}}]},
+              {"type":"icon","name":"play","live":"{music.playIcon}","size":26,"color":"#FFFFFFFF","tap":"music:toggle"},
+              {"type":"spacer","size":10,"show":{"minWidth":240}},
+              {"type":"icon","name":"next","size":22,"color":"#CCFFFFFF","tap":"music:next","show":{"minWidth":240}}]}]}}""",
+        ),
+        Triple(
+            "Sleep", "Last night's sleep with its stages (awake, light, deep, REM) and how it compares with your week. From NOOP, Samsung Health and others.",
+            """{"name":"Sleep","background":"#F2121530","cornerRadius":28,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"moon","size":18,"color":"#FFC79BFF"},
+              {"type":"text","text":" {health.sleep}","size":24,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true},
+              {"type":"text","text":"avg {health.sleep.avg}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":250,"ifSet":"{health.sleep.avg}"}}]},
+             {"type":"text","text":"{health.sleep.vsAvg}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100,"ifSet":"{health.sleep.vsAvg}"}},
+             {"type":"spacer","size":8,"show":{"minHeight":100}},
+             {"type":"sleep","height":14,"show":{"minHeight":100}},
+             {"type":"spacer","size":10,"show":{"minHeight":150}},
+             {"type":"row","show":{"minHeight":150},"children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"Deep","size":11,"color":"#FF7F8BEA"},
+               {"type":"text","text":"{health.sleep.deep}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"REM","size":11,"color":"#FFC79BFF"},
+               {"type":"text","text":"{health.sleep.rem}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+              {"type":"column","grow":true,"show":{"minWidth":250},"children":[
+               {"type":"text","text":"Light","size":11,"color":"#FF8AB4FF"},
+               {"type":"text","text":"{health.sleep.light}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+              {"type":"column","grow":true,"show":{"minWidth":250},"children":[
+               {"type":"text","text":"Awake","size":11,"color":"#FFFF9E6B"},
+               {"type":"text","text":"{health.sleep.awake}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]}]}]}}""",
+        ),
+        Triple(
+            "Daily briefing", "Changes with the day: weather, your first event, commute and Charge in the morning; steps left and tomorrow's first event later on.",
+            """{"name":"Daily briefing","background":"#F2172030","cornerRadius":28,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"text","text":"{greeting}","size":13,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100}},
+             {"type":"column","show":{"ifSet":"{time.morning}"},"children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"icon","name":"weather","size":22,"color":"#FFFFD27A"},
+               {"type":"text","text":" {weather.temp}","size":22,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"  {weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true,"show":{"minWidth":250}}]},
+              {"type":"spacer","size":8,"show":{"minHeight":120}},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":120,"ifSet":"{calendar.1}"},"children":[
+               {"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},
+               {"type":"text","text":" {calendar.1}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"text","text":"{calendar.1.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":150,"ifSet":"{traffic.commute}"},"children":[
+               {"type":"icon","name":"car","size":14,"color":"#FFFFB74D"},
+               {"type":"text","text":" {traffic.commute} to {traffic.to}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"text","text":"{traffic.delay}","size":12,"color":"#99FFFFFF","maxLines":1}]},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":170,"ifSet":"{health.charge}"},"children":[
+               {"type":"icon","name":"bolt","size":14,"color":"#FF2BE38A","levelOf":"{health.charge}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":34,"color":"#FFFFD54F"},{"from":67,"color":"#FF2BE38A"}]},
+               {"type":"text","text":" Charge {health.charge}%","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"text","text":"{health.charge.label}","size":12,"color":"#99FFFFFF","maxLines":1}]}]},
+             {"type":"column","show":{"ifEmpty":"{time.morning}"},"children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"icon","name":"steps","size":18,"color":"#FF4CD137","levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]},
+               {"type":"text","text":" {health.stepsLeft.text}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true}]},
+              {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#26FFFFFF","height":5,"show":{"minHeight":100},"levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]},
+              {"type":"spacer","size":10,"show":{"minHeight":120}},
+              {"type":"text","text":"Tomorrow","size":11,"color":"#99FFFFFF","show":{"minHeight":120,"ifSet":"{calendar.tomorrow}"}},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":120,"ifSet":"{calendar.tomorrow}"},"children":[
+               {"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},
+               {"type":"text","text":" {calendar.tomorrow}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"text","text":"{calendar.tomorrow.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":160},"children":[
+               {"type":"icon","name":"weather","size":14,"color":"#FFFFD27A"},
+               {"type":"text","text":" {weather.temp} · {weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1}]}]}]}}""",
+        ),
+        Triple(
+            "Countdown", "Days until something you're looking forward to; the next ones when taller. Add countdowns in Settings.",
+            """{"name":"Countdown","background":"#F23A1D4A","cornerRadius":28,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
+              {"type":"text","text":"{countdown.1}","size":13,"color":"#CCFFFFFF","maxLines":2,"grow":true},
+              {"type":"text","text":"{countdown.1.days}","size":26,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+              {"type":"text","text":" {countdown.1.unit}","size":12,"color":"#B3FFFFFF","maxLines":1}]},
+             {"type":"text","text":"{countdown.1}","size":13,"color":"#CCFFFFFF","maxLines":1,"show":{"minHeight":130}},
+             {"type":"row","verticalAlign":"bottom","show":{"minHeight":130},"children":[
+              {"type":"text","text":"{countdown.1.days}","size":40,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+              {"type":"text","text":" {countdown.1.unit}","size":14,"color":"#B3FFFFFF","maxLines":1}]},
+             {"type":"text","text":"{countdown.1.date}","size":12,"color":"#99FFFFFF","show":{"minHeight":130}},
+             {"type":"spacer","size":10,"show":{"minHeight":200,"ifSet":"{countdown.2}"}},
+             {"type":"divider","color":"#26FFFFFF","show":{"minHeight":200,"ifSet":"{countdown.2}"}},
+             {"type":"spacer","size":8,"show":{"minHeight":200,"ifSet":"{countdown.2}"}},
+             {"type":"row","show":{"minHeight":200,"ifSet":"{countdown.2}"},"children":[
+              {"type":"text","text":"{countdown.2}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+              {"type":"text","text":"{countdown.2.text}","size":13,"color":"#B3FFFFFF"}]},
+             {"type":"row","show":{"minHeight":230,"ifSet":"{countdown.3}"},"children":[
+              {"type":"text","text":"{countdown.3}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+              {"type":"text","text":"{countdown.3.text}","size":13,"color":"#B3FFFFFF"}]}]}}""",
+        ),
+        Triple(
+            "Smart stack", "One widget that shows what matters now: your next event when it starts within the hour, what's playing, or else the weather.",
+            """{"name":"Smart stack","background":"#F21A1C24","cornerRadius":28,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"column","show":{"ifSet":"{calendar.soon}"},"tap":"{calendar.1.link}","children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"icon","name":"calendar","size":16,"color":"#FF8AB4FF"},
+               {"type":"text","text":" {calendar.soon.in}","size":12,"color":"#FF8AB4FF","weight":"medium"}]},
+              {"type":"text","text":"{calendar.1}","size":18,"color":"#FFFFFFFF","weight":"bold","maxLines":2},
+              {"type":"text","text":"{calendar.1.where}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minHeight":110,"ifSet":"{calendar.1.where}"}}]},
+             {"type":"row","verticalAlign":"center","show":{"ifSet":"{music.playing}","ifEmpty":"{calendar.soon}"},"children":[
+              {"type":"art","size":52,"cornerRadius":12,"show":{"minWidth":220}},
+              {"type":"spacer","size":12,"show":{"minWidth":220}},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{music.title}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+               {"type":"text","text":"{music.artist}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100}},
+               {"type":"row","verticalAlign":"center","children":[
+                {"type":"icon","name":"previous","size":22,"color":"#E6FFFFFF","tap":"music:prev"},
+                {"type":"spacer","size":14},
+                {"type":"icon","name":"play","live":"{music.playIcon}","size":28,"color":"#FFFFFFFF","tap":"music:toggle"},
+                {"type":"spacer","size":14},
+                {"type":"icon","name":"next","size":22,"color":"#E6FFFFFF","tap":"music:next"}]}]}]},
+             {"type":"column","show":{"ifEmpty":"{calendar.soon}{music.playing}"},"children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"icon","name":"weather","size":30,"color":"#FFC9DDE6"},
+               {"type":"text","text":" {weather.temp}","size":28,"color":"#FFFFFFFF","weight":"medium","maxLines":1}]},
+              {"type":"text","text":"{weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minHeight":100}},
+              {"type":"text","text":"H {weather.high}  L {weather.low}","size":12,"color":"#99FFFFFF","show":{"minHeight":130}}]}]}}""",
         ),
     )
 }

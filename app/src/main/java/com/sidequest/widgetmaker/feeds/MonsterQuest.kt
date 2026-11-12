@@ -16,7 +16,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * Monster Quest (the Side Quest game) shares a small summary of your game
+ * Side Quest (the Side Quest game) shares a small summary of your game
  * with this app: your eggs, the monsters out on adventures, steps and sleep.
  */
 object MonsterQuest {

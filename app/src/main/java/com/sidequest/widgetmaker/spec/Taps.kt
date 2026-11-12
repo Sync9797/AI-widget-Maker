@@ -11,7 +11,7 @@ enum class TapKind(val label: String) {
     commute("Commute (maps)"),
     battery("Battery"),
     health("Health & fitness"),
-    game("Monster Quest"),
+    game("Side Quest"),
     music("Music"),
 }
 
@@ -26,10 +26,10 @@ sealed interface TapAction {
     /** Opens the app picked for this kind (or asks which). */
     data class Open(val kind: TapKind) : TapAction
 
-    /** Opens Monster Quest on a screen: "eggs", "adventures" or "quests". */
+    /** Opens Side Quest on a screen: "eggs", "adventures" or "quests". */
     data class GameScreen(val screen: String) : TapAction
 
-    /** Asks Monster Quest to "complete" a quest, "claim" an adventure or "hatch" an egg. */
+    /** Asks Side Quest to "complete" a quest, "claim" an adventure or "hatch" an egg. */
     data class GameAction(val action: String, val id: String) : TapAction
 
     /** Play/pause ("toggle"), "next" or "prev" on whatever is playing. */
@@ -62,12 +62,12 @@ object Taps {
     fun forWidget(design: WidgetDesign): String? {
         design.root.tap?.let { return it }
         val kind = mainKind(design) ?: return null
-        // A Monster Quest widget opens the game on what it shows most: eggs, adventures or quests.
+        // A Side Quest widget opens the game on what it shows most: eggs, adventures or quests.
         if (kind == TapKind.game) gameScreen(design)?.let { return "mq-open:$it" }
         return kind.name
     }
 
-    /** Which game screen a design is mostly about, from its Monster Quest values. */
+    /** Which game screen a design is mostly about, from its Side Quest values. */
     fun gameScreen(design: WidgetDesign): String? {
         val text = DesignParser.encode(design)
         val counts = mapOf(
@@ -90,7 +90,8 @@ object Taps {
                 is ClockNode -> add(if (node.format.contains('h', ignoreCase = true)) TapKind.clock else TapKind.calendar)
                 is IconNode -> add(if (node.name == IconName.weather || node.live?.contains("weather.") == true) TapKind.weather else null)
                 is ProgressNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
-                is ArtNode -> add(TapKind.music)
+                is ArtNode, is TimerNode -> add(TapKind.music)
+                is SleepNode -> add(TapKind.health)
                 is SpacerNode, is DividerNode -> Unit
             }
         }

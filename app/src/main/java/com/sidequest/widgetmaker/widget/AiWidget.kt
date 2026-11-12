@@ -24,6 +24,10 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionSendBroadcast
 import com.sidequest.widgetmaker.music.MusicControlReceiver
 import com.sidequest.widgetmaker.spec.ArtNode
+import com.sidequest.widgetmaker.spec.Colors
+import com.sidequest.widgetmaker.spec.SleepNode
+import com.sidequest.widgetmaker.spec.TimerNode
+import com.sidequest.widgetmaker.spec.levelColor
 import com.sidequest.widgetmaker.spec.TapAction
 import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
@@ -175,7 +179,17 @@ class AiWidget : GlanceAppWidget() {
                 now = LocalDateTime.now(),
                 battery = level?.takeIf { it in 0..100 },
                 charging = battery?.isCharging == true,
-                feeds = Feeds(context).snapshot().values + com.sidequest.widgetmaker.music.Music.values(context),
+                feeds = run {
+                    val feeds = Feeds(context)
+                    val values = feeds.snapshot().values
+                    val countdowns = feeds.settings.countdowns.mapNotNull { c ->
+                        runCatching { com.sidequest.widgetmaker.spec.Smart.Countdown(c.name, java.time.LocalDate.parse(c.date)) }.getOrNull()
+                    }
+                    values + com.sidequest.widgetmaker.music.Music.values(context) +
+                        com.sidequest.widgetmaker.spec.Smart.timeOfDay(LocalDateTime.now()) +
+                        com.sidequest.widgetmaker.spec.Smart.calendarSoon(values, System.currentTimeMillis()) +
+                        com.sidequest.widgetmaker.spec.Smart.countdowns(countdowns, java.time.LocalDate.now())
+                },
             )
         }
     }
@@ -311,6 +325,8 @@ private fun DesignWidget(
  */
 private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? = null) {
     operator fun invoke(role: Role, design: String?): ColorProvider {
+        // Colors that mean something (a red Charge) stay as they are in every theme.
+        if (role == Role.Level) return ColorProvider(Color(Colors.argb(design)))
         if (styler.theme == WidgetTheme.material) return ColorProvider(AiWidget.materialRes(styler.materialSlot(role, design)))
         return ColorProvider(Color(styler.argb(role, design, dark = false)))
     }
@@ -372,13 +388,20 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             provider = ImageProvider(iconRes(node, tokens)),
             contentDescription = null,
             modifier = modifier.size(node.size.dp),
-            colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)),
+            colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
         )
         is ProgressNode -> LinearProgressIndicator(
             progress = tokens.progress(node.value),
             modifier = modifier.fillMaxWidth().height(node.height.dp),
-            color = paint(Role.Accent, node.color),
+            color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
             backgroundColor = paint(Role.Track, node.trackColor),
+        )
+        is TimerNode -> AndroidRemoteViews(remoteViews = timerViews(node, paint.styler), modifier = modifier)
+        is SleepNode -> Image(
+            provider = ImageProvider(SleepBar.draw(tokens.feeds["health.sleep.stages"], heightPx = node.height * 3)),
+            contentDescription = null,
+            modifier = modifier.fillMaxWidth().height(node.height.dp),
+            contentScale = ContentScale.FillBounds,
         )
         is ArtNode -> {
             val cover = paint.albumArt
@@ -436,6 +459,26 @@ private fun clockViews(node: ClockNode, styler: Styler): RemoteViews {
     }
 }
 
+/** A system-run timer: how far into the song it is, counting while it plays. */
+@Composable
+private fun timerViews(node: TimerNode, styler: Styler): RemoteViews {
+    val context = androidx.glance.LocalContext.current
+    val now = com.sidequest.widgetmaker.music.Music.current(context)
+    val elapsed = android.os.SystemClock.elapsedRealtime()
+    val at = now?.let { com.sidequest.widgetmaker.music.MusicMath.position(it, elapsed) } ?: 0L
+    return RemoteViews(context.packageName, R.layout.music_timer).apply {
+        setChronometer(R.id.timer, elapsed - at, null, now?.playing == true)
+        if (styler.theme == WidgetTheme.material) {
+            val res = AiWidget.materialRes(styler.materialSlot(Role.Text, node.color))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setColorStateList(R.id.timer, "setTextColor", res)
+            else setTextColor(R.id.timer, context.getColor(res))
+        } else {
+            setTextColor(R.id.timer, styler.argb(Role.Text, node.color, dark = false))
+        }
+        setTextViewTextSize(R.id.timer, TypedValue.COMPLEX_UNIT_SP, node.size.toFloat())
+    }
+}
+
 private fun container(modifier: GlanceModifier, paint: Paint, background: String?, radius: Int, padding: Int): GlanceModifier {
     var m = modifier
     if (background != null) m = m.background(paint(Role.Container, background)).cornerRadius(radius.dp)
@@ -456,11 +499,18 @@ private fun vertical(align: VAlign) = when (align) {
 }
 
 /** A text's color and what it means, following [TextNode.trendOf] when it's set. */
-fun textColor(node: TextNode, tokens: Tokens): Pair<Role, String> = when (node.trendOf?.let { tokens.trend(it) }) {
-    true -> Role.TrendUp to node.upColor
-    false -> Role.TrendDown to node.downColor
-    null -> Role.Text to node.color
+fun textColor(node: TextNode, tokens: Tokens): Pair<Role, String> {
+    levelColor(node.levelOf, node.levels, tokens)?.let { return Role.Level to it }
+    return when (node.trendOf?.let { tokens.trend(it) }) {
+        true -> Role.TrendUp to node.upColor
+        false -> Role.TrendDown to node.downColor
+        null -> Role.Text to node.color
+    }
 }
+
+/** An icon's or a bar's color: its level color when it has one, else its own as an accent. */
+fun accentColor(levelOf: String?, levels: List<com.sidequest.widgetmaker.spec.Level>?, color: String, tokens: Tokens): Pair<Role, String> =
+    levelColor(levelOf, levels, tokens)?.let { Role.Level to it } ?: (Role.Accent to color)
 
 /** A widget size, in dp. */
 data class Fit(val width: Int, val height: Int, val tokens: Tokens? = null) {

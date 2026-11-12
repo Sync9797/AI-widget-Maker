@@ -108,6 +108,18 @@ class ChooseDesignActivity : ComponentActivity() {
                             Text(refreshNote, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                         }
 
+                        // Change the design this widget shows, in the app: describe the change, preview, save.
+                        picked?.let { id ->
+                            Button(onClick = {
+                                startActivity(
+                                    Intent(this@ChooseDesignActivity, MainActivity::class.java)
+                                        .putExtra(MainActivity.EXTRA_EDIT, id)
+                                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                                )
+                                finish()
+                            }, modifier = Modifier.fillMaxWidth()) { Text("Change this design…") }
+                        }
+
                         Text("Style", style = MaterialTheme.typography.titleMedium)
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(own == null, {

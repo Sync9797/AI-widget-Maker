@@ -264,13 +264,19 @@ object FeedParsers {
     /** A Google News RSS item. */
     data class Headline(val title: String, val source: String, val published: LocalDate?, val link: String = "")
 
+    private val DOCTYPE = Regex("<!DOCTYPE(?:[^\\[>]|\\[[^\\]]*\\])*>", RegexOption.IGNORE_CASE)
+
     fun headlines(body: String): List<Headline> {
         val factory = DocumentBuilderFactory.newInstance().apply {
-            // External entities off: the feed is remote content.
-            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+            // External entities off: the feed is remote content. Android's parser doesn't know this
+            // feature (it throws, which broke news and events on phones), and doesn't fetch external
+            // entities anyway, so it's set only where it exists; the DOCTYPE is dropped below either way.
+            runCatching { setFeature("http://apache.org/xml/features/disallow-doctype-decl", true) }
             isExpandEntityReferences = false
         }
-        val doc = factory.newDocumentBuilder().parse(ByteArrayInputStream(body.toByteArray()))
+        // An RSS feed never needs a DOCTYPE; without one, no entity can be declared.
+        val safe = DOCTYPE.replace(body, "")
+        val doc = factory.newDocumentBuilder().parse(ByteArrayInputStream(safe.toByteArray()))
         val items = doc.getElementsByTagName("item")
         return (0 until items.length).map { i ->
             val item = items.item(i) as Element
@@ -395,6 +401,17 @@ object FeedParsers {
             }
             out["calendar.${i + 1}.where"] = e.location
             if (e.id > 0) out["calendar.${i + 1}.link"] = "calendar-event:${e.id}:${e.beginMs}:${e.endMs}"
+            // For "starts soon" (worked out when the widget draws): timed events only.
+            if (!e.allDay && e.beginMs > 0) {
+                out["calendar.${i + 1}.startMs"] = e.beginMs.toString()
+                out["calendar.${i + 1}.endMs"] = e.endMs.toString()
+            }
+        }
+        // Tomorrow's first event, for evening briefings.
+        upcoming.firstOrNull { it.start.toLocalDate() == today.plusDays(1) }?.let { e ->
+            out["calendar.tomorrow"] = e.title.ifBlank { "(No title)" }
+            out["calendar.tomorrow.when"] = if (e.allDay) "All day" else e.start.toLocalTime().format(DateTimeFormatter.ofPattern("h:mm a", Locale.US)).replace(":00", "")
+            if (e.id > 0) out["calendar.tomorrow.link"] = "calendar-event:${e.id}:${e.beginMs}:${e.endMs}"
         }
         val leftToday = upcoming.count { it.start.toLocalDate() == today || (it.allDay && it.start.toLocalDate() == today) }
         out["calendar.today"] = when (leftToday) {

@@ -19,7 +19,7 @@ Download `AIWidgetMaker.apk` on your phone and open it.
   design**. Changes ("make it purple") work the same way.
 - **Free, no AI:** start from one of the ready-made designs: big clock, clock
   and weather, forecast, crypto ticker, commute, local news, nearby events,
-  up next (calendar), big date, day cookie, hourly weather, battery pill, agenda card, steps pill, activity, Monster Quest eggs, adventures, day, quests, progress and party, battery. Save it as it is, or change it with Claude.
+  up next (calendar), big date, day cookie, hourly weather, battery pill, agenda card, steps pill, activity, Side Quest eggs, adventures, day, quests, progress and party, battery. Save it as it is, or change it with Claude.
 - **Automatic, paid per use:** add an Anthropic API key (from
   console.anthropic.com) in **Settings** and designs are made in the app, a few
   cents each. The key is stored only on the phone.
@@ -32,9 +32,9 @@ forecast as it grows taller; a news widget shows more headlines the taller it
 is. Claude designs every widget this way (each element can say which sizes it
 appears at), and the app previews each design at 2×1, 2×2, 2×4, 4×2 and 4×4.
 
-## Monster Quest, both ways
+## Side Quest, both ways
 
-Monster Quest widgets don't just show the game, they can act in it:
+Side Quest widgets don't just show the game, they can act in it:
 
 - a **✓** next to a quest completes it (and pays its reward),
 - **Claim** appears when an adventure is back, **Hatch** when an egg is ready.
@@ -92,6 +92,22 @@ Each widget can also have its own style: long-press it, tap its settings, and
 pick one (or keep "App default"). The same screen has **Refresh now**, which
 fetches fresh data right away and redraws your widgets.
 
+## New in 0.9
+
+- **The app is organized by section:** ready-made designs are grouped (Everyday, Weather, Health & fitness, Music...). Tap a group to open its grid. Your widgets sit in a fold-away **Active widgets** list. Widgets you remove from the home screen leave that list by themselves, and designs not on the home screen go under **Saved designs**.
+- **Foldables and tablets:** with the screen open, the app splits in two, with making widgets on one side and your widgets on the other.
+- **Update frequency:** every 15 or 30 minutes, or every hour (Settings).
+- **Colors that mean something:** Charge turns red, yellow or green, battery goes orange then red when low, and rain chances get bluer as they rise.
+- **New widgets:**
+  - **Sleep:** stages bar, average and how you compare.
+  - **Daily briefing:** weather, first event, commute and Charge in the morning; steps left and tomorrow later on.
+  - **Countdown:** pick dates or calendar events in Settings.
+  - **Smart stack:** shows your next event within the hour, otherwise what's playing, otherwise the weather.
+- **Music progress:** a live timer and progress bar.
+- **Change a widget from the home screen:** long-press it → Settings → **Change this design…**
+- **Pills:** slim like One UI's (about a third as tall as wide). The pill height in Widget look now applies to every pill. Steps, Battery bar and Music mini are regular widgets you can shrink to a pill with the Pill shape.
+- **Fixed:** news and events failed on phones with an "apache.org ... disallow-doctype-decl" error.
+
 ## Live data
 
 Widgets can show live data, refreshed about every 30 minutes in the
@@ -109,7 +125,7 @@ check it works:
 | Exercise & health: steps, heart rate, kcal, workouts, sleep, effort | Health Connect (Samsung Health, WHOOP, Google Fit, Fitbit, Garmin...) | Turn on **Exercise & health** and allow access. In Samsung Health: Settings → Health Connect. "Effort" is estimated from heart rate (WHOOP keeps its strain score private). |
 | NOOP (the offline WHOOP app by ryanbr): HRV, resting heart rate, SpO2, breathing rate, VO2 max, sleep, plus an estimated Charge | Health Connect | Turn on Health Connect in NOOP's **Data Sources** screen, then **Exercise & health** here. NOOP's data is used first when other apps share too. NOOP keeps Charge/Effort/Rest private, so Charge is estimated from HRV and resting heart rate against your 30-day baseline (needs ~5 days). Health widgets open NOOP when tapped. |
 | Music: what's playing (any app), album art, play/pause, next, previous | Android's media sessions | **Settings → Music → Allow music access** (notification access, used only for this). On Android 13+ for apps not from the Play Store, first allow restricted settings: App info → ⋮ → Allow restricted settings. |
-| Monster Quest: quests, eggs, adventures, party, bounty, torches, phone-free time, steps, sleep | The game itself | Install Monster Quest (3.24 or newer); widgets update whenever the game changes. |
+| Side Quest: quests, eggs, adventures, party, bounty, torches, phone-free time, steps, sleep | The game itself | Install Side Quest (3.24 or newer); widgets update whenever the game changes. |
 
 Then just ask for it, for example "my commute time and today's weather" or
 "a crypto ticker for my coins".

@@ -113,7 +113,7 @@ class MusicTest {
 
     @Test
     fun musicStartersOpenTheMusicApp() {
-        listOf("Now playing", "Music pill").forEach { title ->
+        listOf("Now playing", "Music mini").forEach { title ->
             assertEquals(title, TapKind.music, Taps.mainKind(Starters.all.first { it.title == title }.design))
         }
     }

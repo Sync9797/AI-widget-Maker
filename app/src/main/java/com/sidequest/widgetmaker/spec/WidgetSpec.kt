@@ -63,14 +63,22 @@ data class Show(
     val maxHeight: Int = 0,
     /** Only when this value has data, like "{mq.egg.4}" (so a list shows only the items there are). */
     val ifSet: String? = null,
+    /** Only when these values are all empty, like "{calendar.soon}{music.playing}" (for "otherwise" parts). */
+    val ifEmpty: String? = null,
 ) {
     fun fits(width: Int, height: Int) =
         width >= minWidth && height >= minHeight &&
             (maxWidth == 0 || width <= maxWidth) && (maxHeight == 0 || height <= maxHeight)
 
     fun has(tokens: Tokens?): Boolean {
-        val token = ifSet ?: return true
-        val value = tokens?.fill(token)?.trim() ?: return true
+        tokens ?: return true
+        if (ifSet != null && !set(tokens.fill(ifSet))) return false
+        if (ifEmpty != null && set(tokens.fill(ifEmpty).replace("--", ""))) return false
+        return true
+    }
+
+    private fun set(filled: String): Boolean {
+        val value = filled.trim()
         return value.isNotEmpty() && value != "--" && !value.contains('{')
     }
 }
@@ -124,6 +132,9 @@ data class TextNode(
     val trendOf: String? = null,
     val upColor: String = "#FF4ADE80",
     val downColor: String = "#FFF87171",
+    /** Colors it by a number's level, like "{health.charge}": see [Level]. Wins over [trendOf]. */
+    val levelOf: String? = null,
+    val levels: List<Level>? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -153,6 +164,9 @@ data class IconNode(
     val live: String? = null,
     val size: Int = 20,
     val color: String = "#FFFFFFFF",
+    /** Colors it by a number's level, like "{battery}": see [Level]. */
+    val levelOf: String? = null,
+    val levels: List<Level>? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -166,6 +180,9 @@ data class ProgressNode(
     val color: String = "#FF7CF29C",
     val trackColor: String = "#33FFFFFF",
     val height: Int = 6,
+    /** Colors it by a number's level, like "{battery}": see [Level]. */
+    val levelOf: String? = null,
+    val levels: List<Level>? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -188,6 +205,46 @@ data class DividerNode(
 data class ArtNode(
     val size: Int = 56,
     val cornerRadius: Int = 12,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/**
+ * One step of a color scale: the color for values from [from] up (to the next
+ * step). For example Charge: 0 red, 34 yellow, 67 green.
+ */
+@Serializable
+data class Level(val from: Float, val color: String)
+
+/** The color for [value] on [levels]: the highest step it reaches, or null (no number, or no steps). */
+fun levelColor(value: String?, levels: List<Level>?, tokens: Tokens): String? {
+    if (value == null || levels.isNullOrEmpty()) return null
+    val number = Regex("-?[0-9]+(\\.[0-9]+)?").find(tokens.fill(value).replace(",", ""))?.value?.toFloatOrNull() ?: return null
+    return levels.sortedBy { it.from }.lastOrNull { number >= it.from }?.color ?: levels.minByOrNull { it.from }?.color
+}
+
+/**
+ * Time counting live, kept up to date by the system without redrawing:
+ * "music" is how far into the song you are (it stops while paused).
+ */
+@Serializable
+@SerialName("timer")
+data class TimerNode(
+    val of: String = "music",
+    val size: Int = 12,
+    val color: String = "#B3FFFFFF",
+    val weight: Weight = Weight.normal,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/** Last night's sleep as a bar of stages (awake, light, deep, REM), [height] dp tall. */
+@Serializable
+@SerialName("sleep")
+data class SleepNode(
+    val height: Int = 14,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

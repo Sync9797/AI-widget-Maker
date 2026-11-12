@@ -65,6 +65,8 @@ data class MakerState(
     val snapshot: FeedSnapshot = FeedSnapshot(),
     val sourcesBusy: Boolean = false,
     val sourcesStatus: String? = null,
+    /** Designs on the home screen now, and on how many widgets each. */
+    val placed: Map<String, Int> = emptyMap(),
 )
 
 /** What the Data sources screen edits: plain text, looked up when saved. */
@@ -117,11 +119,14 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     private fun reload() {
         viewModelScope.launch {
             val saved = withContext(Dispatchers.IO) { store.all() }
+            val app = getApplication<Application>()
+            val live = AppWidgetManager.getInstance(app).getAppWidgetIds(ComponentName(app, AiWidgetReceiver::class.java))
+            val placed = withContext(Dispatchers.IO) { store.placed(live) }
             val sources = feeds.settings
             val snapshot = withContext(Dispatchers.IO) { feeds.snapshot() }
             _state.update {
                 it.copy(
-                    saved = saved, hasApiKey = store.apiKey.isNotBlank(), theme = store.theme,
+                    saved = saved, placed = placed, hasApiKey = store.apiKey.isNotBlank(), theme = store.theme,
                     sources = sources, snapshot = snapshot,
                 )
             }
@@ -225,6 +230,18 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(draft = Draft(null, starter.title, starter.design), error = null, message = null) }
     }
 
+    /** Opens a design to change it (from a widget's settings on the home screen). */
+    fun editById(id: String) {
+        store.get(id)?.let(::edit)
+    }
+
+    /** Saves countdowns (Settings) and redraws widgets. */
+    fun setCountdowns(list: List<com.sidequest.widgetmaker.feeds.Countdown>) {
+        feeds.settings = feeds.settings.copy(countdowns = list.sortedBy { it.date })
+        _state.update { it.copy(sources = feeds.settings) }
+        viewModelScope.launch { AiWidget.refreshAll(getApplication()) }
+    }
+
     fun edit(saved: SavedDesign) {
         _state.update { it.copy(draft = Draft(saved.id, saved.prompt, saved.design), error = null, message = null) }
     }
@@ -286,6 +303,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Called when the app comes to the front: fresh data, then redraw widgets. */
     fun refreshWidgets() {
+        reload()
         viewModelScope.launch {
             val snapshot = feeds.snapshot()
             // Fetch now if the data is older than 15 minutes; the background job covers the rest.
@@ -297,6 +315,13 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Looks up the places, saves the data sources, then fetches everything once to check it works. */
+    /** How often widgets refresh their data in the background. */
+    fun setRefreshMinutes(minutes: Int) {
+        feeds.settings = feeds.settings.copy(refreshMinutes = minutes)
+        FeedWorker.schedule(getApplication())
+        _state.update { it.copy(sources = feeds.settings) }
+    }
+
     fun saveSources(form: SourcesForm) {
         if (_state.value.sourcesBusy) return
         _state.update { it.copy(sourcesBusy = true, sourcesStatus = "Saving…") }
@@ -313,7 +338,8 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
             val key = form.tomtomKey.trim()
             val home = if (key.isBlank()) null else lookup(form.home, old.home, "the home address") { feeds.findAddress(it, key) }
             val work = if (key.isBlank()) null else lookup(form.work, old.work, "the work address") { feeds.findAddress(it, key) }
-            val settings = FeedSettings(
+            // A copy, so settings saved elsewhere (refresh rate, countdowns) are kept.
+            val settings = old.copy(
                 place = place,
                 fahrenheit = form.fahrenheit,
                 coins = form.coins.split(',', ' ', ';').map { it.trim().uppercase() }.filter { it.isNotEmpty() }.distinct().take(10),

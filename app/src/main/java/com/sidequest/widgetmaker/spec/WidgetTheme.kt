@@ -20,7 +20,11 @@ enum class WidgetTheme(val label: String) {
 }
 
 /** What a color is used for, so a theme knows what to replace it with. */
-enum class Role { Background, Container, Text, Accent, Track, TrendUp, TrendDown }
+enum class Role {
+    Background, Container, Text, Accent, Track, TrendUp, TrendDown,
+    /** A color that means something (Charge red/yellow/green, low battery): kept in every theme. */
+    Level,
+}
 
 /**
  * The Material 3 colors a widget uses. On the home screen each slot is a color
@@ -68,7 +72,7 @@ class Styler(
             in 0xBF..0xE5 -> MaterialSlot.Text80
             else -> MaterialSlot.Text65
         }
-        Role.Accent -> MaterialSlot.Primary
+        Role.Accent, Role.Level -> MaterialSlot.Primary
         Role.Track -> MaterialSlot.Track
         Role.TrendUp -> MaterialSlot.Up
         Role.TrendDown -> MaterialSlot.Down
@@ -77,6 +81,7 @@ class Styler(
     /** The color to draw for a design color with this [role], as ARGB. */
     fun argb(role: Role, design: String?, dark: Boolean): Int {
         val original = Colors.argb(design, fallback = 0)
+        if (role == Role.Level) return original
         return when (theme) {
             WidgetTheme.original -> original
             WidgetTheme.glass -> when (role) {
@@ -85,7 +90,7 @@ class Styler(
                 // White, keeping the design's opacity so faded text stays faded.
                 Role.Text -> withAlpha(0xFFFFFF, alphaOf(original).coerceAtLeast(0x99))
                 Role.Track -> 0x2EFFFFFF
-                Role.Accent, Role.TrendUp, Role.TrendDown -> original
+                Role.Accent, Role.TrendUp, Role.TrendDown, Role.Level -> original
             }
             WidgetTheme.material -> material(materialSlot(role, design), dark)
             WidgetTheme.oneui -> when (role) {
@@ -98,6 +103,7 @@ class Styler(
                 Role.Track -> withAlpha(material(MaterialSlot.Primary, !backdropLight), 0x40)
                 Role.TrendUp -> material(MaterialSlot.Up, !backdropLight)
                 Role.TrendDown -> material(MaterialSlot.Down, !backdropLight)
+                Role.Level -> original
             }
         }
     }

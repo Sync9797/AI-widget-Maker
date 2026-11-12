@@ -31,7 +31,7 @@ class FeedWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         private const val NOW = "feeds-now"
         private const val ONLY = "only"
 
-        /** Refreshes just some feeds soon (like Monster Quest when the game saves). */
+        /** Refreshes just some feeds soon (like Side Quest when the game saves). */
         fun refreshSoon(context: Context, only: Set<String>) {
             val request = OneTimeWorkRequestBuilder<FeedWorker>()
                 .setInputData(androidx.work.workDataOf(ONLY to only.toTypedArray()))
@@ -40,12 +40,14 @@ class FeedWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         }
         private val online = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-        /** Every 30 minutes while online (Android allows 15 at the most often). */
+        /** Every 15, 30 or 60 minutes (Settings), while online. 15 is the most often Android allows. */
         fun schedule(context: Context) {
-            val request = PeriodicWorkRequestBuilder<FeedWorker>(30, TimeUnit.MINUTES)
+            val minutes = Feeds(context).settings.refreshMinutes.coerceIn(15, 60).toLong()
+            val request = PeriodicWorkRequestBuilder<FeedWorker>(minutes, TimeUnit.MINUTES)
                 .setConstraints(online)
                 .build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)
+            // UPDATE: a new rate takes effect without losing the schedule.
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
 
         fun refreshSoon(context: Context) {

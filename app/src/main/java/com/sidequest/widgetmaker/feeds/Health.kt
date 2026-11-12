@@ -135,12 +135,27 @@ object Health {
                 }
         } else null
         val sleep = if (allowed(SleepSessionRecord::class)) {
-            client.readRecords(ReadRecordsRequest(SleepSessionRecord::class, TimeRangeFilter.between(now.minus(Duration.ofHours(36)), now)))
-                .records.maxByOrNull { it.endTime }?.let { r ->
-                    fun mins(vararg types: Int) = r.stages.filter { it.stage in types }.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() }
-                    val awake = mins(SleepSessionRecord.STAGE_TYPE_AWAKE, SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED, SleepSessionRecord.STAGE_TYPE_OUT_OF_BED)
-                    HealthMath.Sleep(Duration.between(r.startTime, r.endTime).toMinutes() - awake, mins(SleepSessionRecord.STAGE_TYPE_DEEP), mins(SleepSessionRecord.STAGE_TYPE_REM))
+            // The last week of nights (NOOP's when it shares them): last night, and your average.
+            val nights = preferNoop(
+                client.readRecords(ReadRecordsRequest(SleepSessionRecord::class, TimeRangeFilter.between(now.minus(Duration.ofDays(8)), now))).records,
+            ) { it.metadata.dataOrigin.packageName }
+            fun asleep(r: SleepSessionRecord): Long {
+                val awake = r.stages.filter { it.stage in AWAKE }.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() }
+                return Duration.between(r.startTime, r.endTime).toMinutes() - awake
+            }
+            nights.maxByOrNull { it.endTime }?.takeIf { Duration.between(it.endTime, now).toHours() < 36 }?.let { r ->
+                fun mins(vararg types: Int) = r.stages.filter { it.stage in types }.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() }
+                val stages = r.stages.sortedBy { it.startTime }.map {
+                    com.sidequest.widgetmaker.spec.SleepStages.Part(stageLetter(it.stage), Duration.between(it.startTime, it.endTime).toMinutes().toInt())
                 }
+                // A night per day: the longest, when an app split one.
+                val perNight = nights.groupBy { LocalDateTime.ofInstant(it.endTime, zone).toLocalDate() }.values.map { n -> n.maxOf(::asleep) }
+                HealthMath.Sleep(
+                    asleep(r), mins(SleepSessionRecord.STAGE_TYPE_DEEP), mins(SleepSessionRecord.STAGE_TYPE_REM),
+                    stages = stages,
+                    averageMinutes = perNight.takeIf { it.size >= 3 }?.average()?.toLong(),
+                )
+            }
         } else null
 
         return HealthMath.values(
@@ -173,6 +188,15 @@ object Health {
         val granted = HealthConnectClient.getOrCreate(context).permissionController.getGrantedPermissions()
         permissions - granted
     }.getOrDefault(emptySet())
+
+    private val AWAKE = setOf(SleepSessionRecord.STAGE_TYPE_AWAKE, SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED, SleepSessionRecord.STAGE_TYPE_OUT_OF_BED)
+
+    private fun stageLetter(stage: Int): Char = when (stage) {
+        in AWAKE -> 'A'
+        SleepSessionRecord.STAGE_TYPE_DEEP -> 'D'
+        SleepSessionRecord.STAGE_TYPE_REM -> 'R'
+        else -> 'L'
+    }
 
     /** NOOP's records when there are any, else everyone's (so two apps' numbers don't mix). */
     private fun <T> preferNoop(records: List<T>, origin: (T) -> String): List<T> =

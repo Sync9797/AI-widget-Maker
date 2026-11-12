@@ -124,6 +124,23 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
             ) { LookControls(state.theme, onChange = viewModel::setLook) }
 
             Section(
+                "Update frequency",
+                "How often weather, health, calendar and the rest refresh in the background. More often uses a little " +
+                    "more battery. Music and Side Quest update right away anyway.",
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(15 to "15 min", 30 to "30 min", 60 to "1 hour").forEach { (m, label) ->
+                        FilterChip(state.sources.refreshMinutes == m, { viewModel.setRefreshMinutes(m) }, { Text(label) })
+                    }
+                }
+            }
+
+            Section(
+                "Countdowns",
+                "Days until things you're looking forward to, for the Countdown widget. Pick a date, or an event from your calendar.",
+            ) { CountdownControls(state.sources.countdowns, viewModel::setCountdowns) }
+
+            Section(
                 "When you tap a widget",
                 "Headlines, events and calendar entries open themselves. The rest of a widget opens an app " +
                     "for what it shows. Clock, calendar, maps and battery use your phone's defaults unless you pick one.",
@@ -212,7 +229,7 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
             }
 
             Section(
-                "Monster Quest",
+                "Side Quest",
                 "Widgets for the game: your eggs and how far to hatch, monsters out on adventures, and your steps and sleep.",
             ) {
                 MonsterQuestControls(form.monsterQuest) { form = form.copy(monsterQuest = it) }
@@ -476,12 +493,12 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text("Oval 1-row widgets", style = MaterialTheme.typography.bodyLarge)
-            Text("2×1 and 4×1 widgets become pills, no taller than the max height.", style = MaterialTheme.typography.bodySmall)
+            Text("2×1 and 4×1 widgets become pills of this height (it also sets the height of any widget given the Pill shape).", style = MaterialTheme.typography.bodySmall)
         }
-        Switch(checked = look.pillMaxHeight != null, onCheckedChange = { update(look.copy(pillMaxHeight = if (it) 64 else null)) })
+        Switch(checked = look.pillMaxHeight != null, onCheckedChange = { update(look.copy(pillMaxHeight = if (it) 52 else null)) })
     }
     look.pillMaxHeight?.let { maxH ->
-        LookSlider("Max height", "$maxH", maxH.toFloat(), 40f..110f, 70, save) { preview(look.copy(pillMaxHeight = it.toInt())) }
+        LookSlider("Pill height", "$maxH dp", maxH.toFloat(), 32f..96f, 64, save) { preview(look.copy(pillMaxHeight = it.toInt())) }
     }
 }
 
@@ -541,6 +558,79 @@ private fun HealthControls(on: Boolean, onChange: (Boolean) -> Unit) {
     if (status == Health.Status.Partly) TextButton(onClick = { ask.launch(Health.permissions) }) { Text("Allow the rest") }
 }
 
+/** The list of countdowns, with adding by date or from the calendar. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun CountdownControls(list: List<com.sidequest.widgetmaker.feeds.Countdown>, onChange: (List<com.sidequest.widgetmaker.feeds.Countdown>) -> Unit) {
+    val context = LocalContext.current
+    var name by remember { mutableStateOf("") }
+    var picking by remember { mutableStateOf(false) }
+    var fromCalendar by remember { mutableStateOf<List<com.sidequest.widgetmaker.feeds.Countdown>?>(null) }
+    val today = java.time.LocalDate.now()
+    list.forEach { c ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val days = runCatching { java.time.temporal.ChronoUnit.DAYS.between(today, java.time.LocalDate.parse(c.date)) }.getOrNull()
+            Column(Modifier.weight(1f)) {
+                Text(c.name, style = MaterialTheme.typography.bodyLarge)
+                Text("${c.date} · " + when {
+                    days == null -> ""
+                    days < 0 -> "passed"
+                    days == 0L -> "today"
+                    else -> "in $days days"
+                }, style = MaterialTheme.typography.bodySmall)
+            }
+            TextButton(onClick = { onChange(list - c) }) { Text("Remove") }
+        }
+    }
+    OutlinedTextField(name, { name = it }, label = { Text("Name, like \"Beach trip\"") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = { picking = true }, enabled = name.isNotBlank()) { Text("Pick date") }
+        OutlinedButton(onClick = { fromCalendar = com.sidequest.widgetmaker.feeds.Feeds(context).upcomingEvents(days = 365) }) { Text("From calendar") }
+    }
+    if (picking) {
+        val pickerState = androidx.compose.material3.rememberDatePickerState()
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { picking = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { ms ->
+                        // The picker gives midnight UTC of the chosen day.
+                        val date = java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                        onChange(list + com.sidequest.widgetmaker.feeds.Countdown(name.trim(), date.toString()))
+                        name = ""
+                    }
+                    picking = false
+                }) { Text("Add") }
+            },
+            dismissButton = { TextButton(onClick = { picking = false }) { Text("Cancel") } },
+        ) { androidx.compose.material3.DatePicker(pickerState) }
+    }
+    fromCalendar?.let { events ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { fromCalendar = null },
+            title = { Text("Count down to…") },
+            text = {
+                if (events.isEmpty()) {
+                    Text("No upcoming events found. Turn on Your calendar above (and allow access) first.")
+                } else {
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        events.forEach { e ->
+                            Text(
+                                "${e.name}  ·  ${e.date}",
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    onChange(list + e)
+                                    fromCalendar = null
+                                }.padding(vertical = 10.dp),
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { fromCalendar = null }) { Text("Close") } },
+        )
+    }
+}
+
 /** Shows whether music access is allowed, with the way to allow it. */
 @Composable
 private fun MusicControls() {
@@ -566,20 +656,20 @@ private fun MusicControls() {
     }
 }
 
-/** Shows whether Monster Quest is there and sharing. */
+/** Shows whether Side Quest is there and sharing. */
 @Composable
 private fun MonsterQuestControls(on: Boolean, onChange: (Boolean) -> Unit) {
     val context = LocalContext.current
     val status = remember { MonsterQuest.status(context) }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Show Monster Quest", modifier = Modifier.weight(1f))
+        Text("Show Side Quest", modifier = Modifier.weight(1f))
         Switch(checked = on, onCheckedChange = onChange)
     }
     Text(
         when (status) {
-            MonsterQuest.Status.Ready -> "Found Monster Quest. Its widgets update whenever the game changes."
-            MonsterQuest.Status.NeedsUpdate -> "Update Monster Quest to the latest version so it can share with widgets."
-            MonsterQuest.Status.NotInstalled -> "Monster Quest isn't installed."
+            MonsterQuest.Status.Ready -> "Found Side Quest. Its widgets update whenever the game changes."
+            MonsterQuest.Status.NeedsUpdate -> "Update Side Quest to the latest version so it can share with widgets."
+            MonsterQuest.Status.NotInstalled -> "Side Quest isn't installed."
         },
         style = MaterialTheme.typography.bodySmall,
     )

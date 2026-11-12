@@ -68,8 +68,12 @@ object DesignParser {
             maxWidth = it.maxWidth.coerceIn(0, 1000),
             maxHeight = it.maxHeight.coerceIn(0, 1000),
             ifSet = it.ifSet?.take(60),
+            ifEmpty = it.ifEmpty?.take(80),
         )
     }
+
+    private fun sanitize(levels: List<Level>?): List<Level>? =
+        levels?.filter { Colors.parseOrNull(it.color) != null }?.take(6)?.takeIf { it.isNotEmpty() }
 
     private fun sanitize(node: Node): Node = when (node) {
         is ColumnNode -> node.copy(
@@ -90,6 +94,8 @@ object DesignParser {
         )
         is TextNode -> node.copy(
             show = sanitize(node.show),
+            levelOf = node.levelOf?.take(60),
+            levels = sanitize(node.levels),
             tap = node.tap?.take(80),
             text = node.text.take(200),
             size = node.size.coerceIn(8, 72),
@@ -108,6 +114,8 @@ object DesignParser {
         )
         is IconNode -> node.copy(
             show = sanitize(node.show),
+            levelOf = node.levelOf?.take(60),
+            levels = sanitize(node.levels),
             tap = node.tap?.take(80),
             live = node.live?.take(60),
             size = node.size.coerceIn(10, 64),
@@ -115,6 +123,8 @@ object DesignParser {
         )
         is ProgressNode -> node.copy(
             show = sanitize(node.show),
+            levelOf = node.levelOf?.take(60),
+            levels = sanitize(node.levels),
             tap = node.tap?.take(80),
             color = Colors.orDefault(node.color, "#FF7CF29C"),
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
@@ -126,6 +136,14 @@ object DesignParser {
             color = Colors.orDefault(node.color, "#26FFFFFF"),
             thickness = node.thickness.coerceIn(1, 4),
         )
+        is TimerNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            of = node.of.take(20),
+            size = node.size.coerceIn(8, 48),
+            color = Colors.orDefault(node.color, "#B3FFFFFF"),
+        )
+        is SleepNode -> node.copy(show = sanitize(node.show), tap = node.tap?.take(80), height = node.height.coerceIn(4, 48))
         is ArtNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),

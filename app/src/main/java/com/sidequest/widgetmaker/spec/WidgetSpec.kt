@@ -270,6 +270,43 @@ data class TimerNode(
     override val tap: String? = null,
 ) : Node
 
+/**
+ * A line chart of a series of numbers, like today's heart rate
+ * ("{health.heart.series}"), with a soft fill under the line.
+ */
+@Serializable
+@SerialName("chart")
+data class ChartNode(
+    val series: String = "{health.heart.series}",
+    val height: Int = 90,
+    val color: String = "#FFD2542A",
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/**
+ * A ring filled to [value] (0-100), like NOOP's Charge, Effort and Rest,
+ * with [text] in the middle.
+ */
+@Serializable
+@SerialName("ring")
+data class RingNode(
+    val value: String = "{health.charge}",
+    val text: String = "{health.charge}",
+    val size: Int = 72,
+    val thickness: Int = 8,
+    val textSize: Int = 22,
+    val color: String = "#FFD9A33B",
+    val trackColor: String = "#33FFFFFF",
+    val textColor: String = "#FFFFFFFF",
+    val levelOf: String? = null,
+    val levels: List<Level>? = null,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
 /** Last night's sleep as a bar of stages (awake, light, deep, REM), [height] dp tall. */
 @Serializable
 @SerialName("sleep")

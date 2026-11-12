@@ -94,6 +94,8 @@ object Taps {
                 is ProgressNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
                 is ArtNode, is TimerNode -> add(TapKind.music)
                 is SleepNode -> add(TapKind.health)
+                is ChartNode -> TOKEN.findAll(node.series).forEach { add(kindOf(it.groupValues[1])) }
+                is RingNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
                 is SpacerNode, is DividerNode -> Unit
             }
         }

@@ -83,6 +83,9 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"divider","color":"#26FFFFFF","thickness":1}   a thin line between rows (lists, forecasts)
 - {"type":"art","size":56,"cornerRadius":12}   the album art of what's playing (music widgets)
 - {"type":"timer","of":"music","size":12,"color":color}   how far into the song, counting live
+- {"type":"chart","series":"{health.heart.series}","height":90,"color":color}   a line chart (today's heart rate)
+- {"type":"ring","value":"{health.charge}","text":"{health.charge}","size":72,"thickness":8,"textSize":22,
+   "color":color,"trackColor":color,"textColor":color}   a ring filled to a 0-100 value with text in it (NOOP-style)
 - {"type":"sleep","height":14}   last night's sleep as a bar of colored stages (awake, light, deep, REM)
 A widget can fill up like a battery: add "fill":{"value":"{battery}","color":"#FF9FD8CF",
 "levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"}],"levelsUpTo":30} next to "root".
@@ -143,6 +146,10 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
 - Phone: {battery.left} "About 9 h left" or "Full in 40 min", {battery.drain} "3.1%/h", {battery.temp},
   {phone.ram} "5.2 GB of 8 GB", {phone.ramPct}, {phone.ramFree}, {phone.storage}, {phone.storagePct},
   {phone.storageFree}.
+- Heart rate chart: {health.heart.series} (for a chart), {health.heart.last} latest bpm, {health.heartMin},
+  {health.heartMid}, {health.heartMax}, {health.heart.start}/{health.heart.mid}/{health.heart.end} times like "7:55 AM".
+- NOOP-style rings: Charge {health.charge}; Effort {health.effort} (0-21) with {health.effort.pct} (0-100, for a
+  ring); Rest {health.rest} (0-100, last night's sleep against 8 hours).
 - Sleep extras: {health.sleep.bed} "11:42 PM", {health.sleep.wake} "7:05 AM"; the last 7 nights, N = 1
   (oldest) to 7 (last night): {health.sleep.nN.day} "Mon", {health.sleep.nN} "7h 2m", {health.sleep.nN.pct}
   (0-100, for a bar per night).

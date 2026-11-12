@@ -100,8 +100,13 @@ object HealthMath {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         heart.maxByOrNull { it.timeMs }?.takeIf { nowMs - it.timeMs < 2 * 3600_000 }?.let { out["health.heart"] = it.bpm.toString() }
         if (heart.isNotEmpty()) out["health.heartMax"] = heart.maxOf { it.bpm }.toString()
+        out.putAll(heartChart(heart, zone))
         resting?.let { out["health.restingHeart"] = it.toString() }
-        if (heart.isNotEmpty()) out["health.effort"] = "%.1f".format(Locale.US, effort(heart, resting ?: 60))
+        if (heart.isNotEmpty()) {
+            val e = effort(heart, resting ?: 60)
+            out["health.effort"] = "%.1f".format(Locale.US, e)
+            out["health.effort.pct"] = (e / 21 * 100).roundToInt().coerceIn(0, 100).toString()
+        }
         workout?.let {
             out["health.workout"] = it.name
             out["health.workout.when"] = FeedParsers.whenText(it.start.toLocalDate(), it.start.toLocalTime(), now.toLocalDate())
@@ -129,6 +134,8 @@ object HealthMath {
                 out["health.sleep.light"] = hoursMinutes(stage('L'))
                 out["health.sleep.awake"] = hoursMinutes(stage('A'))
             }
+            // Rest, like NOOP's: last night's sleep against an 8-hour night.
+            out["health.rest"] = (it.asleepMinutes * 100 / 480).coerceIn(0, 100).toString()
             val clock = java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.US)
             it.bedtime?.let { t -> out["health.sleep.bed"] = t.format(clock) }
             it.wake?.let { t -> out["health.sleep.wake"] = t.format(clock) }
@@ -151,6 +158,38 @@ object HealthMath {
             }
         }
         return out
+    }
+
+    /**
+     * Today's heart rate for a chart: health.heart.series (up to 96 points,
+     * each the average of its stretch of the day), health.heart.last (latest
+     * reading), health.heartMin/Mid, and the chart's start, middle and end
+     * times (health.heart.start/.mid/.end, like "7:55 AM").
+     */
+    fun heartChart(heart: List<Pulse>, zone: ZoneId, points: Int = 96): Map<String, String> {
+        if (heart.size < 2) return emptyMap()
+        val sorted = heart.sortedBy { it.timeMs }
+        val first = sorted.first().timeMs
+        val last = sorted.last().timeMs
+        val span = maxOf(1L, last - first)
+        val buckets = Array(points) { mutableListOf<Int>() }
+        sorted.forEach { p -> buckets[((p.timeMs - first) * (points - 1) / span).toInt()] += p.bpm }
+        // Empty stretches (no readings) carry the last value, so the line doesn't drop to zero.
+        var previous = sorted.first().bpm
+        val series = buckets.map { b -> (if (b.isEmpty()) previous else b.average().roundToInt()).also { previous = it } }
+        val clock = java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.US)
+        fun time(ms: Long) = java.time.Instant.ofEpochMilli(ms).atZone(zone).format(clock)
+        val min = sorted.minOf { it.bpm }
+        val max = sorted.maxOf { it.bpm }
+        return mapOf(
+            "health.heart.series" to series.joinToString(","),
+            "health.heart.last" to sorted.last().bpm.toString(),
+            "health.heartMin" to min.toString(),
+            "health.heartMid" to ((min + max) / 2).toString(),
+            "health.heart.start" to time(first),
+            "health.heart.mid" to time(first + span / 2),
+            "health.heart.end" to time(last),
+        )
     }
 
     fun hoursMinutes(minutes: Long): String = if (minutes < 60) "${minutes}m" else "${minutes / 60}h ${minutes % 60}m"

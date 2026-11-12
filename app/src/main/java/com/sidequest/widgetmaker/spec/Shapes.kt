@@ -34,6 +34,12 @@ data class Look(
      * centered in their cell (like One UI's "Adjust height for 2x1 & 4x1"). Null is off.
      */
     val pillMaxHeight: Int? = null,
+    /**
+     * Square widgets stay square: a 2×2 (or 4×4) cell is often taller than it
+     * is wide in portrait, so its panel becomes a square of the shorter side,
+     * centered, like One UI's own 2×2 widgets.
+     */
+    val squareCells: Boolean = true,
 )
 
 /** Where a widget's panel goes inside its cell, and how much room its content gets. */
@@ -45,6 +51,8 @@ object Shapes {
 
     /** The tallest a pill gets. */
     const val PILL_MAX = 96
+
+    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.arch)
 
     /**
      * The panel for a widget of [width]×[height] dp: its size after the inset
@@ -59,6 +67,11 @@ object Shapes {
         if (maxH != null && height <= ONE_ROW_MAX) {
             h = min(h, maxH)
             shape = WidgetShape.pill
+        }
+        // A squarish cell (2×2, 4×4) gets a square panel; 4×2 and 2×4 keep their shape.
+        if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX && w.toFloat() / h in 0.6f..1.67f) {
+            w = min(w, h)
+            h = w
         }
         // A pill stays pill-height on taller widgets, centered (like One UI's oval widgets).
         if (shape == WidgetShape.pill) h = min(h, max(56, min(PILL_MAX, w / 2)))

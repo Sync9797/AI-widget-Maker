@@ -37,8 +37,11 @@ class PanelArt(
                     ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, 0x4DFFFFFF),
                     AiWidget.styler(context, theme),
                 )
-                WidgetTheme.oneui -> {
-                    val frost = OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH)
+                WidgetTheme.oneui, WidgetTheme.ambient -> {
+                    // Ambient: frosted album art while something plays; otherwise the wallpaper, as One UI.
+                    val cover = if (theme == WidgetTheme.ambient) com.sidequest.widgetmaker.music.Music.art(context) else null
+                    val frost = cover?.let { OneUiBackdrop.renderArt(it, pxW, pxH, outW, outH) }
+                        ?: OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH)
                     PanelArt(
                         ShapePainter.clip(frost.bitmap, panel.shape, radius), false,
                         ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, if (frost.light) 0x73FFFFFF else 0x33FFFFFF),

@@ -104,11 +104,34 @@ object OneUiBackdrop {
             Bitmap.createScaledBitmap(crop, smallW, smallH, true)
         } ?: colorsBitmap(context, smallW, smallH, place, sw, sh)
 
+        return frost(small, outW, outH)
+    }
+
+    /**
+     * Ambient (music widgets): the album art, cut to the panel's shape like a
+     * cover filling it, blurred and frosted the same way.
+     */
+    fun renderArt(art: Bitmap, widthPx: Int, heightPx: Int, outW: Int, outH: Int): Result {
+        val w = max(8, widthPx)
+        val h = max(8, heightPx)
+        // Crop the middle of the art to the panel's shape, then shrink it (small blurs smoothly).
+        val scale = max(w.toFloat() / art.width, h.toFloat() / art.height)
+        val cropW = (w / scale).roundToInt().coerceIn(1, art.width)
+        val cropH = (h / scale).roundToInt().coerceIn(1, art.height)
+        val crop = Bitmap.createBitmap(art, (art.width - cropW) / 2, (art.height - cropH) / 2, cropW, cropH)
+        val small = Bitmap.createScaledBitmap(crop, max(8, w / 10), max(8, h / 10), true)
+        return frost(small, outW, outH, saturation = 1.35)
+    }
+
+    /** Blurs [small], sees how bright it is, frosts it like One UI, and scales it up with a soft highlight. */
+    private fun frost(small: Bitmap, outW: Int, outH: Int, saturation: Double = 1.2): Result {
+        val smallW = small.width
+        val smallH = small.height
         // 2. Blur it, see how bright it is, and frost it like One UI does.
         val pixels = IntArray(smallW * smallH)
         small.getPixels(pixels, 0, smallW, 0, 0, smallW, smallH)
         Backdrop.blur(pixels, smallW, smallH, radius = max(2, min(smallW, smallH) / 8))
-        Backdrop.saturate(pixels, 1.2)
+        Backdrop.saturate(pixels, saturation)
         val light = Backdrop.luminance(pixels) > Backdrop.LIGHT_ABOVE
         // A light veil, so the wallpaper's colors still show through (One UI's blur is see-through, not gray).
         if (light) Backdrop.tint(pixels, 0xF6F6F8, 96) else Backdrop.tint(pixels, 0x1A1A1E, 64)

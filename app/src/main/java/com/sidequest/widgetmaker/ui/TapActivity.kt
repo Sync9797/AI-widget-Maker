@@ -105,7 +105,7 @@ private fun TapActivity.learnPlace() {
     if (id < 0 || bounds.width() < 8 || bounds.height() < 8) return
     val store = DesignStore(this)
     val moved = store.setBoundsFor(id, Backdrop.Box(bounds.left, bounds.top, bounds.right, bounds.bottom))
-    if (moved && store.themeFor(id) == WidgetTheme.oneui) {
+    if (moved && store.themeFor(id).frosted) {
         val app = applicationContext
         CoroutineScope(Dispatchers.Default).launch { runCatching { updateWidget(app, id) } }
     }

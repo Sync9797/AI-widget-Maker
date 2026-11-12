@@ -141,7 +141,7 @@ class AiWidget : GlanceAppWidget() {
          * the in-app preview; the widget itself never resolves them).
          */
         fun styler(context: Context, theme: WidgetTheme, backdropLight: Boolean = false): Styler =
-            if (theme == WidgetTheme.oneui) {
+            if (theme.frosted) {
                 Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
             } else {
                 Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) })
@@ -276,7 +276,10 @@ private class Inputs(
             return Inputs(
                 saved = store.designFor(appWidgetId),
                 tokens = AiWidget.currentTokens(context),
-                theme = store.themeFor(appWidgetId),
+                // Ambient is for music widgets; another design shown there gets One UI's frost instead.
+                theme = store.themeFor(appWidgetId).let { t ->
+                    if (t == WidgetTheme.ambient && store.designFor(appWidgetId)?.design?.let(WidgetTheme::playsMusic) != true) WidgetTheme.oneui else t
+                },
                 look = store.look,
                 shape = store.shapeFor(appWidgetId),
                 onScreen = store.boundsFor(appWidgetId),

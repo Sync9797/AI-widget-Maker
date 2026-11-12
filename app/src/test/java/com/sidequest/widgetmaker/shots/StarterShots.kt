@@ -58,7 +58,7 @@ class StarterShots {
             .setIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY, 64)
         // Previews refresh on a timer; drive the clock by hand so the test can settle.
         compose.mainClock.autoAdvance = false
-        val shots = WidgetTheme.entries.flatMap { theme -> Starters.all.mapIndexed { i, s -> Triple(theme, i, s) } }
+        val shots = WidgetTheme.everywhere.flatMap { theme -> Starters.all.mapIndexed { i, s -> Triple(theme, i, s) } }
         var current by mutableStateOf(shots.first())
         compose.setContent {
             val (theme, _, starter) = current
@@ -129,7 +129,7 @@ class StarterShots {
                 }
             }
         }
-        WidgetTheme.entries.forEach { t ->
+        WidgetTheme.everywhere.forEach { t ->
             compose.runOnUiThread { theme = t }
             compose.mainClock.advanceTimeBy(500)
             compose.waitForIdle()

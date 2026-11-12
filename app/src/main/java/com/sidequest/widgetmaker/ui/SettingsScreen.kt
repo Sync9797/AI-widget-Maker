@@ -100,7 +100,7 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
         ) {
             Section("Widget style", "Restyles the colors of all your widgets. Layouts stay as designed.") {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    WidgetTheme.entries.forEach { theme ->
+                    WidgetTheme.everywhere.forEach { theme ->
                         FilterChip(state.theme == theme, { viewModel.setTheme(theme) }, { Text(theme.label) })
                     }
                 }
@@ -111,6 +111,7 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                         WidgetTheme.original -> "The colors Claude chose for each design."
                         WidgetTheme.oneui -> "Like Samsung One UI: your wallpaper behind each widget, blurred and frosted, with " +
                             "text that turns dark or light to suit it and accents in your color palette."
+                        WidgetTheme.ambient -> "Music widgets only: frosted from the album art of what's playing."
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )

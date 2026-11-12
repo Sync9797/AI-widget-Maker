@@ -90,10 +90,17 @@ object Health {
         }
         val totals = if (metrics.isEmpty()) null else client.aggregate(AggregateRequest(metrics, today))
 
-        val heart = if (allowed(HeartRateRecord::class)) {
-            client.readRecords(ReadRecordsRequest(HeartRateRecord::class, TimeRangeFilter.between(startOfDay, now)))
-                .records.flatMap { r -> r.samples.map { HealthMath.Pulse(it.time.toEpochMilli(), it.beatsPerMinute.toInt()) } }
-        } else emptyList()
+        val heart = if (allowed(HeartRateRecord::class)) runCatching {
+            // NOOP writes heart rate in chunks that can start before midnight, so read the last 30 hours (every
+            // page of it), NOOP's when it shares, and keep today's readings; early in the day, the last 24 hours.
+            val records = preferNoop(readAll(client, HeartRateRecord::class, TimeRangeFilter.between(now.minus(Duration.ofHours(30)), now))) {
+                it.metadata.dataOrigin.packageName
+            }
+            val samples = records.flatMap { r -> r.samples.map { HealthMath.Pulse(it.time.toEpochMilli(), it.beatsPerMinute.toInt()) } }
+                .filter { it.timeMs <= now.toEpochMilli() }.distinctBy { it.timeMs }.sortedBy { it.timeMs }
+            val today = samples.filter { it.timeMs >= startOfDay.toEpochMilli() }
+            if (today.size >= 2) today else samples.filter { it.timeMs >= now.minus(Duration.ofHours(24)).toEpochMilli() }
+        }.getOrDefault(emptyList()) else emptyList()
         // The last 30 days of these, for today's value and your own baseline (NOOP's when it shares them).
         // NOOP stamps each day's numbers at noon, so read to the end of today: in the morning,
         // today's (from last night) is otherwise still "in the future" and skipped.
@@ -202,6 +209,55 @@ object Health {
         SleepSessionRecord.STAGE_TYPE_REM -> 'R'
         else -> 'L'
     }
+
+    /** Every page of a read (Health Connect returns them a page at a time). */
+    private suspend fun <T : androidx.health.connect.client.records.Record> readAll(
+        client: HealthConnectClient,
+        type: kotlin.reflect.KClass<T>,
+        range: TimeRangeFilter,
+    ): List<T> {
+        val out = mutableListOf<T>()
+        var token: String? = null
+        repeat(10) {
+            val page = client.readRecords(ReadRecordsRequest(type, range, pageSize = 5000, pageToken = token))
+            out += page.records
+            token = page.pageToken ?: return out
+        }
+        return out
+    }
+
+    /**
+     * What Health Connect is sharing with this app, for Settings: for each kind
+     * of data, whether it's allowed, how many records the last day has, and
+     * which apps they come from.
+     */
+    suspend fun diagnose(context: Context): List<String> = runCatching {
+        val client = HealthConnectClient.getOrCreate(context)
+        val granted = client.permissionController.getGrantedPermissions()
+        val now = Instant.now()
+        val day = TimeRangeFilter.between(now.minus(Duration.ofHours(30)), now)
+        val pm = context.packageManager
+        fun appName(pkg: String) = runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg)
+        suspend fun <T : androidx.health.connect.client.records.Record> line(label: String, type: kotlin.reflect.KClass<T>): String {
+            if (HealthPermission.getReadPermission(type) !in granted) return "$label: not allowed"
+            val records = runCatching { readAll(client, type, day) }.getOrElse { return "$label: couldn't read (${it.javaClass.simpleName})" }
+            if (records.isEmpty()) return "$label: nothing in the last day"
+            val from = records.map { it.metadata.dataOrigin.packageName }.distinct().joinToString(", ", transform = ::appName)
+            return "$label: ${records.size} in the last day, from $from"
+        }
+        listOf(
+            line("Heart rate", HeartRateRecord::class),
+            line("Resting heart rate", RestingHeartRateRecord::class),
+            line("HRV", HeartRateVariabilityRmssdRecord::class),
+            line("Blood oxygen", OxygenSaturationRecord::class),
+            line("Breathing rate", RespiratoryRateRecord::class),
+            line("Sleep", SleepSessionRecord::class),
+            line("Steps", StepsRecord::class),
+            line("Workouts", ExerciseSessionRecord::class),
+        ) + if (PERMISSION_BACKGROUND !in granted) listOf("Background reading: not allowed, so widgets only update while the app is open") else emptyList()
+    }.getOrElse { listOf("Couldn't reach Health Connect (${it.javaClass.simpleName}).") }
+
+    private const val PERMISSION_BACKGROUND = HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
 
     /** NOOP's records when there are any, else everyone's (so two apps' numbers don't mix). */
     private fun <T> preferNoop(records: List<T>, origin: (T) -> String): List<T> =

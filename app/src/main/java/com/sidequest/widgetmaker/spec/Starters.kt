@@ -742,9 +742,10 @@ object Starters {
               {"type":"text","text":"{health.heart.last}","size":32,"color":"#FF1C1F26","weight":"bold","maxLines":1},
               {"type":"text","text":" bpm","size":13,"color":"#FF6B7280","maxLines":1},
               {"type":"spacer","size":12,"show":{"minWidth":230}},
-              {"type":"column","background":"#33D2542A","cornerRadius":12,"padding":6,"show":{"minWidth":230},"children":[
+              {"type":"column","background":"#33D2542A","cornerRadius":12,"padding":6,"show":{"minWidth":230,"ifSet":"{health.heartMax}"},"children":[
                {"type":"text","text":"Min {health.heartMin} • Max {health.heartMax}","size":12,"color":"#FF1C1F26","maxLines":1}]}]},
-             {"type":"text","text":"Min {health.heartMin} • Max {health.heartMax}","size":11,"color":"#FF6B7280","maxLines":1,"show":{"maxWidth":229,"minHeight":100}},
+             {"type":"text","text":"Min {health.heartMin} • Max {health.heartMax}","size":11,"color":"#FF6B7280","maxLines":1,"show":{"maxWidth":229,"minHeight":100,"ifSet":"{health.heartMax}"}},
+             {"type":"text","text":"No heart rate readings yet. Settings → Exercise & health → Check what Health Connect shares.","size":12,"color":"#FF6B7280","maxLines":3,"show":{"minHeight":100,"ifEmpty":"{health.heart.series}"}},
              {"type":"spacer","size":8,"show":{"minHeight":150}},
              {"type":"row","show":{"minHeight":150},"children":[
               {"type":"chart","series":"{health.heart.series}","height":84,"color":"#FFD2542A","grow":true},
@@ -754,7 +755,7 @@ object Starters {
                {"type":"spacer","size":56},
                {"type":"text","text":"{health.heartMin}","size":11,"color":"#FF6B7280"}]}]},
              {"type":"spacer","size":4,"show":{"minHeight":150}},
-             {"type":"row","show":{"minHeight":150},"children":[
+             {"type":"row","show":{"minHeight":150,"ifSet":"{health.heart.series}"},"children":[
               {"type":"text","text":"{health.heart.start}","size":11,"color":"#FF6B7280","maxLines":1},
               {"type":"spacer","grow":true},
               {"type":"text","text":"{health.heart.mid}","size":11,"color":"#FF6B7280","maxLines":1,"show":{"minWidth":250}},

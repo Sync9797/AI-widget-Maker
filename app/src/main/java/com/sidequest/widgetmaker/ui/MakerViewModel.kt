@@ -122,7 +122,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val saved = withContext(Dispatchers.IO) { store.all() }
             val app = getApplication<Application>()
-            val live = AppWidgetManager.getInstance(app).getAppWidgetIds(ComponentName(app, AiWidgetReceiver::class.java))
+            val live = com.sidequest.widgetmaker.widget.WidgetSize.allIds(app)
             val placed = withContext(Dispatchers.IO) { store.placed(live) }
             val sources = feeds.settings
             val snapshot = withContext(Dispatchers.IO) { feeds.snapshot() }
@@ -290,7 +290,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Asks the launcher to add a widget showing [saved] (Android 8+, most launchers including Samsung's). */
-    fun pin(saved: SavedDesign) {
+    fun pin(saved: SavedDesign, size: com.sidequest.widgetmaker.widget.WidgetSize = com.sidequest.widgetmaker.widget.WidgetSize.suggested(saved.design)) {
         val app = getApplication<Application>()
         val manager = AppWidgetManager.getInstance(app)
         if (!manager.isRequestPinAppWidgetSupported) {
@@ -306,7 +306,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
             // Mutable: the launcher adds the new widget's id to this intent.
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
         )
-        manager.requestPinAppWidget(ComponentName(app, AiWidgetReceiver::class.java), null, callback)
+        manager.requestPinAppWidget(ComponentName(app, size.receiver), null, callback)
     }
 
     /** Called when the app comes to the front: fresh data, then redraw widgets. */

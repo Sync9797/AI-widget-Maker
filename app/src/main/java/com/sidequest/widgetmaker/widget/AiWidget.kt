@@ -196,7 +196,32 @@ class AiWidget : GlanceAppWidget() {
     }
 }
 
-class AiWidgetReceiver : GlanceAppWidgetReceiver() {
+/** The widget at each starting size. They draw the same way; each widget follows its own size. */
+enum class WidgetSize(val label: String, val receiver: Class<out AiWidgetReceiver>) {
+    slim("2×1 slim", AiWidgetSlimReceiver::class.java),
+    square("2×2", AiWidgetReceiver::class.java),
+    wide("4×2", AiWidgetWideReceiver::class.java),
+    large("4×4", AiWidgetLargeReceiver::class.java),
+    ;
+
+    companion object {
+        /** Every placed widget, whatever size it started as. */
+        fun allIds(context: Context): IntArray {
+            val manager = AppWidgetManager.getInstance(context)
+            return entries.flatMap { manager.getAppWidgetIds(android.content.ComponentName(context, it.receiver)).toList() }.toIntArray()
+        }
+
+        /** The size to suggest for a design: a pill starts slim. */
+        fun suggested(design: com.sidequest.widgetmaker.spec.WidgetDesign) =
+            if (design.shape == WidgetShape.pill) slim else square
+    }
+}
+
+class AiWidgetSlimReceiver : AiWidgetReceiver()
+class AiWidgetWideReceiver : AiWidgetReceiver()
+class AiWidgetLargeReceiver : AiWidgetReceiver()
+
+open class AiWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AiWidget()
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
@@ -212,7 +237,10 @@ class PinnedReceiver : BroadcastReceiver() {
         val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         val designId = intent.getStringExtra(EXTRA_DESIGN_ID) ?: return
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
-        DesignStore(context).assign(appWidgetId, designId)
+        val store = DesignStore(context)
+        store.assign(appWidgetId, designId)
+        // The widget keeps the design's shape itself too (a pill stays a pill).
+        store.get(designId)?.design?.shape?.takeIf { it != WidgetShape.rounded }?.let { store.setShapeFor(appWidgetId, it) }
         val pending = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {

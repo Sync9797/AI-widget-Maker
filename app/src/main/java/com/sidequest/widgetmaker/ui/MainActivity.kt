@@ -228,7 +228,7 @@ private fun WidgetsPane(state: MakerState, viewModel: MakerViewModel, startOpen:
             SavedCard(
                 saved = saved,
                 count = state.placed[saved.id] ?: 0,
-                onAdd = { viewModel.pin(saved) },
+                onAdd = { size -> viewModel.pin(saved, size) },
                 onEdit = { viewModel.edit(saved) },
                 onDelete = { viewModel.delete(saved) },
                 theme = state.theme,
@@ -241,7 +241,7 @@ private fun WidgetsPane(state: MakerState, viewModel: MakerViewModel, startOpen:
                 SavedCard(
                     saved = saved,
                     count = 0,
-                    onAdd = { viewModel.pin(saved) },
+                    onAdd = { size -> viewModel.pin(saved, size) },
                     onEdit = { viewModel.edit(saved) },
                     onDelete = { viewModel.delete(saved) },
                     theme = state.theme,
@@ -470,12 +470,13 @@ private fun ChatCard(
 private fun SavedCard(
     saved: SavedDesign,
     count: Int,
-    onAdd: () -> Unit,
+    onAdd: (com.sidequest.widgetmaker.widget.WidgetSize) -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     theme: WidgetTheme,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
+    var choosingSize by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(saved.design.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -484,11 +485,29 @@ private fun SavedCard(
                 DesignPreview(saved.design, PreviewSize.Wide, theme)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onAdd) { Text("Add to home screen") }
+                Button(onClick = { choosingSize = true }) { Text("Add to home screen") }
                 OutlinedButton(onClick = onEdit) { Text("Edit") }
                 TextButton(onClick = { confirmDelete = true }) { Text("Delete") }
             }
         }
+    }
+    if (choosingSize) {
+        val suggested = com.sidequest.widgetmaker.widget.WidgetSize.suggested(saved.design)
+        AlertDialog(
+            onDismissRequest = { choosingSize = false },
+            title = { Text("What size?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("You can still resize it on the home screen afterwards.", style = MaterialTheme.typography.bodySmall)
+                    com.sidequest.widgetmaker.widget.WidgetSize.entries.forEach { size ->
+                        TextButton(onClick = { choosingSize = false; onAdd(size) }, modifier = Modifier.fillMaxWidth()) {
+                            Text(size.label + if (size == suggested) "  (suggested)" else "", modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { choosingSize = false }) { Text("Cancel") } },
+        )
     }
     if (confirmDelete) {
         AlertDialog(

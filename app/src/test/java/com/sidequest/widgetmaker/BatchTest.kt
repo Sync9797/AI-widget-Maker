@@ -239,3 +239,29 @@ class WidgetSizeTest {
         )
     }
 }
+
+class AutoScaleTest {
+    private val design = Starters.all.first { it.title == "Daily briefing" }.design
+    private fun panel(w: Int, h: Int, look: com.sidequest.widgetmaker.spec.Look) = com.sidequest.widgetmaker.spec.Shapes.panel(w, h, design, look)
+
+    @Test
+    fun growsWithTheShorterSide() {
+        val more = com.sidequest.widgetmaker.spec.Look()
+        // A cover-screen 2×2 stays as it is.
+        assertEquals(1f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(165, 170, more), more), 0.001f)
+        // An open-screen 2×2 (wider, a bit taller) grows a little.
+        assertEquals(1.2f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(340, 198, more), more), 0.01f)
+        // A 4×4 grows up to 1.25× when it also shows more, up to 2× when it only scales.
+        assertEquals(1.25f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(340, 340, more), more), 0.001f)
+        val scale = more.copy(autoScale = com.sidequest.widgetmaker.spec.AutoScale.scale)
+        assertEquals(2f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(340, 340, scale), scale), 0.01f)
+        val off = more.copy(autoScale = com.sidequest.widgetmaker.spec.AutoScale.off)
+        assertEquals(1f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(340, 340, off), off), 0.001f)
+    }
+
+    @Test
+    fun oneRowWidgetsNeverScale() {
+        val look = com.sidequest.widgetmaker.spec.Look(autoScale = com.sidequest.widgetmaker.spec.AutoScale.scale)
+        assertEquals(1f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(400, 110, look), look), 0.001f)
+    }
+}

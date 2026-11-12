@@ -322,7 +322,9 @@ private fun DesignWidget(
     val size = LocalSize.current
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, look, shape)
     val art = PanelArt.build(context, theme, panel, look, onScreen)
-    val paint = Paint(art.styler, albumArt)
+    // On a bigger screen (an open foldable) the content can grow with the widget.
+    val k = Shapes.scale(panel, look)
+    val paint = Paint(art.styler, albumArt, k)
     Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Box(GlanceModifier.size(panel.width.dp, panel.height.dp).then(open)) {
             // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.
@@ -350,9 +352,10 @@ private fun DesignWidget(
                 Image(ImageProvider(it), contentDescription = null, modifier = GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
             }
             Box(
-                GlanceModifier.fillMaxSize().padding(start = panel.padH.dp, end = panel.padH.dp, top = panel.padTop.dp, bottom = panel.padV.dp),
+                GlanceModifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp),
             ) {
-                val fit = Fit(panel.width, panel.height, tokens)
+                // Size rules see the widget as it is before scaling, so a scaled 2×2 stays a 2×2 layout.
+                val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens)
                 if (fit.shows(design.root)) GlanceNode(design.root, tokens, paint, fit, GlanceModifier.fillMaxSize())
             }
         }
@@ -365,7 +368,7 @@ private fun DesignWidget(
  * match the phone's current palette (wallpaper or a One UI color palette) and
  * light or dark mode, with nothing cached in this app.
  */
-private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? = null) {
+private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? = null, val k: Float = 1f) {
     operator fun invoke(role: Role, design: String?): ColorProvider {
         // Colors that mean something (a red Charge) stay as they are in every theme.
         if (role == Role.Level) return ColorProvider(Color(Colors.argb(design)))
@@ -391,11 +394,17 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             verticalAlignment = vertical(node.verticalAlign),
         ) {
             node.children.filter(fit::shows).forEach { child ->
-                GlanceNode(child, tokens, paint, fit, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
+                // Rows that spread their parts out (and columns holding them) span the column's width.
+                val wide = if (spansWidth(child)) GlanceModifier.fillMaxWidth() else GlanceModifier
+                GlanceNode(child, tokens, paint, fit, if (child.grow) GlanceModifier.defaultWeight().then(wide) else wide)
             }
         }
         is RowNode -> Row(
-            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
+            // A row whose parts share out the space must span the width (launchers don't stretch rows themselves).
+            modifier = container(
+                if (!node.grow && node.children.any { it.grow }) modifier.fillMaxWidth() else modifier,
+                paint, node.background, node.cornerRadius, node.padding,
+            ),
             horizontalAlignment = horizontal(node.align),
             verticalAlignment = vertical(node.verticalAlign),
         ) {
@@ -411,7 +420,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 maxLines = node.maxLines,
                 style = TextStyle(
                     color = paint(role, color),
-                    fontSize = node.size.sp,
+                    fontSize = (node.size * paint.k).sp,
                     fontWeight = when (node.weight) {
                         Weight.bold -> FontWeight.Bold
                         Weight.medium -> FontWeight.Medium
@@ -425,24 +434,24 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 ),
             )
         }
-        is ClockNode -> AndroidRemoteViews(remoteViews = clockViews(node, paint.styler), modifier = modifier)
+        is ClockNode -> AndroidRemoteViews(remoteViews = clockViews(node, paint.styler, paint.k), modifier = modifier)
         is IconNode -> Image(
             provider = ImageProvider(iconRes(node, tokens)),
             contentDescription = null,
-            modifier = modifier.size(node.size.dp),
+            modifier = modifier.size((node.size * paint.k).dp),
             colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
         )
         is ProgressNode -> LinearProgressIndicator(
             progress = tokens.progress(node.value),
-            modifier = modifier.fillMaxWidth().height(node.height.dp),
+            modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
             color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
             backgroundColor = paint(Role.Track, node.trackColor),
         )
-        is TimerNode -> AndroidRemoteViews(remoteViews = timerViews(node, paint.styler), modifier = modifier)
+        is TimerNode -> AndroidRemoteViews(remoteViews = timerViews(node, paint.styler, paint.k), modifier = modifier)
         is SleepNode -> Image(
             provider = ImageProvider(SleepBar.draw(tokens.feeds["health.sleep.stages"], heightPx = node.height * 3)),
             contentDescription = null,
-            modifier = modifier.fillMaxWidth().height(node.height.dp),
+            modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
             contentScale = ContentScale.FillBounds,
         )
         is ArtNode -> {
@@ -451,31 +460,31 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 Image(
                     provider = ImageProvider(ArtCorners.round(cover, node.cornerRadius.toFloat() / node.size)),
                     contentDescription = null,
-                    modifier = modifier.size(node.size.dp),
+                    modifier = modifier.size((node.size * paint.k).dp),
                     contentScale = ContentScale.Crop,
                 )
             } else {
                 // No art: a music note on a soft tile the same size.
                 Box(
-                    modifier.size(node.size.dp).cornerRadius(node.cornerRadius.dp).background(paint(Role.Container, "#26FFFFFF")),
+                    modifier.size((node.size * paint.k).dp).cornerRadius((node.cornerRadius * paint.k).dp).background(paint(Role.Container, "#26FFFFFF")),
                     contentAlignment = Alignment.Center,
                 ) {
                     Image(
                         provider = ImageProvider(R.drawable.icon_music),
                         contentDescription = null,
-                        modifier = GlanceModifier.size((node.size / 2).dp),
+                        modifier = GlanceModifier.size((node.size * paint.k / 2).dp),
                         colorFilter = ColorFilter.tint(paint(Role.Accent, "#CCFFFFFF")),
                     )
                 }
             }
         }
-        is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size(node.size.dp))
+        is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color))) {}
     }
 }
 
 @Composable
-private fun clockViews(node: ClockNode, styler: Styler): RemoteViews {
+private fun clockViews(node: ClockNode, styler: Styler, k: Float = 1f): RemoteViews {
     val context = androidx.glance.LocalContext.current
     val layout = when (node.weight) {
         Weight.bold, Weight.medium -> R.layout.clock_bold
@@ -497,13 +506,13 @@ private fun clockViews(node: ClockNode, styler: Styler): RemoteViews {
         } else {
             setTextColor(R.id.clock, styler.argb(Role.Text, node.color, dark = false))
         }
-        setTextViewTextSize(R.id.clock, TypedValue.COMPLEX_UNIT_SP, node.size.toFloat())
+        setTextViewTextSize(R.id.clock, TypedValue.COMPLEX_UNIT_SP, node.size * k)
     }
 }
 
 /** A system-run timer: how far into the song it is, counting while it plays. */
 @Composable
-private fun timerViews(node: TimerNode, styler: Styler): RemoteViews {
+private fun timerViews(node: TimerNode, styler: Styler, k: Float = 1f): RemoteViews {
     val context = androidx.glance.LocalContext.current
     val now = com.sidequest.widgetmaker.music.Music.current(context)
     val elapsed = android.os.SystemClock.elapsedRealtime()
@@ -517,14 +526,21 @@ private fun timerViews(node: TimerNode, styler: Styler): RemoteViews {
         } else {
             setTextColor(R.id.timer, styler.argb(Role.Text, node.color, dark = false))
         }
-        setTextViewTextSize(R.id.timer, TypedValue.COMPLEX_UNIT_SP, node.size.toFloat())
+        setTextViewTextSize(R.id.timer, TypedValue.COMPLEX_UNIT_SP, node.size * k)
     }
+}
+
+/** Whether a row or column needs the full width: it (or one inside it) shares out space with "grow". */
+private fun spansWidth(node: Node): Boolean = when (node) {
+    is RowNode -> node.children.any { it.grow } || node.children.any(::spansWidth)
+    is ColumnNode -> node.children.any(::spansWidth)
+    else -> false
 }
 
 private fun container(modifier: GlanceModifier, paint: Paint, background: String?, radius: Int, padding: Int): GlanceModifier {
     var m = modifier
-    if (background != null) m = m.background(paint(Role.Container, background)).cornerRadius(radius.dp)
-    if (padding > 0) m = m.padding(padding.dp)
+    if (background != null) m = m.background(paint(Role.Container, background)).cornerRadius((radius * paint.k).dp)
+    if (padding > 0) m = m.padding((padding * paint.k).dp)
     return m
 }
 

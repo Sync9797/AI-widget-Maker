@@ -482,6 +482,19 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
         preview(look.copy(inset = 16 - it.toInt()))
     }
 
+    Text("Bigger screens (foldables, tablets)", style = MaterialTheme.typography.bodyLarge)
+    Text(
+        "When a widget is bigger than a standard 2×2, like on an open foldable, its text and icons can grow with it. " +
+            "Your launcher gives each screen its own size, so this follows the fold by itself.",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        com.sidequest.widgetmaker.spec.AutoScale.entries.forEach { mode ->
+            FilterChip(look.autoScale == mode, { update(look.copy(autoScale = mode)) }, { Text(mode.label) })
+        }
+    }
+    Text(look.autoScale.about, style = MaterialTheme.typography.bodySmall)
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text("Square 2×2 widgets", style = MaterialTheme.typography.bodyLarge)

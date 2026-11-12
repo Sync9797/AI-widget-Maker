@@ -116,7 +116,8 @@ fun DesignPreview(
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, usedLook, shape)
     // The same panel the home screen widget gets (in the preview, One UI assumes the middle of the screen).
     val art = remember(theme, panel, usedLook) { PanelArt.build(context, theme, panel, usedLook, null) }
-    val paint = PreviewPaint(art.styler, isSystemInDarkTheme())
+    val k = Shapes.scale(panel, usedLook)
+    val paint = PreviewPaint(art.styler, isSystemInDarkTheme(), k)
     // Shrinks to fit narrow screens, drawn exactly as at full size.
     BoxWithConstraints(modifier) {
         val scale = minOf(1f, maxWidth / size.width)
@@ -146,8 +147,8 @@ fun DesignPreview(
                     art.edge?.let {
                         Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
                     }
-                    Box(Modifier.fillMaxSize().padding(start = panel.padH.dp, end = panel.padH.dp, top = panel.padTop.dp, bottom = panel.padV.dp)) {
-                        val fit = Fit(panel.width, panel.height, tokens)
+                    Box(Modifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp)) {
+                        val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens)
                         if (fit.shows(design.root)) PreviewNode(design.root, tokens, paint, fit, Modifier.fillMaxSize())
                     }
                 }
@@ -189,8 +190,8 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             text = tokens.fill(node.text),
             modifier = modifier,
             color = textColor(node, tokens).let { (role, c) -> paint(role, c) },
-            fontSize = node.size.sp,
-            lineHeight = (node.size * 1.2f).sp,
+            fontSize = (node.size * paint.k).sp,
+            lineHeight = (node.size * paint.k * 1.2f).sp,
             fontWeight = weight(node.weight),
             textAlign = when (node.align) {
                 HAlign.start -> TextAlign.Start
@@ -204,20 +205,20 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             text = android.text.format.DateFormat.format(node.format, Calendar.getInstance()).toString(),
             modifier = modifier,
             color = paint(Role.Text, node.color),
-            fontSize = node.size.sp,
-            lineHeight = node.size.sp,
+            fontSize = (node.size * paint.k).sp,
+            lineHeight = (node.size * paint.k).sp,
             fontWeight = weight(node.weight),
             maxLines = 1,
         )
         is IconNode -> Image(
             painter = painterResource(iconRes(node, tokens)),
             contentDescription = null,
-            modifier = modifier.size(node.size.dp),
+            modifier = modifier.size((node.size * paint.k).dp),
             colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
         )
         is ProgressNode -> LinearProgressIndicator(
             progress = { tokens.progress(node.value) },
-            modifier = modifier.fillMaxWidth().height(node.height.dp).clip(RoundedCornerShape(node.height.dp)),
+            modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp).clip(RoundedCornerShape((node.height * paint.k).dp)),
             color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
             trackColor = paint(Role.Track, node.trackColor),
             gapSize = 0.dp,
@@ -227,7 +228,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             text = tokens.feeds["music.elapsed"] ?: "0:00",
             modifier = modifier,
             color = paint(Role.Text, node.color),
-            fontSize = node.size.sp,
+            fontSize = (node.size * paint.k).sp,
             fontWeight = weight(node.weight),
             maxLines = 1,
         )
@@ -235,26 +236,26 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             val bar = remember(tokens.feeds["health.sleep.stages"], node.height) {
                 com.sidequest.widgetmaker.widget.SleepBar.draw(tokens.feeds["health.sleep.stages"], heightPx = node.height * 3).asImageBitmap()
             }
-            Image(bar, null, modifier.fillMaxWidth().height(node.height.dp), contentScale = ContentScale.FillBounds)
+            Image(bar, null, modifier.fillMaxWidth().height((node.height * paint.k).dp), contentScale = ContentScale.FillBounds)
         }
         is ArtNode -> {
             val context = LocalContext.current
             val cover = remember { com.sidequest.widgetmaker.music.Music.art(context)?.asImageBitmap() }
-            val shape = RoundedCornerShape(node.cornerRadius.dp)
+            val shape = RoundedCornerShape((node.cornerRadius * paint.k).dp)
             if (cover != null) {
-                Image(cover, null, modifier.size(node.size.dp).clip(shape), contentScale = ContentScale.Crop)
+                Image(cover, null, modifier.size((node.size * paint.k).dp).clip(shape), contentScale = ContentScale.Crop)
             } else {
-                Box(modifier.size(node.size.dp).clip(shape).background(paint(Role.Container, "#26FFFFFF")), contentAlignment = Alignment.Center) {
+                Box(modifier.size((node.size * paint.k).dp).clip(shape).background(paint(Role.Container, "#26FFFFFF")), contentAlignment = Alignment.Center) {
                     Image(
                         painter = painterResource(R.drawable.icon_music),
                         contentDescription = null,
-                        modifier = Modifier.size((node.size / 2).dp),
+                        modifier = Modifier.size((node.size * paint.k / 2).dp),
                         colorFilter = ColorFilter.tint(paint(Role.Accent, "#CCFFFFFF")),
                     )
                 }
             }
         }
-        is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size(node.size.dp))
+        is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color)))
     }
 }
@@ -269,13 +270,13 @@ private fun RowScope.RowChild(node: Node, tokens: Tokens, paint: PreviewPaint, f
 
 private fun container(modifier: Modifier, paint: PreviewPaint, background: String?, radius: Int, padding: Int): Modifier {
     var m = modifier
-    if (background != null) m = m.clip(RoundedCornerShape(radius.dp)).background(paint(Role.Container, background))
-    if (padding > 0) m = m.padding(padding.dp)
+    if (background != null) m = m.clip(RoundedCornerShape((radius * paint.k).dp)).background(paint(Role.Container, background))
+    if (padding > 0) m = m.padding((padding * paint.k).dp)
     return m
 }
 
 /** Theme colors for the preview, in the app's current light or dark mode. */
-private class PreviewPaint(val styler: Styler, val dark: Boolean) {
+private class PreviewPaint(val styler: Styler, val dark: Boolean, val k: Float = 1f) {
     operator fun invoke(role: Role, design: String?) = Color(styler.argb(role, design, dark))
 }
 

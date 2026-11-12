@@ -17,6 +17,27 @@ enum class WidgetTheme(val label: String) {
      * behind it, and accents in the phone's color palette.
      */
     oneui("One UI"),
+    /**
+     * Music widgets only: like One UI, but frosted from the album art of
+     * what's playing, so the widget takes on the song's colors (the
+     * wallpaper, as One UI, when nothing is playing).
+     */
+    ambient("Ambient"),
+    ;
+
+    /** Frosted from a picture (wallpaper or album art), with text that suits it. */
+    val frosted: Boolean get() = this == oneui || this == ambient
+
+    companion object {
+        /** The styles for every widget (Ambient is for music widgets only). */
+        val everywhere: List<WidgetTheme> get() = entries.filter { it != ambient }
+
+        /** Whether a design shows music, so it can use the Ambient style. */
+        fun playsMusic(design: WidgetDesign): Boolean {
+            val json = DesignParser.encode(design)
+            return json.contains("{music.") || json.contains("\"type\":\"art\"")
+        }
+    }
 }
 
 /** What a color is used for, so a theme knows what to replace it with. */
@@ -93,7 +114,7 @@ class Styler(
                 Role.Accent, Role.TrendUp, Role.TrendDown, Role.Level -> original
             }
             WidgetTheme.material -> material(materialSlot(role, design), dark)
-            WidgetTheme.oneui -> when (role) {
+            WidgetTheme.oneui, WidgetTheme.ambient -> when (role) {
                 Role.Background -> if (backdropLight) 0x8CF4F4F6.toInt() else 0x73202024
                 Role.Container -> if (backdropLight) 0x47FFFFFF else 0x24FFFFFF
                 // Text suits what's behind it, keeping the design's fade.

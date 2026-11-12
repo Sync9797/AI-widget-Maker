@@ -244,7 +244,10 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                     "NOOP (the offline WHOOP app): turn on Health Connect in NOOP's Data Sources screen, and widgets get its HRV, " +
                     "resting heart rate, blood oxygen, breathing rate, VO2 max and sleep (its data comes first when other apps share too). " +
                     "NOOP keeps its Charge score to itself, so \"charge\" here is estimated the same way, from HRV and resting heart rate " +
-                    "against your own 30-day baseline (it needs about 5 days of data). Tapping a health widget opens NOOP when it's installed.",
+                    "against your own 30-day baseline (it needs about 5 days of data). Tapping a health widget opens NOOP when it's installed.\n\n" +
+                    "not-NOOP (the fork) shares straight with this app instead: its own Charge, Rest and Effort, live heart rate " +
+                    "and strap battery, with no Health Connect in between and no estimates. Nothing to set up; just install a not-NOOP " +
+                    "build with sharing.",
             ) {
                 HealthControls(form.health) { form = form.copy(health = it) }
                 Field("Daily step goal", form.stepGoal, "8000", KeyboardType.Number) { form = form.copy(stepGoal = it) }
@@ -399,7 +402,7 @@ private fun TapChoices() {
         TapKind.entries.associateWith { kind ->
             when (val choice = store.tapApp(kind)) {
                 null -> when {
-                    kind == TapKind.health && pm.getLaunchIntentForPackage(Health.NOOP) != null -> "NOOP"
+                    kind == TapKind.health && Health.installedNoop(context) != null -> "NOOP"
                     kind == TapKind.music -> "The app that's playing"
                     AppOpener.hasSystemDefault(kind) -> "Phone's default"
                     else -> "Ask every time"

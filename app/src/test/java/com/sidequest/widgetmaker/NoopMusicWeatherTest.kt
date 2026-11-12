@@ -62,6 +62,13 @@ class NoopTest {
     }
 
     @Test
+    fun saysWhenHrvIsNotAllowed() {
+        val v = HealthMath.values(null, 8000, null, null, null, emptyList(), 52, null, null, now, extras = HealthMath.Extras(hrvAllowed = false))
+        assertEquals("Open the app to allow HRV", v["health.charge.label"])
+        assertNull(v["health.charge"])
+    }
+
+    @Test
     fun noopStarterOpensHealth() {
         val design = Starters.all.first { it.title == "NOOP recovery" }.design
         assertEquals(TapKind.health, Taps.mainKind(design))

@@ -229,6 +229,11 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(draft = Draft(saved.id, saved.prompt, saved.design), error = null, message = null) }
     }
 
+    /** Changes the draft's shape (the preview follows; saved with the design). */
+    fun setDraftShape(shape: com.sidequest.widgetmaker.spec.WidgetShape) {
+        _state.update { s -> s.draft?.let { d -> s.copy(draft = d.copy(design = d.design.copy(shape = shape))) } ?: s }
+    }
+
     fun discardDraft() = _state.update { it.copy(draft = null, error = null) }
 
     fun dismissMessage() = _state.update { it.copy(message = null, error = null) }

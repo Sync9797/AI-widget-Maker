@@ -105,7 +105,8 @@ fun DesignPreview(
             tokens = AiWidget.currentTokens(context)
         }
     }
-    val usedLook = look ?: remember { DesignStore(context).look }
+    // Read each time, so previews follow Settings → Widget look as soon as it changes.
+    val usedLook = look ?: DesignStore(context).look
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, usedLook, shape)
     // The same panel the home screen widget gets (in the preview, One UI assumes the middle of the screen).
     val art = remember(theme, panel, usedLook) { PanelArt.build(context, theme, panel, usedLook, null) }

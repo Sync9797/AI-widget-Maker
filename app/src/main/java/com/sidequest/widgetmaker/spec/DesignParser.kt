@@ -14,7 +14,7 @@ object DesignParser {
     }
 
     /** Widgets get slow and launchers refuse them past a few dozen views. */
-    const val MAX_NODES = 60
+    const val MAX_NODES = 80
     const val MAX_DEPTH = 7
 
     class InvalidDesign(message: String) : Exception(message)

@@ -44,6 +44,22 @@ object Starters {
           {"type":"text","text":"{calendar.$n}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
           {"type":"text","text":"{calendar.$n.when}","size":11,"color":"#99FFFFFF","maxLines":1}]}]}"""
 
+    /** One hour in a forecast list: time, chance of rain, conditions, temperature, then a divider. */
+    private fun hourRow(n: Int, minHeight: Int, divider: Boolean = true): String {
+        val line = if (divider) DIVIDER_GAP else ""
+        return """
+        {"type":"column","show":{"minHeight":$minHeight},"children":[
+         {"type":"row","verticalAlign":"center","children":[
+          {"type":"text","text":"{weather.h$n.time}","size":13,"color":"#B3FFFFFF","grow":true},
+          {"type":"icon","name":"umbrella","size":12,"color":"#99FFFFFF"},
+          {"type":"text","text":" {weather.h$n.rain}","size":13,"color":"#B3FFFFFF","grow":true},
+          {"type":"icon","name":"sun","live":"{weather.h$n.icon}","size":18,"color":"#FFDCE8FF"},
+          {"type":"text","text":"{weather.h$n.temp}","size":14,"color":"#FFFFFFFF","weight":"bold","align":"end","grow":true}]}$line]}"""
+    }
+
+    private const val DIVIDER_GAP =
+        """,{"type":"spacer","size":5},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":5}"""
+
     private fun coin(symbol: String, minHeight: Int) = """
         {"type":"row","show":{"minHeight":$minHeight},"children":[
          {"type":"text","text":"$symbol","size":14,"color":"#CCFFFFFF","weight":"bold","grow":true},
@@ -181,6 +197,64 @@ object Starters {
              ${appointment(2, 190)},
              ${appointment(3, 240)},
              ${appointment(4, 290)}]}}""",
+        ),
+        Triple(
+            "Big date", "Material 3 Expressive: the month, the weekday and a huge day number; your next events beside it when wider.",
+            """{"name":"Big date","background":"#F22A221C","cornerRadius":32,"padding":18,"root":
+            {"type":"row","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","show":{"maxHeight":119},"children":[
+              {"type":"clock","format":"d","size":38,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"spacer","size":10},
+              {"type":"column","children":[
+               {"type":"clock","format":"MMM yyyy","size":12,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"clock","format":"EEEE","size":12,"color":"#CCFFFFFF","weight":"normal"}]}]},
+             {"type":"column","align":"center","verticalAlign":"center","grow":true,"show":{"minHeight":120},"children":[
+              {"type":"clock","format":"MMM yyyy","size":15,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"clock","format":"EEEE","size":15,"color":"#CCFFFFFF","weight":"normal"},
+              {"type":"clock","format":"d","size":64,"color":"#FFFFFFFF","weight":"bold","show":{"maxHeight":139}},
+              {"type":"clock","format":"d","size":96,"color":"#FFFFFFFF","weight":"bold","show":{"minHeight":140}}]},
+             {"type":"column","grow":true,"show":{"minWidth":250},"children":[
+              {"type":"text","text":"{calendar.1}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
+              {"type":"text","text":"{calendar.1.when}","size":12,"color":"#B3FFFFFF","maxLines":1},
+              {"type":"spacer","size":8,"show":{"minHeight":120}},
+              {"type":"text","text":"{calendar.2}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"show":{"minHeight":120}},
+              {"type":"text","text":"{calendar.2.when}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":120}},
+              {"type":"spacer","size":8,"show":{"minHeight":200}},
+              {"type":"text","text":"{calendar.3}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"show":{"minHeight":200}},
+              {"type":"text","text":"{calendar.3.when}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":200}}]}]}}""",
+        ),
+        Triple(
+            "Day cookie", "A scalloped Material 3 Expressive cookie with the weekday and day number.",
+            """{"name":"Day cookie","background":"#FFD8E4FF","cornerRadius":24,"padding":10,"shape":"cookie","root":
+            {"type":"column","align":"center","verticalAlign":"center","children":[
+             {"type":"clock","format":"EEE","size":14,"color":"#FF1B2A4A","weight":"bold"},
+             {"type":"clock","format":"d","size":44,"color":"#FF1B2A4A","weight":"bold","show":{"maxHeight":199}},
+             {"type":"clock","format":"d","size":64,"color":"#FF1B2A4A","weight":"bold","show":{"minHeight":200}},
+             {"type":"clock","format":"MMMM","size":14,"color":"#CC1B2A4A","weight":"medium","show":{"minHeight":200}}]}}""",
+        ),
+        Triple(
+            "Hourly weather", "Now on the left, the next hours as a list with rain chances on the right (when wide).",
+            """{"name":"Hourly weather","background":"#F2163170","cornerRadius":30,"padding":16,"root":
+            {"type":"row","children":[
+             {"type":"column","grow":true,"children":[
+              {"type":"icon","name":"weather","size":44,"color":"#FFDCE8FF","show":{"minHeight":150}},
+              {"type":"spacer","grow":true},
+              {"type":"text","text":"{weather.temp}","size":30,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
+              {"type":"text","text":"{weather.condition}","size":13,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100}},
+              {"type":"row","show":{"minHeight":120},"children":[
+               {"type":"icon","name":"pin","size":13,"color":"#B3FFFFFF"},
+               {"type":"text","text":" {weather.place}","size":13,"color":"#B3FFFFFF","maxLines":1}]}]},
+             {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
+              ${hourRow(1, 0)},${hourRow(2, 0)},${hourRow(3, 150)},${hourRow(4, 150, divider = false)}]}]}}""",
+        ),
+        Triple(
+            "Battery pill", "An oval battery meter, like One UI's: the percentage and a bar.",
+            """{"name":"Battery pill","background":"#B3504A48","cornerRadius":40,"padding":12,"shape":"pill","root":
+            {"type":"row","verticalAlign":"center","children":[
+             {"type":"text","text":"{battery}%","size":18,"color":"#FFFFFFFF","weight":"bold"},
+             {"type":"spacer","size":14},
+             {"type":"progress","value":"{battery}","color":"#FFFFFFFF","trackColor":"#40FFFFFF","height":12,"grow":true},
+             {"type":"text","text":"  {charging}","size":12,"color":"#CCFFFFFF","show":{"minWidth":260}}]}}""",
         ),
         Triple(
             "Battery", "Your battery level with a bar; the time and date when it's bigger.",

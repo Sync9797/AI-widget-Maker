@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Optional: your upcoming calendar events, for "up next" widgets. Asked for only when you turn it on. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Optional, for the One UI theme's blur: reading the wallpaper itself needs "All files access" on recent Android. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <!-- Lets the app see whether the Claude app is installed, to hand it a widget request. -->
     <queries>

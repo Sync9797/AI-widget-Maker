@@ -3,7 +3,10 @@ package com.sidequest.widgetmaker.data
 import android.content.Context
 import com.sidequest.widgetmaker.spec.DesignParser
 import com.sidequest.widgetmaker.spec.SavedDesign
+import com.sidequest.widgetmaker.spec.Backdrop
+import com.sidequest.widgetmaker.spec.Look
 import com.sidequest.widgetmaker.spec.TapKind
+import com.sidequest.widgetmaker.spec.WidgetShape
 import com.sidequest.widgetmaker.spec.WidgetTheme
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
@@ -47,7 +50,8 @@ class DesignStore(context: Context) {
     }
 
     fun forget(appWidgetId: Int) {
-        prefs.edit().remove(widgetKey(appWidgetId)).remove("widget_theme_$appWidgetId").apply()
+        prefs.edit().remove(widgetKey(appWidgetId)).remove("widget_theme_$appWidgetId")
+            .remove("widget_shape_$appWidgetId").remove("widget_bounds_$appWidgetId").apply()
     }
 
     /** How every widget is colored (Settings). */
@@ -78,6 +82,34 @@ class DesignStore(context: Context) {
         prefs.edit().apply {
             if (choice == null) remove("tap_app_${kind.name}") else putString("tap_app_${kind.name}", choice)
         }.apply()
+    }
+
+    /** How all widgets look (Settings → Widget look). */
+    var look: Look
+        get() = prefs.getString("look", null)
+            ?.let { runCatching { DesignParser.json.decodeFromString(Look.serializer(), it) }.getOrNull() } ?: Look()
+        set(value) = prefs.edit().putString("look", DesignParser.json.encodeToString(Look.serializer(), value)).apply()
+
+    /** A widget's own shape (its settings), or null for its design's. */
+    fun shapeFor(appWidgetId: Int): WidgetShape? =
+        prefs.getString("widget_shape_$appWidgetId", null)?.let { runCatching { WidgetShape.valueOf(it) }.getOrNull() }
+
+    fun setShapeFor(appWidgetId: Int, shape: WidgetShape?) {
+        prefs.edit().apply {
+            if (shape == null) remove("widget_shape_$appWidgetId") else putString("widget_shape_$appWidgetId", shape.name)
+        }.apply()
+    }
+
+    /** Where a widget's panel is on the home screen, in pixels (learned when it's tapped), for the One UI blur. */
+    fun boundsFor(appWidgetId: Int): Backdrop.Box? =
+        prefs.getString("widget_bounds_$appWidgetId", null)?.split(',')?.mapNotNull { it.toIntOrNull() }
+            ?.takeIf { it.size == 4 }?.let { Backdrop.Box(it[0], it[1], it[2], it[3]) }
+
+    /** Saves a widget's place; true if it changed. */
+    fun setBoundsFor(appWidgetId: Int, box: Backdrop.Box): Boolean {
+        if (boundsFor(appWidgetId) == box) return false
+        prefs.edit().putString("widget_bounds_$appWidgetId", "${box.left},${box.top},${box.right},${box.bottom}").apply()
+        return true
     }
 
     var apiKey: String

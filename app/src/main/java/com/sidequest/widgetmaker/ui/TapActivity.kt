@@ -46,6 +46,12 @@ import com.sidequest.widgetmaker.data.DesignStore
 import com.sidequest.widgetmaker.feeds.Feeds
 import com.sidequest.widgetmaker.spec.TapAction
 import com.sidequest.widgetmaker.spec.TapKind
+import com.sidequest.widgetmaker.spec.Backdrop
+import com.sidequest.widgetmaker.spec.WidgetTheme
+import com.sidequest.widgetmaker.widget.updateWidget
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.net.URLEncoder
 
 /**
@@ -56,8 +62,13 @@ import java.net.URLEncoder
 class TapActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        learnPlace()
         val action = TapIntents.read(intent)
-        if (action == null) return finish()
+        if (action == null) {
+            // A widget with nothing in particular to open: open this app.
+            if (intent?.hasExtra(TapIntents.WIDGET) == true) startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            return finish()
+        }
         if (action !is TapAction.Open) {
             AppOpener.open(this, action)
             return finish()
@@ -82,8 +93,34 @@ class TapActivity : ComponentActivity() {
     }
 }
 
+/**
+ * A tap on a widget's panel comes with where the panel is on screen (the
+ * launcher says so). Saved, it lines the One UI blur up with the wallpaper
+ * behind the widget; the widget is redrawn when it moved.
+ */
+private fun TapActivity.learnPlace() {
+    val id = intent?.getIntExtra(TapIntents.WIDGET, -1) ?: -1
+    val bounds = intent?.sourceBounds ?: return
+    if (id < 0 || bounds.width() < 8 || bounds.height() < 8) return
+    val store = DesignStore(this)
+    val moved = store.setBoundsFor(id, Backdrop.Box(bounds.left, bounds.top, bounds.right, bounds.bottom))
+    if (moved && store.themeFor(id) == WidgetTheme.oneui) {
+        val app = applicationContext
+        CoroutineScope(Dispatchers.Default).launch { runCatching { updateWidget(app, id) } }
+    }
+}
+
 /** Packs a tap into the intent a widget element launches, and reads it back. */
 object TapIntents {
+    const val WIDGET = "widget"
+
+    /** The whole widget's tap: [action] if it has one (else open this app), noting which widget it was. */
+    fun root(context: Context, appWidgetId: Int, action: TapAction?): Intent {
+        val intent = action?.let { intent(context, it) }
+            ?: Intent(context, TapActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        return intent.putExtra(WIDGET, appWidgetId).setData(Uri.parse("aiwidget://widget/$appWidgetId/" + action.hashCode().toUInt()))
+    }
+
     fun intent(context: Context, action: TapAction): Intent {
         val intent = Intent(context, TapActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

@@ -35,7 +35,10 @@ You design Android widgets for the home screen and the lock screen. You reply wi
 object describing the widget and nothing else: no explanation and no code fence.
 
 The widget is drawn from a tree of elements. The top level is:
-{"name": short name, "background": color, "cornerRadius": dp, "padding": dp, "root": element}
+{"name": short name, "background": color, "cornerRadius": dp, "padding": dp, "shape": shape, "root": element}
+"shape" is the panel's outline: "rounded" (default), "pill" (capsule, for 1-row widgets), "circle",
+"squircle", "arch" (round top), or "cookie" (Material 3 Expressive's scalloped circle; for a single
+bold value like a day number). Circles and cookies keep content near the middle.
 
 Colors are "#RRGGBB" or "#AARRGGBB" (the AA part is opacity; "#CC000000" is 80% black).
 Sizes are in dp (text sizes in sp). Every element may set "grow": true to take the leftover
@@ -73,6 +76,7 @@ Elements ("type" picks one; leave out any field to use its default):
    set "live" to a value holding an icon name, like "{weather.h1.icon}", to make the icon follow it
 - {"type":"progress","value":"{battery}" or a number 0-100,"color":color,"trackColor":color,"height":6}
 - {"type":"spacer","size":8}   empty space; with "grow":true it pushes things apart
+- {"type":"divider","color":"#26FFFFFF","thickness":1}   a thin line between rows (lists, forecasts)
 
 Text can include these live values, written in braces: ${Tokens.NAMES.joinToString(", ") { "{$it}" }}.
 {greeting} is "Good morning/afternoon/evening/night"; {battery} is the percentage without the
@@ -83,7 +87,7 @@ Live data from the internet (refreshed about every 30 minutes; each request says
 - Weather: {weather.temp} "18°", {weather.feelsLike}, {weather.high}, {weather.low},
   {weather.condition} "Partly cloudy", {weather.rain} "40%" (chance today), {weather.wind} "9 mph",
   {weather.place} the town name. The icon "weather" shows the current conditions.
-  Next hours, N = 1 to 5: {weather.hN.time} "3 PM", {weather.hN.temp}, {weather.hN.icon}.
+  Next hours, N = 1 to 5: {weather.hN.time} "3 PM", {weather.hN.temp}, {weather.hN.icon}, {weather.hN.rain} "10%".
   Next days, N = 1 to 3: {weather.dN.day} "Thu", {weather.dN.high}, {weather.dN.low}, {weather.dN.icon}.
   Show forecasts as a row of small columns (time, live icon, temp), only at bigger sizes.
 - Crypto, for each coin the user tracks (SYMBOL is like BTC): {crypto.SYMBOL.price} "$97,412",

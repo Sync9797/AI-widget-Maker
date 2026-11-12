@@ -164,7 +164,9 @@ class Feeds(private val context: Context) {
 
     private fun news(s: FeedSettings): Map<String, String> {
         val query = s.newsTopic.ifBlank { s.place!!.name.substringBefore(",") }
-        return FeedParsers.news(get(newsUrl(query)))
+        // Google News can leave death notices out itself; anything that slips through is caught below.
+        val search = if (s.hideObituaries) "$query -obituary -obituaries" else query
+        return FeedParsers.news(get(newsUrl(search)), hideObituaries = s.hideObituaries, muted = s.mutedWords)
     }
 
     /** A Google News search feed in the phone's language and country. */
@@ -186,7 +188,7 @@ class Feeds(private val context: Context) {
             // No account: recent local articles about things to do, from Google News.
             val town = place.name.substringBefore(",")
             val url = newsUrl("(events OR concerts OR festival OR \"things to do\") \"$town\" when:14d")
-            return FeedParsers.eventArticles(get(url), LocalDate.now())
+            return FeedParsers.eventArticles(get(url), LocalDate.now(), hideObituaries = s.hideObituaries, muted = s.mutedWords)
         }
         val url = "https://app.ticketmaster.com/discovery/v2/events.json".toHttpUrl().newBuilder()
             .addQueryParameter("apikey", s.ticketmasterKey.trim())

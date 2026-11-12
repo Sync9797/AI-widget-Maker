@@ -84,6 +84,7 @@ object Starters {
         {"type":"column","show":{"minHeight":$minHeight},"children":[
          {"type":"row","verticalAlign":"center","children":[
           {"type":"text","text":"{weather.h$n.$time}","size":13,"color":"#B3FFFFFF","grow":true},
+          {"type":"spacer","size":6},
           {"type":"icon","name":"umbrella","size":12,"color":"#99FFFFFF"},
           {"type":"text","text":" {weather.h$n.rain}","size":13,"color":"#B3FFFFFF","grow":true,"levelOf":"{weather.h$n.rain}","levels":[{"from":0,"color":"#B3FFFFFF"},{"from":30,"color":"#FF9CCBFF"},{"from":60,"color":"#FF5AA9FF"}]},
           {"type":"icon","name":"sun","live":"{weather.h$n.icon}","size":18,"color":"#FFDCE8FF"},
@@ -194,13 +195,15 @@ object Starters {
               {"type":"column","grow":true,"children":[
                {"type":"row","show":{"minHeight":150},"children":[
                 {"type":"spacer","grow":true},
-                {"type":"icon","name":"weather","size":52,"color":"#FFC9DDE6"}]},
+                {"type":"icon","name":"weather","size":56,"color":"#FFC9DDE6"},
+                {"type":"spacer","size":20,"show":{"minWidth":250}}]},
                {"type":"spacer","grow":true},
                {"type":"text","text":"{weather.temp}","size":30,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
                {"type":"text","text":"{weather.outlook}","size":13,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100}},
                {"type":"row","show":{"minHeight":120},"children":[
                 {"type":"icon","name":"pin","size":13,"color":"#B3FFFFFF"},
                 {"type":"text","text":" {weather.place}","size":13,"color":"#B3FFFFFF","maxLines":1}]}]},
+              {"type":"spacer","size":20,"show":{"minWidth":250}},
               {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
                ${hourRow(1, 0)},${hourRow(2, 0)},${hourRow(3, 140)},${hourRow(4, 140, divider = false)}]}]},
              {"type":"column","show":{"minHeight":300},"children":[
@@ -326,13 +329,15 @@ object Starters {
              {"type":"column","grow":true,"children":[
               {"type":"row","show":{"minHeight":150},"children":[
                {"type":"spacer","grow":true},
-               {"type":"icon","name":"weather","size":52,"color":"#FFC9DDE6"}]},
+               {"type":"icon","name":"weather","size":56,"color":"#FFC9DDE6"},
+               {"type":"spacer","size":20,"show":{"minWidth":250}}]},
               {"type":"spacer","grow":true},
               {"type":"text","text":"{weather.temp}","size":30,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
               {"type":"text","text":"{weather.outlook}","size":13,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100}},
               {"type":"row","show":{"minHeight":120},"children":[
                {"type":"icon","name":"pin","size":13,"color":"#B3FFFFFF"},
                {"type":"text","text":" {weather.place}","size":13,"color":"#B3FFFFFF","maxLines":1}]}]},
+             {"type":"spacer","size":20,"show":{"minWidth":250}},
              {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
               ${hourRow(1, 0, clock24 = true)},${hourRow(2, 0, clock24 = true)},${hourRow(3, 140, clock24 = true)},${hourRow(4, 140, divider = false, clock24 = true)}]}]},{"type":"column","show":{"minHeight":300},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"column","show":{"maxWidth":249},"children":[{"type":"row","children":[${hour(1)},${hour(2)},${hour(3)}]},{"type":"spacer","size":8}]},${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
         ),

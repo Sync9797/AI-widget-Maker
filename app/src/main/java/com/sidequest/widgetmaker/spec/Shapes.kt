@@ -40,7 +40,16 @@ data class Look(
      * centered, like One UI's own 2×2 widgets.
      */
     val squareCells: Boolean = true,
+    /** Bigger widgets (like on a foldable's inner screen) can grow their text and icons too. */
+    val autoScale: AutoScale = AutoScale.more,
 )
+
+/** How a widget grows when it's bigger than a standard 2×2 (an open foldable, a tablet, a 4×4). */
+enum class AutoScale(val label: String, val about: String) {
+    off("Off", "Text and icons stay the same size; bigger widgets show more."),
+    scale("Scale with size", "Everything grows with the widget, like a bigger copy of the 2×2."),
+    more("Scale and show more", "Grows a little and shows more, so big widgets aren't sparse."),
+}
 
 /** Where a widget's panel goes inside its cell, and how much room its content gets. */
 data class Panel(val width: Int, val height: Int, val shape: WidgetShape, val radius: Int, val padH: Int, val padV: Int, val padTop: Int)
@@ -52,6 +61,24 @@ object Shapes {
     /** The tallest a pill gets (unless set in Settings), and the shortest. */
     const val PILL_MAX = 72
     const val PILL_MIN = 40
+
+    /** The shorter side of a standard 2×2 widget, in dp: bigger panels scale up from it. */
+    const val BASE_SIDE = 165f
+
+    /**
+     * How much a panel's content grows: its shorter side against a standard
+     * 2×2, up to 1.25× when it also shows more, up to 2× when it only scales.
+     * One-row widgets and pills never scale.
+     */
+    fun scale(panel: Panel, look: Look): Float {
+        if (panel.shape == WidgetShape.pill || panel.height <= ONE_ROW_MAX) return 1f
+        val raw = minOf(panel.width, panel.height) / BASE_SIDE
+        return when (look.autoScale) {
+            AutoScale.off -> 1f
+            AutoScale.scale -> raw.coerceIn(1f, 2f)
+            AutoScale.more -> raw.coerceIn(1f, 1.25f)
+        }
+    }
 
     /** A pill's height for its width, like One UI's oval widgets. */
     const val PILL_RATIO = 0.32

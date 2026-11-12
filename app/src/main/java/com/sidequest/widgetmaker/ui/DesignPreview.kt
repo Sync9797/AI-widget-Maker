@@ -1,6 +1,9 @@
 package com.sidequest.widgetmaker.ui
 
 import androidx.compose.foundation.Image
+import com.sidequest.widgetmaker.R
+import androidx.compose.runtime.remember
+import com.sidequest.widgetmaker.spec.ArtNode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -207,6 +210,23 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             gapSize = 0.dp,
             drawStopIndicator = {},
         )
+        is ArtNode -> {
+            val context = LocalContext.current
+            val cover = remember { com.sidequest.widgetmaker.music.Music.art(context)?.asImageBitmap() }
+            val shape = RoundedCornerShape(node.cornerRadius.dp)
+            if (cover != null) {
+                Image(cover, null, modifier.size(node.size.dp).clip(shape), contentScale = ContentScale.Crop)
+            } else {
+                Box(modifier.size(node.size.dp).clip(shape).background(paint(Role.Container, "#26FFFFFF")), contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(R.drawable.icon_music),
+                        contentDescription = null,
+                        modifier = Modifier.size((node.size / 2).dp),
+                        colorFilter = ColorFilter.tint(paint(Role.Accent, "#CCFFFFFF")),
+                    )
+                }
+            }
+        }
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size(node.size.dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color)))
     }

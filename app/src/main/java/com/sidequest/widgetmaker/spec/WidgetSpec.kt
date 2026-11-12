@@ -39,7 +39,7 @@ enum class Weight { light, normal, medium, bold }
  * Icons the widget can draw (each is a drawable in the app). "weather" is
  * live: it shows sun, moon, cloud, rain, snow or storm for the current weather.
  */
-enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, umbrella, pin, flame, egg, paw, steps, check, weather }
+enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, umbrella, pin, flame, egg, paw, steps, check, play, pause, next, previous, weather }
 
 @Serializable
 sealed interface Node {
@@ -177,6 +177,17 @@ data class ProgressNode(
 data class DividerNode(
     val color: String = "#26FFFFFF",
     val thickness: Int = 1,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/** The album art of what's playing (a music note when there's none), [size] dp square. */
+@Serializable
+@SerialName("art")
+data class ArtNode(
+    val size: Int = 56,
+    val cornerRadius: Int = 12,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

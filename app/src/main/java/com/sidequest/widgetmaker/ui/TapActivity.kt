@@ -131,6 +131,7 @@ object TapIntents {
             is TapAction.Open -> intent.putExtra("kind", action.kind.name)
             is TapAction.GameScreen -> intent.putExtra("gameScreen", action.screen)
             is TapAction.GameAction -> intent.putExtra("gameAction", action.action).putExtra("gameId", action.id)
+            is TapAction.Media -> intent.putExtra("media", action.command)
         }
         // A distinct data URI per target, so each element gets its own PendingIntent.
         return intent.setData(Uri.parse("aiwidget://tap/" + action.hashCode().toUInt()))
@@ -140,6 +141,7 @@ object TapIntents {
         intent ?: return null
         intent.getStringExtra("url")?.let { return TapAction.Link(it) }
         intent.getStringExtra("gameScreen")?.let { return TapAction.GameScreen(it) }
+        intent.getStringExtra("media")?.let { return TapAction.Media(it) }
         intent.getStringExtra("gameAction")?.let { a -> intent.getStringExtra("gameId")?.let { return TapAction.GameAction(a, it) } }
         intent.getLongArrayExtra("event")?.takeIf { it.size == 3 }?.let { return TapAction.CalendarEvent(it[0], it[1], it[2]) }
         return intent.getStringExtra("kind")?.let { runCatching { TapAction.Open(TapKind.valueOf(it)) }.getOrNull() }
@@ -165,6 +167,7 @@ object AppOpener {
             }
             is TapAction.GameScreen -> openGame(context, action.screen)
             is TapAction.GameAction -> gameAction(context, action)
+            is TapAction.Media -> com.sidequest.widgetmaker.music.Music.control(context, action.command)
         }
     }
 
@@ -224,10 +227,14 @@ object AppOpener {
             }
         }
         TapKind.game -> context.packageManager.getLaunchIntentForPackage(MonsterQuest.PACKAGE)
-        TapKind.weather, TapKind.crypto, TapKind.news, TapKind.events, TapKind.health -> null
+        // What's playing opens the app playing it.
+        TapKind.music -> com.sidequest.widgetmaker.music.Music.current(context)?.packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
+        // NOOP, when it's installed: health widgets mostly show what it shares.
+        TapKind.health -> context.packageManager.getLaunchIntentForPackage(com.sidequest.widgetmaker.feeds.Health.NOOP)
+        TapKind.weather, TapKind.crypto, TapKind.news, TapKind.events -> null
     }
 
-    fun hasSystemDefault(kind: TapKind) = kind in setOf(TapKind.clock, TapKind.calendar, TapKind.battery, TapKind.commute, TapKind.game)
+    fun hasSystemDefault(kind: TapKind) = kind in setOf(TapKind.clock, TapKind.calendar, TapKind.battery, TapKind.commute, TapKind.game, TapKind.music)
 
     fun openChoice(context: Context, kind: TapKind, choice: String): Boolean {
         if (choice == WEB) return start(context, Intent(Intent.ACTION_VIEW, Uri.parse(webPage(context, kind))))
@@ -250,6 +257,7 @@ object AppOpener {
             TapKind.battery -> search("battery tips")
             TapKind.health -> "https://health.google/health-connect-android/"
             TapKind.game -> "https://github.com/Sync9797/Side-Quest-/releases/latest"
+            TapKind.music -> "https://music.youtube.com/"
         }
     }
 
@@ -287,7 +295,8 @@ object AppOpener {
         TapKind.clock to listOf("clock", "alarm"),
         TapKind.commute to listOf("maps", "waze", "navigation", "transit", "citymapper", "here we go"),
         TapKind.battery to listOf("battery", "device care", "settings"),
-        TapKind.health to listOf("health", "whoop", "fit", "fitbit", "garmin", "strava", "oura", "polar", "zepp", "samsung health"),
+        TapKind.health to listOf("health", "whoop", "fit", "fitbit", "garmin", "strava", "oura", "polar", "zepp", "samsung health", "noop"),
+        TapKind.music to listOf("music", "spotify", "pandora", "deezer", "tidal", "soundcloud", "podcast", "pocket casts", "audible", "player", "plex", "jellyfin"),
         TapKind.game to listOf("monster quest", "side quest", "monsterquest"),
     )
 

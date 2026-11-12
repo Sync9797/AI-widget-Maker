@@ -8,6 +8,10 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.RespiratoryRateRecord
+import androidx.health.connect.client.records.Vo2MaxRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -28,6 +32,9 @@ import java.time.ZoneId
 object Health {
     const val PROVIDER = "com.google.android.apps.healthdata"
 
+    /** NOOP, the offline WHOOP companion (github.com/ryanbr/noop): its data is preferred when it shares to Health Connect. */
+    const val NOOP = "com.noop.whoop"
+
     /** What the widgets read. Background reading lets widgets refresh while the app is closed. */
     val permissions = setOf(
         HealthPermission.getReadPermission(StepsRecord::class),
@@ -37,6 +44,10 @@ object Health {
         HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
         HealthPermission.getReadPermission(ExerciseSessionRecord::class),
         HealthPermission.getReadPermission(SleepSessionRecord::class),
+        HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
+        HealthPermission.getReadPermission(OxygenSaturationRecord::class),
+        HealthPermission.getReadPermission(RespiratoryRateRecord::class),
+        HealthPermission.getReadPermission(Vo2MaxRecord::class),
         HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND,
     )
 
@@ -83,10 +94,32 @@ object Health {
             client.readRecords(ReadRecordsRequest(HeartRateRecord::class, TimeRangeFilter.between(startOfDay, now)))
                 .records.flatMap { r -> r.samples.map { HealthMath.Pulse(it.time.toEpochMilli(), it.beatsPerMinute.toInt()) } }
         } else emptyList()
-        val resting = if (allowed(RestingHeartRateRecord::class)) {
-            client.readRecords(ReadRecordsRequest(RestingHeartRateRecord::class, TimeRangeFilter.between(now.minus(Duration.ofDays(3)), now)))
-                .records.maxByOrNull { it.time }?.beatsPerMinute?.toInt()
+        // The last 30 days of these, for today's value and your own baseline (NOOP's when it shares them).
+        val month = TimeRangeFilter.between(now.minus(Duration.ofDays(30)), now)
+        val restingDays = if (allowed(RestingHeartRateRecord::class)) {
+            preferNoop(client.readRecords(ReadRecordsRequest(RestingHeartRateRecord::class, month)).records) { it.metadata.dataOrigin.packageName }
+                .sortedBy { it.time }.map { it.time to it.beatsPerMinute.toDouble() }
+        } else emptyList()
+        val resting = restingDays.lastOrNull()?.takeIf { Duration.between(it.first, now).toDays() < 3 }?.second?.toInt()
+        val hrvDays = if (allowed(HeartRateVariabilityRmssdRecord::class)) {
+            preferNoop(client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, month)).records) { it.metadata.dataOrigin.packageName }
+                .sortedBy { it.time }.map { it.time to it.heartRateVariabilityMillis }
+        } else emptyList()
+        val spo2 = if (allowed(OxygenSaturationRecord::class)) {
+            preferNoop(client.readRecords(ReadRecordsRequest(OxygenSaturationRecord::class, TimeRangeFilter.between(now.minus(Duration.ofHours(36)), now))).records) { it.metadata.dataOrigin.packageName }
+                .maxByOrNull { it.time }?.percentage?.value
         } else null
+        val respiratory = if (allowed(RespiratoryRateRecord::class)) {
+            preferNoop(client.readRecords(ReadRecordsRequest(RespiratoryRateRecord::class, TimeRangeFilter.between(now.minus(Duration.ofHours(36)), now))).records) { it.metadata.dataOrigin.packageName }
+                .maxByOrNull { it.time }?.rate
+        } else null
+        val vo2 = if (allowed(Vo2MaxRecord::class)) {
+            preferNoop(client.readRecords(ReadRecordsRequest(Vo2MaxRecord::class, month)).records) { it.metadata.dataOrigin.packageName }
+                .maxByOrNull { it.time }?.vo2MillilitersPerMinuteKilogram
+        } else null
+        val fromNoop = (restingDays.isNotEmpty() || hrvDays.isNotEmpty()) && runCatching {
+            client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, month)).records.any { it.metadata.dataOrigin.packageName == NOOP }
+        }.getOrDefault(false)
         val workout = if (allowed(ExerciseSessionRecord::class)) {
             client.readRecords(ReadRecordsRequest(ExerciseSessionRecord::class, TimeRangeFilter.between(now.minus(Duration.ofDays(7)), now)))
                 .records.maxByOrNull { it.endTime }?.let {
@@ -117,8 +150,21 @@ object Health {
             workout = workout,
             sleep = sleep,
             now = LocalDateTime.now(),
+            extras = HealthMath.Extras(
+                hrvToday = hrvDays.lastOrNull()?.takeIf { Duration.between(it.first, now).toHours() < 36 }?.second,
+                hrvBaseline = HealthMath.baseline(hrvDays.map { it.second }),
+                restingBaseline = HealthMath.baseline(restingDays.map { it.second }),
+                spo2 = spo2,
+                respiratoryRate = respiratory,
+                vo2max = vo2,
+                source = if (fromNoop) "NOOP" else null,
+            ),
         )
     }
+
+    /** NOOP's records when there are any, else everyone's (so two apps' numbers don't mix). */
+    private fun <T> preferNoop(records: List<T>, origin: (T) -> String): List<T> =
+        records.filter { origin(it) == NOOP }.ifEmpty { records }
 
     /** Readable names for the common exercise types. */
     private fun exerciseName(type: Int): String = when (type) {

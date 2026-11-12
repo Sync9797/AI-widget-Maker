@@ -1,5 +1,6 @@
 package com.sidequest.widgetmaker.ui
 
+import com.sidequest.widgetmaker.music.Music
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
@@ -191,10 +192,23 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                 "Exercise & health",
                 "Steps, heart rate, kcal burned, workouts and sleep from Health Connect, where Samsung Health, WHOOP, " +
                     "Google Fit, Fitbit and others share their data (in Samsung Health: Settings → Health Connect). " +
-                    "Read on the phone only. WHOOP keeps its strain score to itself, so \"effort\" is estimated from your heart rate.",
+                    "Read on the phone only. WHOOP keeps its strain score to itself, so \"effort\" is estimated from your heart rate.\n\n" +
+                    "NOOP (the offline WHOOP app): turn on Health Connect in NOOP's Data Sources screen, and widgets get its HRV, " +
+                    "resting heart rate, blood oxygen, breathing rate, VO2 max and sleep (its data comes first when other apps share too). " +
+                    "NOOP keeps its Charge score to itself, so \"charge\" here is estimated the same way, from HRV and resting heart rate " +
+                    "against your own 30-day baseline (it needs about 5 days of data). Tapping a health widget opens NOOP when it's installed.",
             ) {
                 HealthControls(form.health) { form = form.copy(health = it) }
                 Field("Daily step goal", form.stepGoal, "8000", KeyboardType.Number) { form = form.copy(stepGoal = it) }
+            }
+
+            Section(
+                "Music",
+                "A now-playing widget for Spotify, YouTube Music, podcasts or any player: the song, artist, album art and " +
+                    "play/pause, next and previous buttons. Android only shares what's playing with apps allowed notification " +
+                    "access; this app uses it for the music and nothing else.",
+            ) {
+                MusicControls()
             }
 
             Section(
@@ -336,7 +350,12 @@ private fun TapChoices() {
         val pm = context.packageManager
         TapKind.entries.associateWith { kind ->
             when (val choice = store.tapApp(kind)) {
-                null -> if (AppOpener.hasSystemDefault(kind)) "Phone's default" else "Ask every time"
+                null -> when {
+                    kind == TapKind.health && pm.getLaunchIntentForPackage(Health.NOOP) != null -> "NOOP"
+                    kind == TapKind.music -> "The app that's playing"
+                    AppOpener.hasSystemDefault(kind) -> "Phone's default"
+                    else -> "Ask every time"
+                }
                 AppOpener.WEB -> "On the web"
                 else -> runCatching { pm.getApplicationLabel(pm.getApplicationInfo(choice, 0)).toString() }.getOrDefault(choice)
             }
@@ -512,6 +531,31 @@ private fun HealthControls(on: Boolean, onChange: (Boolean) -> Unit) {
         style = MaterialTheme.typography.bodySmall,
     )
     if (status == Health.Status.Partly) TextButton(onClick = { ask.launch(Health.permissions) }) { Text("Allow the rest") }
+}
+
+/** Shows whether music access is allowed, with the way to allow it. */
+@Composable
+private fun MusicControls() {
+    val context = LocalContext.current
+    var allowed by remember { mutableStateOf(Music.hasAccess(context)) }
+    // Checks again on coming back from Android's settings.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        allowed = Music.hasAccess(context)
+        onPauseOrDispose {}
+    }
+    Text(
+        if (allowed) "Allowed: music widgets show what's playing." else "Not allowed yet. Play/pause still works, but the widget can't show the song.",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    if (!allowed) {
+        TextButton(onClick = { runCatching { context.startActivity(Music.accessIntent(context)) } }) { Text("Allow music access") }
+        Text(
+            "If Android says it's a restricted setting (apps not from the Play Store, Android 13+): open App info below, " +
+                "tap ⋮ at the top, choose \"Allow restricted settings\", then come back and try again.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        TextButton(onClick = { runCatching { context.startActivity(Music.appInfoIntent(context)) } }) { Text("Open App info") }
+    }
 }
 
 /** Shows whether Monster Quest is there and sharing. */

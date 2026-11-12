@@ -26,6 +26,8 @@ import com.sidequest.widgetmaker.music.MusicControlReceiver
 import com.sidequest.widgetmaker.spec.ArtNode
 import com.sidequest.widgetmaker.spec.Colors
 import com.sidequest.widgetmaker.spec.SleepNode
+import com.sidequest.widgetmaker.spec.ChartNode
+import com.sidequest.widgetmaker.spec.RingNode
 import com.sidequest.widgetmaker.spec.TimerNode
 import com.sidequest.widgetmaker.spec.levelColor
 import com.sidequest.widgetmaker.spec.TapAction
@@ -451,6 +453,32 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             backgroundColor = paint(Role.Track, node.trackColor),
         )
         is TimerNode -> AndroidRemoteViews(remoteViews = timerViews(node, paint.styler, paint.k), modifier = modifier)
+        is ChartNode -> {
+            val density = context.resources.displayMetrics.density
+            val values = ChartArt.parse(tokens.fill(node.series))
+            Image(
+                provider = ImageProvider(ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density)),
+                contentDescription = null,
+                modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
+                contentScale = ContentScale.FillBounds,
+                colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)),
+            )
+        }
+        is RingNode -> {
+            val density = context.resources.displayMetrics.density
+            val px = (node.size * paint.k * density).toInt()
+            val thick = node.thickness * paint.k * density
+            val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens)
+            Box(modifier.size((node.size * paint.k).dp), contentAlignment = Alignment.Center) {
+                Image(ImageProvider(ChartArt.ring(px, thick, null)), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(Role.Track, node.trackColor)))
+                Image(ImageProvider(ChartArt.ring(px, thick, tokens.progress(node.value))), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(role, color)))
+                Text(
+                    tokens.fill(node.text),
+                    maxLines = 1,
+                    style = TextStyle(color = paint(Role.Text, node.textColor), fontSize = (node.textSize * paint.k).sp, fontWeight = FontWeight.Bold),
+                )
+            }
+        }
         is SleepNode -> Image(
             provider = ImageProvider(SleepBar.draw(tokens.feeds["health.sleep.stages"], heightPx = node.height * 3)),
             contentDescription = null,

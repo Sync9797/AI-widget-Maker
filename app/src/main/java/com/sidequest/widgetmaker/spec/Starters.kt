@@ -730,5 +730,59 @@ object Starters {
               {"type":"text","text":"{weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minHeight":100}},
               {"type":"text","text":"H {weather.high}  L {weather.low}","size":12,"color":"#99FFFFFF","show":{"minHeight":130}}]},{"type":"column","show":{"minHeight":240},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"column","show":{"ifEmpty":"{calendar.soon}{music.playing}"},"children":[{"type":"row","children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]}]},{"type":"column","show":{"ifSet":"{calendar.soon}"},"children":[{"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.2}"},"children":[{"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},{"type":"text","text":" {calendar.2}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{calendar.2.when}","size":12,"color":"#99FFFFFF","maxLines":1}]}]},{"type":"column","show":{"ifSet":"{music.playing}","ifEmpty":"{calendar.soon}"},"children":[{"type":"row","verticalAlign":"center","show":{"ifSet":"{music.length}"},"children":[{"type":"timer","of":"music","size":11,"color":"#99FFFFFF"},{"type":"spacer","size":8},{"type":"progress","value":"{music.progress}","color":"#FFFFFFFF","trackColor":"#33FFFFFF","height":4,"grow":true}]}]}]}]}}""",
         ),
+        Triple(
+            "Heart rate", "Like NOOP's heart rate card: now, today's low and high, and the day as a line chart. From NOOP, Samsung Health and others via Health Connect.",
+            """{"name":"Heart rate","background":"#FAF5F1E8","cornerRadius":28,"padding":16,"root":
+            {"type":"column","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"heart","size":16,"color":"#FFD2542A"},
+              {"type":"text","text":" Heart rate","size":15,"color":"#FF1C1F26","weight":"medium","maxLines":1}]},
+             {"type":"spacer","size":6,"show":{"minHeight":100}},
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"text","text":"{health.heart.last}","size":32,"color":"#FF1C1F26","weight":"bold","maxLines":1},
+              {"type":"text","text":" bpm","size":13,"color":"#FF6B7280","maxLines":1},
+              {"type":"spacer","size":12,"show":{"minWidth":230}},
+              {"type":"column","background":"#33D2542A","cornerRadius":12,"padding":6,"show":{"minWidth":230},"children":[
+               {"type":"text","text":"Min {health.heartMin} • Max {health.heartMax}","size":12,"color":"#FF1C1F26","maxLines":1}]}]},
+             {"type":"text","text":"Min {health.heartMin} • Max {health.heartMax}","size":11,"color":"#FF6B7280","maxLines":1,"show":{"maxWidth":229,"minHeight":100}},
+             {"type":"spacer","size":8,"show":{"minHeight":150}},
+             {"type":"row","show":{"minHeight":150},"children":[
+              {"type":"chart","series":"{health.heart.series}","height":84,"color":"#FFD2542A","grow":true},
+              {"type":"spacer","size":8,"show":{"minWidth":250,"minHeight":200}},
+              {"type":"column","show":{"minWidth":250,"minHeight":200},"children":[
+               {"type":"text","text":"{health.heartMax}","size":11,"color":"#FF6B7280"},
+               {"type":"spacer","size":56},
+               {"type":"text","text":"{health.heartMin}","size":11,"color":"#FF6B7280"}]}]},
+             {"type":"spacer","size":4,"show":{"minHeight":150}},
+             {"type":"row","show":{"minHeight":150},"children":[
+              {"type":"text","text":"{health.heart.start}","size":11,"color":"#FF6B7280","maxLines":1},
+              {"type":"spacer","grow":true},
+              {"type":"text","text":"{health.heart.mid}","size":11,"color":"#FF6B7280","maxLines":1,"show":{"minWidth":250}},
+              {"type":"spacer","grow":true},
+              {"type":"text","text":"{health.heart.end}","size":11,"color":"#FF6B7280","maxLines":1}]},
+             {"type":"row","show":{"minHeight":360},"children":[
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{health.restingHeart}","size":18,"color":"#FF1C1F26","weight":"bold","maxLines":1},
+               {"type":"text","text":"resting bpm","size":11,"color":"#FF6B7280","maxLines":1}]},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{health.hrv}","size":18,"color":"#FF1C1F26","weight":"bold","maxLines":1},
+               {"type":"text","text":"HRV","size":11,"color":"#FF6B7280","maxLines":1}]}]},
+             {"type":"spacer","size":8,"show":{"minHeight":360}},
+             {"type":"row","show":{"minHeight":260},"children":[
+              {"type":"spacer","grow":true},
+              {"type":"text","text":"Updated {updated}","size":11,"color":"#FF6B7280","maxLines":1},
+              {"type":"spacer","grow":true}]}]}}""",
+        ),
+        Triple(
+            "NOOP rings", "Charge, Effort and Rest as rings, like NOOP's. Charge and Effort are estimated from Health Connect (NOOP keeps its own scores private); Rest is last night's sleep against 8 hours.",
+            """{"name":"NOOP rings","background":"#E6C6D9F0","cornerRadius":28,"padding":14,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[{"type":"column","align":"center","grow":true,"show":{"maxWidth":249},"children":[{"type":"ring","value":"{health.charge}","text":"{health.charge}","size":44,"thickness":5,"textSize":14,"color":"#FFD4A23A","trackColor":"#33506080","textColor":"#FF1C2433"},{"type":"spacer","size":6,"show":{"minHeight":100}},{"type":"text","text":"CHARGE","size":10,"color":"#FF3B4656","weight":"bold","maxLines":1,"show":{"minHeight":100}}]},{"type":"column","align":"center","grow":true,"show":{"maxWidth":249},"children":[{"type":"ring","value":"{health.effort.pct}","text":"{health.effort}","size":44,"thickness":5,"textSize":14,"color":"#FFB0681F","trackColor":"#33506080","textColor":"#FF1C2433"},{"type":"spacer","size":6,"show":{"minHeight":100}},{"type":"text","text":"EFFORT","size":10,"color":"#FF3B4656","weight":"bold","maxLines":1,"show":{"minHeight":100}}]},{"type":"column","align":"center","grow":true,"show":{"maxWidth":249},"children":[{"type":"ring","value":"{health.rest}","text":"{health.rest}","size":44,"thickness":5,"textSize":14,"color":"#FFDDAE45","trackColor":"#33506080","textColor":"#FF1C2433"},{"type":"spacer","size":6,"show":{"minHeight":100}},{"type":"text","text":"REST","size":10,"color":"#FF3B4656","weight":"bold","maxLines":1,"show":{"minHeight":100}}]},{"type":"column","align":"center","grow":true,"show":{"minWidth":250},"children":[{"type":"ring","value":"{health.charge}","text":"{health.charge}","size":76,"thickness":8,"textSize":24,"color":"#FFD4A23A","trackColor":"#33506080","textColor":"#FF1C2433"},{"type":"spacer","size":6,"show":{"minHeight":100}},{"type":"text","text":"CHARGE","size":12,"color":"#FF3B4656","weight":"bold","maxLines":1,"show":{"minHeight":100}}]},{"type":"column","align":"center","grow":true,"show":{"minWidth":250},"children":[{"type":"ring","value":"{health.effort.pct}","text":"{health.effort}","size":76,"thickness":8,"textSize":24,"color":"#FFB0681F","trackColor":"#33506080","textColor":"#FF1C2433"},{"type":"spacer","size":6,"show":{"minHeight":100}},{"type":"text","text":"EFFORT","size":12,"color":"#FF3B4656","weight":"bold","maxLines":1,"show":{"minHeight":100}}]},{"type":"column","align":"center","grow":true,"show":{"minWidth":250},"children":[{"type":"ring","value":"{health.rest}","text":"{health.rest}","size":76,"thickness":8,"textSize":24,"color":"#FFDDAE45","trackColor":"#33506080","textColor":"#FF1C2433"},{"type":"spacer","size":6,"show":{"minHeight":100}},{"type":"text","text":"REST","size":12,"color":"#FF3B4656","weight":"bold","maxLines":1,"show":{"minHeight":100}}]}]},
+             {"type":"spacer","size":10,"show":{"minHeight":200}},
+             {"type":"row","show":{"minHeight":200},"children":[
+              {"type":"spacer","grow":true},
+              {"type":"text","text":"{health.charge.label} · Slept {health.sleep}","size":12,"color":"#FF3B4656","maxLines":1},
+              {"type":"spacer","grow":true}]}]}}""",
+        ),
     )
 }

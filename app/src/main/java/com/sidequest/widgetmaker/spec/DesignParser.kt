@@ -153,6 +153,27 @@ object DesignParser {
             size = node.size.coerceIn(8, 48),
             color = Colors.orDefault(node.color, "#B3FFFFFF"),
         )
+        is ChartNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            series = node.series.take(60),
+            height = node.height.coerceIn(20, 240),
+            color = Colors.orDefault(node.color, "#FFD2542A"),
+        )
+        is RingNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            value = node.value.take(60),
+            text = node.text.take(40),
+            size = node.size.coerceIn(24, 200),
+            thickness = node.thickness.coerceIn(2, 30),
+            textSize = node.textSize.coerceIn(8, 60),
+            color = Colors.orDefault(node.color, "#FFD9A33B"),
+            trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
+            textColor = Colors.orDefault(node.textColor, "#FFFFFFFF"),
+            levelOf = node.levelOf?.take(60),
+            levels = sanitize(node.levels),
+        )
         is SleepNode -> node.copy(show = sanitize(node.show), tap = node.tap?.take(80), height = node.height.coerceIn(4, 48))
         is ArtNode -> node.copy(
             show = sanitize(node.show),

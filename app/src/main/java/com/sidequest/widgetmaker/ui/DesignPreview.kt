@@ -5,6 +5,9 @@ import com.sidequest.widgetmaker.R
 import androidx.compose.runtime.remember
 import com.sidequest.widgetmaker.spec.ArtNode
 import com.sidequest.widgetmaker.spec.SleepNode
+import com.sidequest.widgetmaker.spec.ChartNode
+import com.sidequest.widgetmaker.spec.RingNode
+import com.sidequest.widgetmaker.widget.ChartArt
 import com.sidequest.widgetmaker.spec.TimerNode
 import com.sidequest.widgetmaker.widget.accentColor
 import androidx.compose.foundation.background
@@ -232,6 +235,30 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             fontWeight = weight(node.weight),
             maxLines = 1,
         )
+        is ChartNode -> {
+            val density = LocalContext.current.resources.displayMetrics.density
+            val values = ChartArt.parse(tokens.fill(node.series))
+            val bmp = remember(values, fit.width, node.height, paint.k) {
+                ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density).asImageBitmap()
+            }
+            Image(bmp, null, modifier.fillMaxWidth().height((node.height * paint.k).dp), contentScale = ContentScale.FillBounds,
+                colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)))
+        }
+        is RingNode -> {
+            val density = LocalContext.current.resources.displayMetrics.density
+            val px = (node.size * paint.k * density).toInt()
+            val thick = node.thickness * paint.k * density
+            val fraction = tokens.progress(node.value)
+            val track = remember(px, thick) { ChartArt.ring(px, thick, null).asImageBitmap() }
+            val arc = remember(px, thick, fraction) { ChartArt.ring(px, thick, fraction).asImageBitmap() }
+            val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens)
+            Box(modifier.size((node.size * paint.k).dp), contentAlignment = Alignment.Center) {
+                Image(track, null, Modifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(Role.Track, node.trackColor)))
+                Image(arc, null, Modifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(role, color)))
+                Text(tokens.fill(node.text), color = paint(Role.Text, node.textColor), fontSize = (node.textSize * paint.k).sp,
+                    fontWeight = FontWeight.Bold, maxLines = 1)
+            }
+        }
         is SleepNode -> {
             val bar = remember(tokens.feeds["health.sleep.stages"], node.height) {
                 com.sidequest.widgetmaker.widget.SleepBar.draw(tokens.feeds["health.sleep.stages"], heightPx = node.height * 3).asImageBitmap()

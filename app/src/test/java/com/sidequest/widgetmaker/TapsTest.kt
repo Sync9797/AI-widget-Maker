@@ -71,6 +71,8 @@ class TapsTest {
             "Now playing" to TapKind.music,
             "Music mini" to TapKind.music,
             "Sleep" to TapKind.health,
+            "Heart rate" to TapKind.health,
+            "NOOP rings" to TapKind.health,
             "Daily briefing" to TapKind.weather,
             "Smart stack" to TapKind.weather,
             "Side Quest eggs" to TapKind.game,

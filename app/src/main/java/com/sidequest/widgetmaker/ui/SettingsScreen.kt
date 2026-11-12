@@ -202,6 +202,14 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
 
             Section("Local news", "Headlines from Google News. Free, no account needed. Leave the topic blank for news about your town.") {
                 Field("Topic (optional)", form.newsTopic, "Austin food, Texas Longhorns…") { form = form.copy(newsTopic = it) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Hide obituaries", style = MaterialTheme.typography.bodyLarge)
+                        Text("Leaves death notices and funeral announcements out of news and events.", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Switch(checked = form.hideObituaries, onCheckedChange = { form = form.copy(hideObituaries = it) })
+                }
+                Field("Hide headlines with these words (optional)", form.mutedWords, "election, crash, …") { form = form.copy(mutedWords = it) }
             }
 
             Section(

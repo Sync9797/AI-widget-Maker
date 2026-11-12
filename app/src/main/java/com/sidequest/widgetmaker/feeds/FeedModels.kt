@@ -29,6 +29,10 @@ data class FeedSettings(
 
     /** News search; blank means news about your town. */
     val newsTopic: String = "",
+    /** Leave obituaries and death notices out of news and events. */
+    val hideObituaries: Boolean = true,
+    /** Headlines with any of these words are left out. */
+    val mutedWords: List<String> = emptyList(),
 
     /** Optional free key from developer.ticketmaster.com, for exact listings; without it, events come from local news. */
     val ticketmasterKey: String = "",

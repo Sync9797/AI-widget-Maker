@@ -265,3 +265,34 @@ class AutoScaleTest {
         assertEquals(1f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(400, 110, look), look), 0.001f)
     }
 }
+
+class ObituaryTest {
+    private fun h(title: String, source: String = "WSET", link: String = "https://wset.com/a") =
+        FeedParsers.Headline(title, source, null, link)
+
+    @Test
+    fun deathNoticesAreLeftOut() {
+        assertTrue(FeedParsers.isObituary(h("John Smith Obituary (1941 - 2026) - Lynchburg, VA")))
+        assertTrue(FeedParsers.isObituary(h("Mary Jones passed away peacefully at home")))
+        assertTrue(FeedParsers.isObituary(h("Funeral services set for longtime coach")))
+        assertTrue(FeedParsers.isObituary(h("Robert Lee", source = "Legacy.com")))
+        assertTrue(FeedParsers.isObituary(h("Robert Lee", link = "https://www.newsadvance.com/obituaries/robert-lee")))
+        assertFalse(FeedParsers.isObituary(h("City council approves new downtown park")))
+    }
+
+    @Test
+    fun newsSkipsThemAndMutedWords() {
+        val body = """<rss><channel>
+            <item><title>Jane Doe Obituary - News &amp; Advance</title><source>News &amp; Advance</source><link>https://x/1</link></item>
+            <item><title>New park opens downtown - WSET</title><source>WSET</source><link>https://x/2</link></item>
+            <item><title>Election results are in - WDBJ</title><source>WDBJ</source><link>https://x/3</link></item>
+            <item><title>Food truck festival returns - WSET</title><source>WSET</source><link>https://x/4</link></item>
+            </channel></rss>"""
+        val v = FeedParsers.news(body, muted = listOf("Election"))
+        assertEquals("New park opens downtown", v["news.1"])
+        assertEquals("Food truck festival returns", v["news.2"])
+        assertNull(v["news.3"])
+        // Turned off: obituaries show again.
+        assertEquals("Jane Doe Obituary", FeedParsers.news(body, hideObituaries = false)["news.1"])
+    }
+}

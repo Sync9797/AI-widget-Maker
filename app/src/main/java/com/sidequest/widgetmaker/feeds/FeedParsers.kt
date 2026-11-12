@@ -291,9 +291,9 @@ object FeedParsers {
         }
     }
 
-    fun news(body: String, count: Int = 5): Map<String, String> {
+    fun news(body: String, count: Int = 5, hideObituaries: Boolean = true, muted: List<String> = emptyList()): Map<String, String> {
         val out = mutableMapOf<String, String>()
-        headlines(body).take(count).forEachIndexed { i, h ->
+        headlines(body).filter { keep(it, hideObituaries, muted) }.take(count).forEachIndexed { i, h ->
             out["news.${i + 1}"] = h.title
             out["news.${i + 1}.source"] = h.source
             out["news.${i + 1}.link"] = h.link
@@ -308,8 +308,15 @@ object FeedParsers {
      * events.N is the headline, events.N.when the day it names ("This weekend",
      * "Sat", "Nov 14") or else when it was posted, events.N.venue the publication.
      */
-    fun eventArticles(body: String, today: LocalDate, count: Int = 5): Map<String, String> {
+    fun eventArticles(
+        body: String,
+        today: LocalDate,
+        count: Int = 5,
+        hideObituaries: Boolean = true,
+        muted: List<String> = emptyList(),
+    ): Map<String, String> {
         val recent = headlines(body)
+            .filter { keep(it, hideObituaries, muted) }
             .filter { it.published == null || !it.published.isBefore(today.minusDays(14)) }
             .filter { eventScore(it.title) >= 0 }
         // Event-like headlines first (most event words first), then the rest, each in the feed's order.
@@ -323,6 +330,31 @@ object FeedParsers {
             out["events.${i + 1}.link"] = h.link
         }
         return out
+    }
+
+    /** Words that mark a death notice, in the headline. */
+    private val OBITUARY_WORDS = listOf(
+        "obituar", "obit:", "obit -", " obit ", "passed away", "passes away", "in loving memory", "funeral",
+        "memorial service", "celebration of life", "laid to rest", "visitation for", "remembering ",
+        "in memoriam", "rest in peace", "survived by", "dies at", "died at", "condolence",
+    )
+
+    /** Sites that publish death notices. */
+    private val OBITUARY_SOURCES = listOf("legacy", "echovita", "tribute", "funeral", "obituar", "dignity memorial", "everloved")
+
+    /** Whether a headline reads like an obituary or death notice. */
+    fun isObituary(h: Headline): Boolean {
+        val t = " ${h.title.lowercase()} "
+        val src = h.source.lowercase()
+        return OBITUARY_WORDS.any { t.contains(it) } || OBITUARY_SOURCES.any { src.contains(it) } ||
+            h.link.lowercase().let { "obituar" in it || "legacy.com" in it }
+    }
+
+    /** Whether to show a headline: not an obituary (when hidden), and none of the user's muted words. */
+    fun keep(h: Headline, hideObituaries: Boolean, muted: List<String>): Boolean {
+        if (hideObituaries && isObituary(h)) return false
+        val t = h.title.lowercase()
+        return muted.none { w -> w.isNotBlank() && t.contains(w.trim().lowercase()) }
     }
 
     private val EVENT_WORDS = listOf(

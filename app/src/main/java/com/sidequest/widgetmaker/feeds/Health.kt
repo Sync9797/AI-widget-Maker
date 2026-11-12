@@ -35,6 +35,18 @@ object Health {
     /** NOOP, the offline WHOOP companion (github.com/ryanbr/noop): its data is preferred when it shares to Health Connect. */
     const val NOOP = "com.noop.whoop"
 
+    /**
+     * Every NOOP build the app recognises: NOOP itself and the not-NOOP fork, with their staging,
+     * debug and demo variants (each installs under its own id).
+     */
+    val NOOP_PACKAGES: List<String> = listOf("com.not.noop.oop", NOOP).flatMap { base ->
+        listOf(base, "$base.staging", "$base.debug", "$base.demo")
+    }
+
+    /** The NOOP build to open from a health widget: the first one installed. */
+    fun installedNoop(context: Context): String? =
+        NOOP_PACKAGES.firstOrNull { context.packageManager.getLaunchIntentForPackage(it) != null }
+
     /** What the widgets read. Background reading lets widgets refresh while the app is closed. */
     val permissions = setOf(
         HealthPermission.getReadPermission(StepsRecord::class),
@@ -129,7 +141,7 @@ object Health {
                 .maxByOrNull { it.time }?.vo2MillilitersPerMinuteKilogram
         } else null
         val fromNoop = (restingDays.isNotEmpty() || hrvDays.isNotEmpty()) && runCatching {
-            client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, month)).records.any { it.metadata.dataOrigin.packageName == NOOP }
+            client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, month)).records.any { it.metadata.dataOrigin.packageName in NOOP_PACKAGES }
         }.getOrDefault(false)
         val workout = if (allowed(ExerciseSessionRecord::class)) {
             client.readRecords(ReadRecordsRequest(ExerciseSessionRecord::class, TimeRangeFilter.between(now.minus(Duration.ofDays(7)), now)))
@@ -261,7 +273,7 @@ object Health {
 
     /** NOOP's records when there are any, else everyone's (so two apps' numbers don't mix). */
     private fun <T> preferNoop(records: List<T>, origin: (T) -> String): List<T> =
-        records.filter { origin(it) == NOOP }.ifEmpty { records }
+        records.filter { origin(it) in NOOP_PACKAGES }.ifEmpty { records }
 
     /** Readable names for the common exercise types. */
     private fun exerciseName(type: Int): String = when (type) {

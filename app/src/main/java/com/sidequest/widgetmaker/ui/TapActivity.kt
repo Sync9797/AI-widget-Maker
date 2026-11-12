@@ -231,7 +231,7 @@ object AppOpener {
         // What's playing opens the app playing it.
         TapKind.music -> com.sidequest.widgetmaker.music.Music.current(context)?.packageName?.let { context.packageManager.getLaunchIntentForPackage(it) }
         // NOOP, when it's installed: health widgets mostly show what it shares.
-        TapKind.health -> context.packageManager.getLaunchIntentForPackage(com.sidequest.widgetmaker.feeds.Health.NOOP)
+        TapKind.health -> com.sidequest.widgetmaker.feeds.Health.installedNoop(context)?.let { context.packageManager.getLaunchIntentForPackage(it) }
         TapKind.weather, TapKind.crypto, TapKind.news, TapKind.events -> null
     }
 

@@ -30,7 +30,14 @@
         <package android:name="com.google.android.apps.healthdata" />
         <package android:name="com.monsterquest.app" />
         <!-- NOOP (offline WHOOP companion): to open it from health widgets. -->
+        <package android:name="com.not.noop.oop" />
+        <package android:name="com.not.noop.oop.staging" />
+        <package android:name="com.not.noop.oop.debug" />
+        <package android:name="com.not.noop.oop.demo" />
         <package android:name="com.noop.whoop" />
+        <package android:name="com.noop.whoop.staging" />
+        <package android:name="com.noop.whoop.debug" />
+        <package android:name="com.noop.whoop.demo" />
         <!-- To list your apps when you pick which one a widget tap opens. -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -77,6 +84,15 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.sidequest.widgetmaker.GAME_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- The not-NOOP fork says when its snapshot changes, so health widgets redraw right away. -->
+        <receiver
+            android:name=".feeds.NoopChangedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.sidequest.widgetmaker.NOOP_CHANGED" />
             </intent-filter>
         </receiver>
 

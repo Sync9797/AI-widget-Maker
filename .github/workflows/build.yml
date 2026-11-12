@@ -47,8 +47,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/release/app-release.apk AIWidgetMaker.apk
+          VERSION=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -1)
           gh release delete latest --yes --cleanup-tag || true
+          # The title carries the version; the target, the commit (the app compares it with its own).
           gh release create latest AIWidgetMaker.apk \
-            --title "Latest build ($(git rev-parse --short HEAD))" \
+            --title "AI Widget Maker ${VERSION} ($(git rev-parse --short HEAD))" \
             --notes "Download AIWidgetMaker.apk on your Android phone and open it to install." \
             --target "${GITHUB_SHA}"

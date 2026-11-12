@@ -69,6 +69,18 @@ data class MakerState(
     val sourcesStatus: String? = null,
     /** Designs on the home screen now, and on how many widgets each. */
     val placed: Map<String, Int> = emptyMap(),
+    val update: UpdateUi = UpdateUi(),
+)
+
+/** Checking for, downloading and installing a newer build. */
+data class UpdateUi(
+    val checking: Boolean = false,
+    /** A newer build, when there is one (and it hasn't been put off). */
+    val available: com.sidequest.widgetmaker.update.Release? = null,
+    /** What the last check found, for Settings. */
+    val note: String? = null,
+    /** Download progress 0-100 while downloading. */
+    val downloading: Int? = null,
 )
 
 /** What the Data sources screen edits: plain text, looked up when saved. */
@@ -323,6 +335,51 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Looks up the places, saves the data sources, then fetches everything once to check it works. */
+    /** Checks GitHub for a newer build. [quiet]: on app start, saying nothing unless there is one. */
+    fun checkForUpdates(quiet: Boolean = false) {
+        if (_state.value.update.checking) return
+        _state.update { it.copy(update = it.update.copy(checking = true, note = if (quiet) it.update.note else "Checking…")) }
+        viewModelScope.launch {
+            val result = com.sidequest.widgetmaker.update.Updater.check()
+            _state.update { s ->
+                s.copy(update = when (result) {
+                    is com.sidequest.widgetmaker.update.Updater.Result.Available ->
+                        s.update.copy(checking = false, available = result.release, note = "Version ${result.release.version ?: "(newer build)"} is available.")
+                    com.sidequest.widgetmaker.update.Updater.Result.UpToDate ->
+                        s.update.copy(checking = false, available = null, note = "You have the latest version (${com.sidequest.widgetmaker.update.Updater.currentVersion}).")
+                    is com.sidequest.widgetmaker.update.Updater.Result.Failed ->
+                        s.update.copy(checking = false, note = if (quiet) s.update.note else result.why)
+                })
+            }
+        }
+    }
+
+    /** Hides the update card until the app next opens. */
+    fun laterUpdate() = _state.update { it.copy(update = it.update.copy(available = null)) }
+
+    /**
+     * Downloads the newer build and opens Android's installer for it. The
+     * first time, Android asks to allow installs from this app; that screen
+     * opens instead, and tapping Update again carries on.
+     */
+    fun installUpdate() {
+        val release = _state.value.update.available ?: return
+        val app = getApplication<Application>()
+        if (!com.sidequest.widgetmaker.update.Updater.canInstall(app)) {
+            app.startActivity(com.sidequest.widgetmaker.update.Updater.allowInstallIntent(app).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            _state.update { it.copy(update = it.update.copy(note = "Allow installs from AI Widget Maker, come back, and tap Update again.")) }
+            return
+        }
+        _state.update { it.copy(update = it.update.copy(downloading = 0)) }
+        viewModelScope.launch {
+            val install = com.sidequest.widgetmaker.update.Updater.download(app, release) { pct ->
+                _state.update { it.copy(update = it.update.copy(downloading = pct)) }
+            }
+            _state.update { it.copy(update = it.update.copy(downloading = null, note = if (install == null) "The download didn't finish. Try again." else it.update.note)) }
+            install?.let { runCatching { app.startActivity(it) } }
+        }
+    }
+
     /** How often widgets refresh their data in the background. */
     fun setRefreshMinutes(minutes: Int) {
         feeds.settings = feeds.settings.copy(refreshMinutes = minutes)

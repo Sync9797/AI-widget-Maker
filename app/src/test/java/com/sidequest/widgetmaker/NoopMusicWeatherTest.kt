@@ -62,6 +62,13 @@ class NoopTest {
     }
 
     @Test
+    fun saysWhenHrvIsNotAllowed() {
+        val v = HealthMath.values(null, 8000, null, null, null, emptyList(), 52, null, null, now, extras = HealthMath.Extras(hrvAllowed = false))
+        assertEquals("Open the app to allow HRV", v["health.charge.label"])
+        assertNull(v["health.charge"])
+    }
+
+    @Test
     fun noopStarterOpensHealth() {
         val design = Starters.all.first { it.title == "NOOP recovery" }.design
         assertEquals(TapKind.health, Taps.mainKind(design))
@@ -144,5 +151,24 @@ class WeatherOutlookTest {
         assertEquals("this evening", FeedParsers.period(now, now.withHour(19)))
         assertEquals("tomorrow morning", FeedParsers.period(now, now.plusDays(1).withHour(8)))
         assertEquals("tonight", FeedParsers.period(now, now.plusDays(1).withHour(2)))
+    }
+}
+
+class SquareCellTest {
+    private val design = Starters.all.first { it.title == "Weather forecast" }.design
+    private val look = com.sidequest.widgetmaker.spec.Look()
+
+    @Test
+    fun aTall2x2CellGetsASquarePanel() {
+        val p = com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look)
+        assertEquals(170, p.width)
+        assertEquals(170, p.height)
+    }
+
+    @Test
+    fun wideAndTallWidgetsKeepTheirShape() {
+        assertEquals(160, com.sidequest.widgetmaker.spec.Shapes.panel(320, 160, design, look).height)
+        assertEquals(340, com.sidequest.widgetmaker.spec.Shapes.panel(170, 340, design, look).height)
+        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look.copy(squareCells = false)).height)
     }
 }

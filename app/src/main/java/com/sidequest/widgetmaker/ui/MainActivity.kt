@@ -138,6 +138,7 @@ private fun MakerScreen(viewModel: MakerViewModel) {
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            HealthAccessCard()
             val draft = state.draft
             val chat = state.chat
             if (chat != null) {
@@ -391,3 +392,55 @@ private fun BusyButton(label: String, busy: Boolean, enabled: Boolean, onClick: 
         }
     }
 }
+
+/**
+ * Shows when Exercise & health is on but some data isn't allowed yet: types
+ * added in an update (HRV, blood oxygen... for NOOP) need allowing once.
+ */
+@Composable
+private fun HealthAccessCard() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val on = remember { com.sidequest.widgetmaker.feeds.Feeds(context).settings.health }
+    if (!on) return
+    var missing by remember { mutableStateOf(emptySet<String>()) }
+    var version by remember { mutableStateOf(0) }
+    androidx.compose.runtime.LaunchedEffect(version) { missing = com.sidequest.widgetmaker.feeds.Health.missing(context) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        version++
+        onPauseOrDispose {}
+    }
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.health.connect.client.PermissionController.createRequestPermissionResultContract(),
+    ) {
+        version++
+        com.sidequest.widgetmaker.feeds.FeedWorker.refreshSoon(context, setOf("health"))
+    }
+    if (missing.isEmpty()) return
+    val names = missing.mapNotNull { NAMES.entries.firstOrNull { (key, _) -> it.endsWith(key) }?.value }.distinct()
+    androidx.compose.material3.Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Allow more health data", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Health widgets can't read " + (names.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "some of your data") +
+                    " yet. NOOP's Charge needs HRV.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            androidx.compose.material3.Button(onClick = { ask.launch(com.sidequest.widgetmaker.feeds.Health.permissions) }) { Text("Allow") }
+        }
+    }
+}
+
+private val NAMES = mapOf(
+    "HEART_RATE_VARIABILITY" to "HRV",
+    "OXYGEN_SATURATION" to "blood oxygen",
+    "RESPIRATORY_RATE" to "breathing rate",
+    "VO2_MAX" to "VO2 max",
+    "RESTING_HEART_RATE" to "resting heart rate",
+    "READ_HEART_RATE" to "heart rate",
+    "SLEEP" to "sleep",
+    "STEPS" to "steps",
+    "EXERCISE" to "workouts",
+    "ACTIVE_CALORIES_BURNED" to "calories",
+    "TOTAL_CALORIES_BURNED" to "calories",
+    "IN_BACKGROUND" to "background updates",
+)

@@ -467,6 +467,14 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
+            Text("Square 2×2 widgets", style = MaterialTheme.typography.bodyLarge)
+            Text("2×2 and 4×4 widgets stay square, like One UI's, instead of stretching to the cell.", style = MaterialTheme.typography.bodySmall)
+        }
+        Switch(checked = look.squareCells, onCheckedChange = { update(look.copy(squareCells = it)) })
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
             Text("Oval 1-row widgets", style = MaterialTheme.typography.bodyLarge)
             Text("2×1 and 4×1 widgets become pills, no taller than the max height.", style = MaterialTheme.typography.bodySmall)
         }

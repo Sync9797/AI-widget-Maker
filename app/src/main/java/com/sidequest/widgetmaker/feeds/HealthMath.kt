@@ -28,6 +28,8 @@ object HealthMath {
         val vo2max: Double? = null,
         /** "NOOP" when the data comes from NOOP. */
         val source: String? = null,
+        /** False when Health Connect doesn't let this app read HRV yet (so Charge can't be worked out). */
+        val hrvAllowed: Boolean = true,
     )
 
     /** The middle of the last readings (needs at least 5 days), so one odd day doesn't move it. */
@@ -95,6 +97,8 @@ object HealthMath {
         extras.respiratoryRate?.let { out["health.respRate"] = "%.1f".format(Locale.US, it) }
         extras.vo2max?.let { out["health.vo2max"] = it.roundToInt().toString() }
         extras.source?.let { out["health.source"] = it }
+        // Say why Charge is missing, right on the widget, when it's a permission.
+        if (!extras.hrvAllowed) out["health.charge.label"] = "Open the app to allow HRV"
         if (extras.hrvToday != null && extras.hrvBaseline != null) {
             val c = charge(extras.hrvToday, extras.hrvBaseline, resting, extras.restingBaseline, sleep?.asleepMinutes)
             out["health.charge"] = c.toString()

@@ -95,22 +95,26 @@ object Health {
                 .records.flatMap { r -> r.samples.map { HealthMath.Pulse(it.time.toEpochMilli(), it.beatsPerMinute.toInt()) } }
         } else emptyList()
         // The last 30 days of these, for today's value and your own baseline (NOOP's when it shares them).
-        val month = TimeRangeFilter.between(now.minus(Duration.ofDays(30)), now)
+        // NOOP stamps each day's numbers at noon, so read to the end of today: in the morning,
+        // today's (from last night) is otherwise still "in the future" and skipped.
+        val endOfToday = LocalDate.now().plusDays(1).atStartOfDay(zone).toInstant()
+        val month = TimeRangeFilter.between(now.minus(Duration.ofDays(30)), endOfToday)
+        val recent = TimeRangeFilter.between(now.minus(Duration.ofDays(3)), endOfToday)
         val restingDays = if (allowed(RestingHeartRateRecord::class)) {
             preferNoop(client.readRecords(ReadRecordsRequest(RestingHeartRateRecord::class, month)).records) { it.metadata.dataOrigin.packageName }
                 .sortedBy { it.time }.map { it.time to it.beatsPerMinute.toDouble() }
         } else emptyList()
-        val resting = restingDays.lastOrNull()?.takeIf { Duration.between(it.first, now).toDays() < 3 }?.second?.toInt()
+        val resting = restingDays.lastOrNull()?.takeIf { Duration.between(it.first, now).toHours() < 60 }?.second?.toInt()
         val hrvDays = if (allowed(HeartRateVariabilityRmssdRecord::class)) {
             preferNoop(client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, month)).records) { it.metadata.dataOrigin.packageName }
                 .sortedBy { it.time }.map { it.time to it.heartRateVariabilityMillis }
         } else emptyList()
         val spo2 = if (allowed(OxygenSaturationRecord::class)) {
-            preferNoop(client.readRecords(ReadRecordsRequest(OxygenSaturationRecord::class, TimeRangeFilter.between(now.minus(Duration.ofHours(36)), now))).records) { it.metadata.dataOrigin.packageName }
+            preferNoop(client.readRecords(ReadRecordsRequest(OxygenSaturationRecord::class, recent)).records) { it.metadata.dataOrigin.packageName }
                 .maxByOrNull { it.time }?.percentage?.value
         } else null
         val respiratory = if (allowed(RespiratoryRateRecord::class)) {
-            preferNoop(client.readRecords(ReadRecordsRequest(RespiratoryRateRecord::class, TimeRangeFilter.between(now.minus(Duration.ofHours(36)), now))).records) { it.metadata.dataOrigin.packageName }
+            preferNoop(client.readRecords(ReadRecordsRequest(RespiratoryRateRecord::class, recent)).records) { it.metadata.dataOrigin.packageName }
                 .maxByOrNull { it.time }?.rate
         } else null
         val vo2 = if (allowed(Vo2MaxRecord::class)) {
@@ -151,16 +155,24 @@ object Health {
             sleep = sleep,
             now = LocalDateTime.now(),
             extras = HealthMath.Extras(
-                hrvToday = hrvDays.lastOrNull()?.takeIf { Duration.between(it.first, now).toHours() < 36 }?.second,
+                hrvToday = hrvDays.lastOrNull()?.takeIf { Duration.between(it.first, now).toHours() < 60 }?.second,
                 hrvBaseline = HealthMath.baseline(hrvDays.map { it.second }),
                 restingBaseline = HealthMath.baseline(restingDays.map { it.second }),
                 spo2 = spo2,
                 respiratoryRate = respiratory,
                 vo2max = vo2,
                 source = if (fromNoop) "NOOP" else null,
+                hrvAllowed = allowed(HeartRateVariabilityRmssdRecord::class),
             ),
         )
     }
+
+    /** The data types the app can read but isn't allowed to yet (added in an update, or turned off). */
+    suspend fun missing(context: Context): Set<String> = runCatching {
+        if (HealthConnectClient.getSdkStatus(context, PROVIDER) != HealthConnectClient.SDK_AVAILABLE) return emptySet()
+        val granted = HealthConnectClient.getOrCreate(context).permissionController.getGrantedPermissions()
+        permissions - granted
+    }.getOrDefault(emptySet())
 
     /** NOOP's records when there are any, else everyone's (so two apps' numbers don't mix). */
     private fun <T> preferNoop(records: List<T>, origin: (T) -> String): List<T> =

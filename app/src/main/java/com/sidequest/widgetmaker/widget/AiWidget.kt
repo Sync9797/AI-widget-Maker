@@ -29,7 +29,10 @@ import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.updateAll
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.currentState
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.compose.runtime.remember
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -90,14 +93,14 @@ class AiWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        val store = DesignStore(context)
-        val saved = withContext(Dispatchers.IO) { store.designFor(appWidgetId) }
-        val tokens = currentTokens(context)
-        val theme = store.themeFor(appWidgetId)
-        val look = store.look
-        val shape = store.shapeFor(appWidgetId)
-        val onScreen = store.boundsFor(appWidgetId)
         provideContent {
+            // Glance keeps a widget's drawing alive for a while and reuses it for
+            // updates, so everything is (re)loaded here, whenever a refresh bumps
+            // this widget's revision: a new shape, look, theme or data shows at once.
+            val rev = currentState(REV) ?: 0L
+            val inputs = remember(rev) { Inputs.load(context, appWidgetId) }
+            val saved = inputs.saved
+            val tokens = inputs.tokens
             if (saved == null) {
                 EmptyWidget(GlanceModifier.clickable(actionStartActivity<MainActivity>()))
             } else {
@@ -105,13 +108,24 @@ class AiWidget : GlanceAppWidget() {
                 // It goes through the tap screen, which also learns where the widget is (for the One UI blur).
                 val whole = Taps.forWidget(saved.design)?.let { Taps.resolve(it, tokens) }
                 val open = GlanceModifier.clickable(actionStartActivity(TapIntents.root(context, appWidgetId, whole)))
-                DesignWidget(saved.design, tokens, theme, look, shape, onScreen, open)
+                DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open)
             }
         }
     }
 
     companion object {
-        suspend fun refreshAll(context: Context) = AiWidget().updateAll(context)
+        /** Every widget's revision, bumped by each refresh so it reloads everything. */
+        val REV = longPreferencesKey("rev")
+
+        /** Redraws every placed widget with fresh settings and data. */
+        suspend fun refreshAll(context: Context) {
+            GlanceAppWidgetManager(context).getGlanceIds(AiWidget::class.java).forEach { refresh(context, it) }
+        }
+
+        suspend fun refresh(context: Context, id: GlanceId) {
+            updateAppWidgetState(context, id) { it[REV] = System.nanoTime() }
+            AiWidget().update(context, id)
+        }
 
         /**
          * The chosen theme. For Material 3 the app reads the phone's colors
@@ -196,8 +210,31 @@ class PinnedReceiver : BroadcastReceiver() {
 }
 
 suspend fun updateWidget(context: Context, appWidgetId: Int) {
-    val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
-    AiWidget().update(context, glanceId)
+    AiWidget.refresh(context, GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId))
+}
+
+/** Everything one widget draws from, loaded fresh for each revision. */
+private class Inputs(
+    val saved: com.sidequest.widgetmaker.spec.SavedDesign?,
+    val tokens: Tokens,
+    val theme: WidgetTheme,
+    val look: Look,
+    val shape: WidgetShape?,
+    val onScreen: Backdrop.Box?,
+) {
+    companion object {
+        fun load(context: Context, appWidgetId: Int): Inputs {
+            val store = DesignStore(context)
+            return Inputs(
+                saved = store.designFor(appWidgetId),
+                tokens = AiWidget.currentTokens(context),
+                theme = store.themeFor(appWidgetId),
+                look = store.look,
+                shape = store.shapeFor(appWidgetId),
+                onScreen = store.boundsFor(appWidgetId),
+            )
+        }
+    }
 }
 
 @Composable

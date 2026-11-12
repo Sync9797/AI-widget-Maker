@@ -419,10 +419,16 @@ private fun OneUiBlurControls(onChanged: () -> Unit) {
 private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
     val context = LocalContext.current
     var look by remember { mutableStateOf(DesignStore(context).look) }
+    /** Saves and redraws the home screen widgets. */
     fun update(new: Look) {
         look = new
         onChange(new)
     }
+    /** While a slider moves: only the preview follows; it's saved when let go. */
+    fun preview(new: Look) {
+        look = new
+    }
+    val save = { onChange(look) }
     val samples = remember { Starters.all }
     val wide = samples.first { it.title == "Battery" }.design
     val square = samples.first { it.title == "Clock and weather" }.design
@@ -432,12 +438,12 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
     }
 
     LookSlider(
-        "Corner radius", look.cornerRadius?.let { "$it" } ?: "Design's", (look.cornerRadius ?: 24).toFloat(), 0f..40f, 40,
-    ) { update(look.copy(cornerRadius = it.toInt())) }
+        "Corner radius", look.cornerRadius?.let { "$it" } ?: "Design's", (look.cornerRadius ?: 24).toFloat(), 0f..40f, 40, save,
+    ) { preview(look.copy(cornerRadius = it.toInt())) }
     if (look.cornerRadius != null) TextButton(onClick = { update(look.copy(cornerRadius = null)) }) { Text("Use each design's radius") }
-    LookSlider("Edge", "%.1f".format(look.edge), look.edge, 0f..3f, 12) { update(look.copy(edge = it)) }
-    LookSlider("Size", if (look.inset == 0) "Full" else "-${look.inset}", (16 - look.inset).toFloat(), 0f..16f, 16) {
-        update(look.copy(inset = 16 - it.toInt()))
+    LookSlider("Edge", "%.1f".format(look.edge), look.edge, 0f..3f, 12, save) { preview(look.copy(edge = it)) }
+    LookSlider("Size", if (look.inset == 0) "Full" else "-${look.inset}", (16 - look.inset).toFloat(), 0f..16f, 16, save) {
+        preview(look.copy(inset = 16 - it.toInt()))
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -448,18 +454,26 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
         Switch(checked = look.pillMaxHeight != null, onCheckedChange = { update(look.copy(pillMaxHeight = if (it) 64 else null)) })
     }
     look.pillMaxHeight?.let { maxH ->
-        LookSlider("Max height", "$maxH", maxH.toFloat(), 40f..110f, 70) { update(look.copy(pillMaxHeight = it.toInt())) }
+        LookSlider("Max height", "$maxH", maxH.toFloat(), 40f..110f, 70, save) { preview(look.copy(pillMaxHeight = it.toInt())) }
     }
 }
 
 @Composable
-private fun LookSlider(label: String, value: String, current: Float, range: ClosedFloatingPointRange<Float>, steps: Int, onChange: (Float) -> Unit) {
+private fun LookSlider(
+    label: String,
+    value: String,
+    current: Float,
+    range: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onDone: () -> Unit,
+    onChange: (Float) -> Unit,
+) {
     Column {
         Row {
             Text(label, modifier = Modifier.weight(1f))
             Text(value, style = MaterialTheme.typography.titleSmall)
         }
-        Slider(value = current, onValueChange = onChange, valueRange = range, steps = steps - 1)
+        Slider(value = current, onValueChange = onChange, onValueChangeFinished = onDone, valueRange = range, steps = steps - 1)
     }
 }
 

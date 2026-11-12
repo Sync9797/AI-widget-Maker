@@ -63,6 +63,7 @@ import com.sidequest.widgetmaker.ai.ClaudeApp
 import com.sidequest.widgetmaker.spec.SavedDesign
 import com.sidequest.widgetmaker.spec.Starters
 import com.sidequest.widgetmaker.spec.WidgetTheme
+import com.sidequest.widgetmaker.spec.WidgetShape
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MakerViewModel by viewModels()
@@ -160,6 +161,7 @@ private fun MakerScreen(viewModel: MakerViewModel) {
                     onDiscard = viewModel::discardDraft,
                     theme = state.theme,
                     free = !state.hasApiKey,
+                    onShape = viewModel::setDraftShape,
                 )
             }
 
@@ -231,6 +233,7 @@ private fun DraftCard(
     onDiscard: () -> Unit,
     theme: WidgetTheme,
     free: Boolean,
+    onShape: (WidgetShape) -> Unit,
 ) {
     var change by remember(draft) { mutableStateOf("") }
     var size by rememberSaveable { mutableStateOf(PreviewSize.Wide) }
@@ -244,6 +247,12 @@ private fun DraftCard(
             }
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 DesignPreview(draft.design, size, theme)
+            }
+            // The widget's shape: Claude's pick, or any other.
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                WidgetShape.entries.forEach { shape ->
+                    FilterChip(selected = draft.design.shape == shape, onClick = { onShape(shape) }, label = { Text(shape.label) })
+                }
             }
             OutlinedTextField(
                 value = change,

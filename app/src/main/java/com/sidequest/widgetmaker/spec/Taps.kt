@@ -24,6 +24,12 @@ sealed interface TapAction {
 
     /** Opens the app picked for this kind (or asks which). */
     data class Open(val kind: TapKind) : TapAction
+
+    /** Opens Monster Quest on a screen: "eggs", "adventures" or "quests". */
+    data class GameScreen(val screen: String) : TapAction
+
+    /** Asks Monster Quest to "complete" a quest, "claim" an adventure or "hatch" an egg. */
+    data class GameAction(val action: String, val id: String) : TapAction
 }
 
 /**
@@ -36,7 +42,7 @@ sealed interface TapAction {
  */
 object Taps {
     private val TOKEN = Regex("\\{([\\w.]+)\\}")
-    private val LISTED = Regex("^(news|events|calendar)\\.(\\d)$")
+    private val LISTED = Regex("^(news|events|calendar|mq\\.egg|mq\\.adv|mq\\.quest)\\.(\\d)$")
 
     /** The tap for one element: its own, or its item's link for a headline, event or calendar entry. */
     fun forNode(node: Node): String? {
@@ -49,7 +55,24 @@ object Taps {
     }
 
     /** The tap for the widget as a whole: the root's own, or the app kind for what it mostly shows. */
-    fun forWidget(design: WidgetDesign): String? = design.root.tap ?: mainKind(design)?.name
+    fun forWidget(design: WidgetDesign): String? {
+        design.root.tap?.let { return it }
+        val kind = mainKind(design) ?: return null
+        // A Monster Quest widget opens the game on what it shows most: eggs, adventures or quests.
+        if (kind == TapKind.game) gameScreen(design)?.let { return "mq-open:$it" }
+        return kind.name
+    }
+
+    /** Which game screen a design is mostly about, from its Monster Quest values. */
+    fun gameScreen(design: WidgetDesign): String? {
+        val text = DesignParser.encode(design)
+        val counts = mapOf(
+            "eggs" to Regex("\\{mq\\.egg").findAll(text).count(),
+            "adventures" to Regex("\\{mq\\.adv").findAll(text).count(),
+            "quests" to Regex("\\{mq\\.quest").findAll(text).count(),
+        )
+        return counts.filterValues { it > 0 }.maxByOrNull { it.value }?.key
+    }
 
     /** The kind of data a design shows most, by how many elements use it. */
     fun mainKind(design: WidgetDesign): TapKind? {
@@ -89,6 +112,13 @@ object Taps {
         val value = tokens.fill(raw).trim()
         if (value.isEmpty() || value == "--" || value.contains('{')) return null
         if (value.startsWith("https://") || value.startsWith("http://")) return TapAction.Link(value)
+        if (value.startsWith("mq-open:")) {
+            return value.removePrefix("mq-open:").takeIf { it in setOf("eggs", "adventures", "quests") }?.let { TapAction.GameScreen(it) }
+        }
+        if (value.startsWith("mq-action:")) {
+            val parts = value.removePrefix("mq-action:").split(':', limit = 2)
+            return if (parts.size == 2 && parts[0] in setOf("complete", "claim", "hatch") && parts[1].isNotBlank()) TapAction.GameAction(parts[0], parts[1]) else null
+        }
         if (value.startsWith("calendar-event:")) {
             val parts = value.removePrefix("calendar-event:").split(':').mapNotNull { it.toLongOrNull() }
             return if (parts.size == 3) TapAction.CalendarEvent(parts[0], parts[1], parts[2]) else null

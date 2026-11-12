@@ -129,6 +129,8 @@ object TapIntents {
             is TapAction.Link -> intent.putExtra("url", action.url)
             is TapAction.CalendarEvent -> intent.putExtra("event", longArrayOf(action.id, action.beginMs, action.endMs))
             is TapAction.Open -> intent.putExtra("kind", action.kind.name)
+            is TapAction.GameScreen -> intent.putExtra("gameScreen", action.screen)
+            is TapAction.GameAction -> intent.putExtra("gameAction", action.action).putExtra("gameId", action.id)
         }
         // A distinct data URI per target, so each element gets its own PendingIntent.
         return intent.setData(Uri.parse("aiwidget://tap/" + action.hashCode().toUInt()))
@@ -137,6 +139,8 @@ object TapIntents {
     fun read(intent: Intent?): TapAction? {
         intent ?: return null
         intent.getStringExtra("url")?.let { return TapAction.Link(it) }
+        intent.getStringExtra("gameScreen")?.let { return TapAction.GameScreen(it) }
+        intent.getStringExtra("gameAction")?.let { a -> intent.getStringExtra("gameId")?.let { return TapAction.GameAction(a, it) } }
         intent.getLongArrayExtra("event")?.takeIf { it.size == 3 }?.let { return TapAction.CalendarEvent(it[0], it[1], it[2]) }
         return intent.getStringExtra("kind")?.let { runCatching { TapAction.Open(TapKind.valueOf(it)) }.getOrNull() }
     }
@@ -159,7 +163,35 @@ object AppOpener {
             is TapAction.Open -> if (!openSavedOrDefault(context, action.kind)) {
                 start(context, TapIntents.intent(context, action))
             }
+            is TapAction.GameScreen -> openGame(context, action.screen)
+            is TapAction.GameAction -> gameAction(context, action)
         }
+    }
+
+    /** Opens Monster Quest on a screen (eggs, adventures, quests), whether or not it's already open. */
+    fun openGame(context: Context, screen: String?): Boolean {
+        val launch = context.packageManager.getLaunchIntentForPackage(MonsterQuest.PACKAGE) ?: run {
+            android.widget.Toast.makeText(context, "Monster Quest isn't installed.", android.widget.Toast.LENGTH_SHORT).show()
+            return false
+        }
+        launch.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        screen?.let { launch.putExtra("open", it) }
+        return start(context, launch)
+    }
+
+    /**
+     * Asks the game to complete a quest, claim an adventure or hatch an egg.
+     * The game checks it against its rules and answers; its answer is shown,
+     * and the game's widgets refresh.
+     */
+    fun gameAction(context: Context, action: TapAction.GameAction) {
+        val result = runCatching {
+            context.contentResolver.call(Uri.parse("content://com.monsterquest.app.summary"), action.action, action.id, null)
+        }.getOrNull()
+        val message = result?.getString("message")
+            ?: "Update Monster Quest to the latest version to use widget buttons."
+        android.widget.Toast.makeText(context.applicationContext, message, android.widget.Toast.LENGTH_SHORT).show()
+        if (result?.getBoolean("ok") == true) com.sidequest.widgetmaker.feeds.FeedWorker.refreshSoon(context, setOf("mq"))
     }
 
     /** Opens the saved app for [kind], or else the system default where Android has one. False if it should ask. */

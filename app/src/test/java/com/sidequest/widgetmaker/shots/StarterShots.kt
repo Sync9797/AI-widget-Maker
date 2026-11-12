@@ -184,6 +184,17 @@ class StarterShots {
             "mq.adventures" to "2",
             "mq.adv.1" to "Clear the cellar", "mq.adv.1.team" to "Ember, Pip", "mq.adv.1.left" to "1 h 20 min left", "mq.adv.1.progress" to "40",
             "mq.adv.2" to "Scout the river", "mq.adv.2.team" to "Tide", "mq.adv.2.left" to "Done! Collect your loot", "mq.adv.2.progress" to "100",
+            "mq.egg.1.hatch" to "mq-action:hatch:e1", "mq.adv.2.claim" to "mq-action:claim:a2",
+            "mq.quests" to "6", "mq.quest.1" to "Write report", "mq.quest.1.when" to "Today 3 PM", "mq.quest.1.done" to "mq-action:complete:q1",
+            "mq.quest.2" to "Water plants", "mq.quest.2.done" to "mq-action:complete:q2",
+            "mq.quest.3" to "Call the bank", "mq.quest.3.when" to "Tomorrow", "mq.quest.3.done" to "mq-action:complete:q3",
+            "mq.party.1" to "Ember", "mq.party.1.level" to "Lv 24", "mq.party.1.hp" to "52/60", "mq.party.1.hpPct" to "86",
+            "mq.party.2" to "Pip", "mq.party.2.level" to "Lv 21", "mq.party.2.hp" to "18/55", "mq.party.2.hpPct" to "33",
+            "mq.bounty.1" to "Walk 40,000 steps", "mq.bounty.1.progress" to "12,400 / 40,000", "mq.bounty.1.pct" to "31",
+            "mq.bounty.2" to "Two 60-minute phone-free sessions", "mq.bounty.2.progress" to "1 / 2", "mq.bounty.2.pct" to "50",
+            "mq.bounty.3" to "Complete 10 quests", "mq.bounty.3.progress" to "7 / 10", "mq.bounty.3.pct" to "70",
+            "mq.torch.pct" to "48", "mq.torch.next" to "520 steps to the next torch",
+            "mq.focus" to "Phone-free · 23 min left", "mq.focus.pct" to "62",
             "updated" to "3:12 PM",
         )
     }

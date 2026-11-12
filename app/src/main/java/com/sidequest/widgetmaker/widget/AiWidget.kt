@@ -423,5 +423,6 @@ fun iconRes(name: IconName): Int = when (name) {
     IconName.egg -> R.drawable.icon_egg
     IconName.paw -> R.drawable.icon_paw
     IconName.steps -> R.drawable.icon_steps
+    IconName.check -> R.drawable.icon_check
     IconName.weather -> R.drawable.icon_sun
 }

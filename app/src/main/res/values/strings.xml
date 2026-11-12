@@ -3,4 +3,10 @@
     <string name="app_name">AI Widget Maker</string>
     <string name="widget_name">AI widget</string>
     <string name="widget_description">A widget you designed by describing it.</string>
+    <string name="widget_name_slim">AI widget, slim</string>
+    <string name="widget_name_wide">AI widget, wide</string>
+    <string name="widget_name_large">AI widget, large</string>
+    <string name="widget_description_slim">One row (2×1): pills and slim widgets.</string>
+    <string name="widget_description_wide">Wide (4×2): more beside the main content.</string>
+    <string name="widget_description_large">Large (4×4): everything a design can show.</string>
 </resources>

@@ -227,3 +227,15 @@ class FillTest {
         assertEquals(design, DesignParser.parse(DesignParser.encode(design)))
     }
 }
+
+class WidgetSizeTest {
+    @Test
+    fun pillsStartSlim() {
+        val design = Starters.all.first { it.title == "Battery fill" }.design
+        assertEquals(com.sidequest.widgetmaker.widget.WidgetSize.square, com.sidequest.widgetmaker.widget.WidgetSize.suggested(design))
+        assertEquals(
+            com.sidequest.widgetmaker.widget.WidgetSize.slim,
+            com.sidequest.widgetmaker.widget.WidgetSize.suggested(design.copy(shape = com.sidequest.widgetmaker.spec.WidgetShape.pill)),
+        )
+    }
+}

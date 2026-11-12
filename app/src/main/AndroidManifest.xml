@@ -110,6 +110,40 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/ai_widget_info" />
         </receiver>
+        <!-- The same widget at other starting sizes, so "Add to home screen" can place it at the right size. -->
+        <receiver
+            android:name=".widget.AiWidgetSlimReceiver"
+            android:exported="true"
+            android:label="@string/widget_name_slim">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/ai_widget_info_slim" />
+        </receiver>
+        <receiver
+            android:name=".widget.AiWidgetWideReceiver"
+            android:exported="true"
+            android:label="@string/widget_name_wide">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/ai_widget_info_wide" />
+        </receiver>
+        <receiver
+            android:name=".widget.AiWidgetLargeReceiver"
+            android:exported="true"
+            android:label="@string/widget_name_large">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/ai_widget_info_large" />
+        </receiver>
 
         <!-- Told the new widget's id after "Add to home screen", so it shows the right design. -->
         <receiver

@@ -1,5 +1,6 @@
 package com.sidequest.widgetmaker.ui
 
+import kotlinx.coroutines.launch
 import com.sidequest.widgetmaker.music.Music
 import android.Manifest
 import android.content.pm.PackageManager
@@ -599,6 +600,16 @@ private fun HealthControls(on: Boolean, onChange: (Boolean) -> Unit) {
         style = MaterialTheme.typography.bodySmall,
     )
     if (status == Health.Status.Partly) TextButton(onClick = { ask.launch(Health.permissions) }) { Text("Allow the rest") }
+    // What Health Connect actually shares, to see why a widget shows "--".
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var report by remember { mutableStateOf<List<String>?>(null) }
+    if (status == Health.Status.Ready || status == Health.Status.Partly) {
+        TextButton(onClick = {
+            report = listOf("Checking…")
+            scope.launch { report = Health.diagnose(context) }
+        }) { Text("Check what Health Connect shares") }
+    }
+    report?.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
 }
 
 /** The list of countdowns, with adding by date or from the calendar. */

@@ -159,10 +159,12 @@ class SquareCellTest {
     private val look = com.sidequest.widgetmaker.spec.Look()
 
     @Test
-    fun aTall2x2CellGetsASquarePanel() {
+    fun aTall2x2CellGetsOneUisProportions() {
         val p = com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look)
         assertEquals(170, p.width)
-        assertEquals(170, p.height)
+        assertEquals(179, p.height)
+        // An open foldable's wider 2×2 is filled, as One UI fills its own.
+        assertEquals(330, com.sidequest.widgetmaker.spec.Shapes.panel(330, 200, design, look).width)
     }
 
     @Test

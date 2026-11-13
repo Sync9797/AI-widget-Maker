@@ -445,6 +445,16 @@ private fun OneUiBlurControls(onChanged: () -> Unit) {
     val context = LocalContext.current
     var version by remember { mutableStateOf(0) }
     val source = remember(version) { OneUiBackdrop.source(context) }
+    // Back from allowing wallpaper access (or a new wallpaper): read it again and redraw the widgets.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        val now = OneUiBackdrop.source(context)
+        OneUiBackdrop.forgetCached()
+        if (now != source) {
+            version++
+            onChanged()
+        }
+        onPauseOrDispose {}
+    }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null && OneUiBackdrop.savePicked(context, uri)) {
             version++
@@ -470,9 +480,10 @@ private fun OneUiBlurControls(onChanged: () -> Unit) {
         }
     }
     Text(
-        "Pick the same picture as your home screen wallpaper (or allow wallpaper access, which reads it directly and " +
-            "follows when you change it). Then tap an empty spot on each widget once: it learns where it sits, " +
-            "so the blur lines up with what's behind it.",
+        "Best: allow wallpaper access. The app then reads your wallpaper exactly as your home screen shows it, " +
+            "zoomed and placed as you set it, and follows when you change it. A picked picture only lines up if your " +
+            "wallpaper isn't zoomed in or moved. Then tap each widget once: it learns where it sits, so the blur " +
+            "lines up with what's behind it.",
         style = MaterialTheme.typography.bodySmall,
     )
 }

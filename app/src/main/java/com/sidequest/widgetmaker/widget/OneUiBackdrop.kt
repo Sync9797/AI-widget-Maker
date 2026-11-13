@@ -43,9 +43,14 @@ object OneUiBackdrop {
 
     @Volatile private var cached: Pair<Long, Bitmap?>? = null
 
+    /**
+     * The wallpaper itself comes first when Android lets the app read it: it's exactly what the home
+     * screen shows, zoomed and placed as you set it, and it follows when you change it. A picked
+     * picture is the original, which lines up only if the wallpaper wasn't zoomed or moved.
+     */
     fun source(context: Context): Source = when {
-        File(context.filesDir, PICKED).exists() -> Source.Picked
         systemWallpaper(context) != null -> Source.System
+        File(context.filesDir, PICKED).exists() -> Source.Picked
         else -> Source.Colors
     }
 
@@ -72,11 +77,25 @@ object OneUiBackdrop {
     /** The wallpaper picture to blur, or null to use the wallpaper's colors. */
     private fun wallpaper(context: Context): Bitmap? {
         val now = System.currentTimeMillis()
-        cached?.let { (at, bitmap) -> if (now - at < 5 * 60_000) return bitmap }
+        // Reused for a few minutes, unless the wallpaper has been changed since.
+        val id = wallpaperId(context)
+        cached?.let { (at, bitmap) -> if (now - at < 5 * 60_000 && id == cachedId) return bitmap }
         val picked = File(context.filesDir, PICKED)
-        val bitmap = if (picked.exists()) BitmapFactory.decodeFile(picked.path) else systemWallpaper(context)
+        val bitmap = systemWallpaper(context) ?: if (picked.exists()) BitmapFactory.decodeFile(picked.path) else null
         cached = now to bitmap
+        cachedId = id
         return bitmap
+    }
+
+    @Volatile private var cachedId: Int = -1
+
+    /** Which wallpaper is set: it changes when you set a new one. -1 when Android won't say. */
+    private fun wallpaperId(context: Context): Int =
+        runCatching { WallpaperManager.getInstance(context).getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
+
+    /** Forgets the wallpaper read last, so the next drawing reads it again (after access is allowed). */
+    fun forgetCached() {
+        cached = null
     }
 
     /** The home screen wallpaper, when Android lets the app read it (wallpaper access allowed). */

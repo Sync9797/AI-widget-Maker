@@ -131,6 +131,17 @@ class DesignStore(context: Context) {
     /** Whether this widget's place on [screen] was learned (else the blur guesses the middle of the screen). */
     fun knowsPlace(appWidgetId: Int, screen: String) = prefs.contains("widget_bounds_${appWidgetId}_$screen")
 
+    /** Notes what a tap on the widget's panel said about where it is ([box] null: the launcher didn't say). */
+    fun noteTap(appWidgetId: Int, box: Backdrop.Box?, screen: String) {
+        val time = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.US))
+        val said = box?.let { "at ${it.left},${it.top}, ${it.right - it.left}×${it.bottom - it.top} px on a $screen screen" }
+            ?: "but the home screen didn't say where the widget is"
+        prefs.edit().putString("widget_tap_$appWidgetId", "Last tap $time, $said.").apply()
+    }
+
+    /** What the last tap on the widget's panel said, or null before the first one. */
+    fun lastTap(appWidgetId: Int): String? = prefs.getString("widget_tap_$appWidgetId", null)
+
     /** Forgets where a widget is on every screen, so its next tap (anywhere on it) learns it again. */
     fun forgetPlace(appWidgetId: Int) {
         val keys = prefs.all.keys.filter { it == "widget_bounds_$appWidgetId" || it.startsWith("widget_bounds_${appWidgetId}_") }

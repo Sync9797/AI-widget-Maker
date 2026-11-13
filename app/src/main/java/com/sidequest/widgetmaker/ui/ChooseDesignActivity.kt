@@ -151,6 +151,16 @@ class ChooseDesignActivity : ComponentActivity() {
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                             )
+                            Text(
+                                com.sidequest.widgetmaker.widget.OneUiBackdrop.source(this@ChooseDesignActivity).description + ".",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                store.lastTap(appWidgetId) ?: "No tap on this widget's background yet.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             // Moved it? Forget where it was, so the next tap anywhere on it lines the blur up again.
                             if (known) {
                                 TextButton(onClick = {

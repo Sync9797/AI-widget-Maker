@@ -361,7 +361,7 @@ private fun DesignWidget(
                 GlanceModifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp),
             ) {
                 // Size rules see the widget as it is before scaling, so a scaled 2×2 stays a 2×2 layout.
-                val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens)
+                val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens, inner = (panel.height / k).toInt() - panel.padTop - panel.padV)
                 if (fit.shows(design.root)) GlanceNode(design.root, tokens, paint, fit, GlanceModifier.fillMaxSize())
             }
         }
@@ -458,7 +458,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             val density = context.resources.displayMetrics.density
             val values = ChartArt.parse(tokens.fill(node.series))
             Image(
-                provider = ImageProvider(ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density)),
+                provider = ImageProvider(ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density, node.min, node.max)),
                 contentDescription = null,
                 modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
                 contentScale = ContentScale.FillBounds,
@@ -466,6 +466,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             )
         }
         is RingNode -> {
+            @Suppress("NAME_SHADOWING") val node = node.fitted(fit.inner)
             val density = context.resources.displayMetrics.density
             val px = (node.size * paint.k * density).toInt()
             val thick = node.thickness * paint.k * density
@@ -602,8 +603,8 @@ fun textColor(node: TextNode, tokens: Tokens): Pair<Role, String> {
 fun accentColor(levelOf: String?, levels: List<com.sidequest.widgetmaker.spec.Level>?, color: String, tokens: Tokens): Pair<Role, String> =
     levelColor(levelOf, levels, tokens)?.let { Role.Level to it } ?: (Role.Accent to color)
 
-/** A widget size, in dp. */
-data class Fit(val width: Int, val height: Int, val tokens: Tokens? = null) {
+/** The widget's size for size rules, and [inner]: the height inside its padding, which rings shrink to. */
+data class Fit(val width: Int, val height: Int, val tokens: Tokens? = null, val inner: Int = height) {
     fun shows(node: Node) = visible(node, width, height, tokens)
 }
 

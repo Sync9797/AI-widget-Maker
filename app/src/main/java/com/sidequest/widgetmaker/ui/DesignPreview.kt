@@ -151,7 +151,7 @@ fun DesignPreview(
                         Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
                     }
                     Box(Modifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp)) {
-                        val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens)
+                        val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens, inner = (panel.height / k).toInt() - panel.padTop - panel.padV)
                         if (fit.shows(design.root)) PreviewNode(design.root, tokens, paint, fit, Modifier.fillMaxSize())
                     }
                 }
@@ -239,12 +239,13 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             val density = LocalContext.current.resources.displayMetrics.density
             val values = ChartArt.parse(tokens.fill(node.series))
             val bmp = remember(values, fit.width, node.height, paint.k) {
-                ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density).asImageBitmap()
+                ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density, node.min, node.max).asImageBitmap()
             }
             Image(bmp, null, modifier.fillMaxWidth().height((node.height * paint.k).dp), contentScale = ContentScale.FillBounds,
                 colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)))
         }
         is RingNode -> {
+            @Suppress("NAME_SHADOWING") val node = node.fitted(fit.inner)
             val density = LocalContext.current.resources.displayMetrics.density
             val px = (node.size * paint.k * density).toInt()
             val thick = node.thickness * paint.k * density

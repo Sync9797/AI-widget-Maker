@@ -785,5 +785,41 @@ object Starters {
               {"type":"text","text":"{health.charge.label} · Slept {health.sleep}","size":12,"color":"#FF3B4656","maxLines":1},
               {"type":"spacer","grow":true}]}]}}""",
         ),
+        Triple(
+            "Stress", "Today's stress from not-NOOP on NOOP's 0-3 scale, with the day's curve, peak and average when there's room.",
+            """{"name":"Stress","background":"#FFF4F0E6","cornerRadius":28,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"text","text":"Stress","size":13,"color":"#FF1C2433","weight":"medium","grow":true,"maxLines":1},
+              {"type":"text","text":"{noop.stress.label}","size":12,"color":"#FF5A6472","maxLines":1,"show":{"ifSet":"{noop.stress}"},"levelOf":"{noop.stress.pct}","levels":[{"from":0,"color":"#FF3FA37A"},{"from":34,"color":"#FFD99A2B"},{"from":67,"color":"#FFD9534F"}]}]},
+             {"type":"row","verticalAlign":"bottom","show":{"ifSet":"{noop.stress}"},"children":[
+              {"type":"text","text":"{noop.stress}","size":34,"color":"#FF1C2433","weight":"bold","maxLines":1},
+              {"type":"text","text":" of 3","size":13,"color":"#FF5A6472","maxLines":1,"grow":true},
+              {"type":"text","text":"Peak {noop.stress.peak} · {noop.stress.peakAt}","size":12,"color":"#FF5A6472","maxLines":1,"show":{"minWidth":250}}]},
+             {"type":"text","text":"Shows once not-NOOP has scored an hour today.","size":12,"color":"#FF5A6472","maxLines":3,"show":{"ifEmpty":"{noop.stress}"}},
+             {"type":"spacer","size":8,"show":{"minHeight":130,"ifSet":"{noop.stress.series}"}},
+             {"type":"chart","series":"{noop.stress.series}","height":48,"min":0,"max":300,"color":"#FF3FA37A","show":{"minHeight":130,"maxHeight":249,"ifSet":"{noop.stress.series}"}},
+             {"type":"chart","series":"{noop.stress.series}","height":120,"min":0,"max":300,"color":"#FF3FA37A","show":{"minHeight":250,"ifSet":"{noop.stress.series}"}},
+             {"type":"row","show":{"minHeight":160,"ifSet":"{noop.stress.series}"},"children":[
+              {"type":"text","text":"{noop.stress.start}","size":11,"color":"#FF5A6472","grow":true,"maxLines":1},
+              {"type":"text","text":"{noop.stress.end}","size":11,"color":"#FF5A6472","maxLines":1}]},
+             {"type":"text","text":"Avg {noop.stress.avg} · peak {noop.stress.peak} at {noop.stress.peakAt}","size":12,"color":"#FF5A6472","maxLines":1,"show":{"minHeight":200,"maxWidth":249,"ifSet":"{noop.stress}"}},
+             {"type":"text","text":"Average {noop.stress.avg} today","size":12,"color":"#FF5A6472","maxLines":1,"show":{"minHeight":200,"minWidth":250,"ifSet":"{noop.stress}"}}]}}""",
+        ),
+        Triple(
+            "Coach brief", "not-NOOP's daily Coach brief: the first point on a small widget, the whole brief on a big one. Turn the brief on in not-NOOP.",
+            """{"name":"Coach brief","background":"#F20D1626","cornerRadius":28,"padding":16,"root":
+            {"type":"column","children":[
+             {"type":"row","verticalAlign":"center","children":[
+              {"type":"icon","name":"star","size":14,"color":"#FFE8B64C"},
+              {"type":"text","text":" Coach brief","size":14,"color":"#FFE8B64C","weight":"bold","grow":true,"maxLines":1},
+              {"type":"text","text":"{noop.coach.time}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":200}}]},
+             {"type":"spacer","size":8},
+             {"type":"text","text":"Turn on the Coach brief in not-NOOP to see it here.","size":13,"color":"#CCFFFFFF","maxLines":3,"show":{"ifEmpty":"{noop.coach}"}},
+             {"type":"text","text":"{noop.coach.summary}","size":13,"color":"#FFFFFFFF","maxLines":5,"show":{"maxHeight":249,"ifSet":"{noop.coach}"}},
+             {"type":"text","text":"{noop.coach.title}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"show":{"minHeight":250,"ifSet":"{noop.coach}"}},
+             {"type":"spacer","size":6,"show":{"minHeight":250,"ifSet":"{noop.coach}"}},
+             {"type":"text","text":"{noop.coach.body}","size":13,"color":"#E6FFFFFF","maxLines":18,"show":{"minHeight":250,"ifSet":"{noop.coach}"}}]}}""",
+        ),
     )
 }

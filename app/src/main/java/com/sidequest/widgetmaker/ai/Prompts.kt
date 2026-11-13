@@ -84,6 +84,7 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"art","size":56,"cornerRadius":12}   the album art of what's playing (music widgets)
 - {"type":"timer","of":"music","size":12,"color":color}   how far into the song, counting live
 - {"type":"chart","series":"{health.heart.series}","height":90,"color":color}   a line chart (today's heart rate)
+  optional "min" and "max" fix the scale (stress: "min":0,"max":300)
 - {"type":"ring","value":"{health.charge}","text":"{health.charge}","size":72,"thickness":8,"textSize":22,
    "color":color,"trackColor":color,"textColor":color}   a ring filled to a 0-100 value with text in it (NOOP-style)
 - {"type":"sleep","height":14}   last night's sleep as a bar of colored stages (awake, light, deep, REM)
@@ -151,6 +152,11 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
 - NOOP-style rings: Charge {health.charge}; Effort {health.effort} with {health.effort.pct} (0-100, for a
   ring); Rest {health.rest} (0-100). From not-NOOP these are NOOP's own scores (Effort 0-100); otherwise
   estimates (Effort 0-21). {noop.battery} strap battery "82%", {noop.connected} "Connected".
+- Stress from not-NOOP (0-3 scale): {noop.stress} "1.6", {noop.stress.label} Low/Moderate/High, {noop.stress.pct}
+  (of 3, for levels or a ring), {noop.stress.avg}, {noop.stress.peak}, {noop.stress.peakAt} "9:00 AM",
+  {noop.stress.series} (for a chart with "min":0,"max":300), {noop.stress.start}, {noop.stress.mid}, {noop.stress.end}.
+- not-NOOP's Coach brief: {noop.coach} all of it, {noop.coach.title}, {noop.coach.body}, {noop.coach.summary}
+  (its first point), {noop.coach.time} when it was written. Give it maxLines to fit.
 - Sleep extras: {health.sleep.bed} "11:42 PM", {health.sleep.wake} "7:05 AM"; the last 7 nights, N = 1
   (oldest) to 7 (last night): {health.sleep.nN.day} "Mon", {health.sleep.nN} "7h 2m", {health.sleep.nN.pct}
   (0-100, for a bar per night).

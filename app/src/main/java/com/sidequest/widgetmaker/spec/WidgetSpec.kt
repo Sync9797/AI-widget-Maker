@@ -280,6 +280,9 @@ data class ChartNode(
     val series: String = "{health.heart.series}",
     val height: Int = 90,
     val color: String = "#FFD2542A",
+    /** Fixed bottom and top of the scale (like 0 and 300 for stress); null fits the series. */
+    val min: Int? = null,
+    val max: Int? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -305,7 +308,17 @@ data class RingNode(
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
-) : Node
+) : Node {
+    /**
+     * This ring shrunk to fit [room] (the height there is, in dp before scaling), with its line and
+     * text in proportion, so a ring in a slim pill isn't cut off. Never grows it.
+     */
+    fun fitted(room: Int): RingNode {
+        if (room >= size || room <= 0) return this
+        val r = maxOf(room, 16).toFloat() / size
+        return copy(size = maxOf(room, 16), thickness = maxOf(2, (thickness * r).toInt()), textSize = maxOf(8, (textSize * r).toInt()))
+    }
+}
 
 /** Last night's sleep as a bar of stages (awake, light, deep, REM), [height] dp tall. */
 @Serializable

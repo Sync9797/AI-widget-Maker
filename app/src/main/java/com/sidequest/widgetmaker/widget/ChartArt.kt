@@ -16,13 +16,16 @@ object ChartArt {
     /** The numbers in a series value like "72,75,81". */
     fun parse(series: String?): List<Int> = series.orEmpty().split(',').mapNotNull { it.trim().toIntOrNull() }
 
-    /** A line through [values] with a fading fill under it, scaled between their lowest and highest. */
-    fun line(values: List<Int>, w: Int, h: Int, strokePx: Float): Bitmap {
+    /**
+     * A line through [values] with a fading fill under it, scaled between their lowest and highest,
+     * or between [min] and [max] when given.
+     */
+    fun line(values: List<Int>, w: Int, h: Int, strokePx: Float, min: Int? = null, max: Int? = null): Bitmap {
         val out = Bitmap.createBitmap(w.coerceAtLeast(8), h.coerceAtLeast(8), Bitmap.Config.ARGB_8888)
         if (values.size < 2) return out
         val canvas = Canvas(out)
-        val lo = values.min()
-        val hi = maxOf(values.max(), lo + 1)
+        val lo = min ?: values.min()
+        val hi = maxOf(max ?: values.max(), lo + 1)
         val pad = strokePx
         fun x(i: Int) = pad + (out.width - 2 * pad) * i / (values.size - 1).toFloat()
         fun y(v: Int) = pad + (out.height - 2 * pad) * (1f - (v - lo).toFloat() / (hi - lo))

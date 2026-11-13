@@ -15,8 +15,8 @@ android {
         applicationId = "com.sidequest.widgetmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 24
-        versionName = "0.9.12"
+        versionCode = 25
+        versionName = "0.9.13"
         // Which commit this is (set by the GitHub build), so the app can tell when a newer build is out.
         buildConfigField("String", "GIT_SHA", "\"${System.getenv("GITHUB_SHA") ?: "dev"}\"")
     }
@@ -103,4 +103,9 @@ dependencies {
 
 kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+}
+
+// -PshotsOnly="Title,Title" draws just those starters in StarterShots.
+tasks.withType<Test>().configureEach {
+    (project.findProperty("shotsOnly") as String?)?.let { systemProperty("shots.only", it) }
 }

@@ -52,6 +52,32 @@ object NoopMath {
     }
 
     /**
+     * One line saying what the fork shares right now, for the Check screen: whether its heart rate is
+     * live, how long its 3-hour trace is, its scores and how old the snapshot is. [nowMs] is passed in.
+     */
+    fun describe(s: Snapshot, nowMs: Long): String {
+        val points = s.series.split(',').count { it.indexOf(':') > 0 }
+        val heart = when {
+            s.heart <= 0 -> "no heart rate yet"
+            s.heartStale -> "heart rate ${s.heart} (not live)"
+            else -> "heart rate ${s.heart} live"
+        }
+        val parts = mutableListOf(heart, if (points > 0) "$points-minute trace" else "no trace yet")
+        if (s.charge >= 0) parts += "Charge ${s.charge}%"
+        parts += if (s.connected) "strap connected" else "strap not connected"
+        val age = if (s.updatedAtMs <= 0L) "never updated" else {
+            val min = ((nowMs - s.updatedAtMs) / 60_000L).coerceAtLeast(0L)
+            when {
+                min < 1 -> "updated just now"
+                min < 60 -> "updated $min min ago"
+                min < 48 * 60 -> "updated ${min / 60} h ago"
+                else -> "updated ${min / (24 * 60)} days ago"
+            }
+        }
+        return parts.joinToString(", ") + ", " + age
+    }
+
+    /**
      * Combines the fork's values with Health Connect's: the fork's scores win (they are NOOP's own,
      * not estimates), while a full day of heart rate from Health Connect beats the fork's 3 hours.
      */

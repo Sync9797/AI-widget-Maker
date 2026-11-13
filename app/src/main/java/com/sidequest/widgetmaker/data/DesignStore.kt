@@ -131,6 +131,12 @@ class DesignStore(context: Context) {
     /** Whether this widget's place on [screen] was learned (else the blur guesses the middle of the screen). */
     fun knowsPlace(appWidgetId: Int, screen: String) = prefs.contains("widget_bounds_${appWidgetId}_$screen")
 
+    /** Forgets where a widget is on every screen, so its next tap (anywhere on it) learns it again. */
+    fun forgetPlace(appWidgetId: Int) {
+        val keys = prefs.all.keys.filter { it == "widget_bounds_$appWidgetId" || it.startsWith("widget_bounds_${appWidgetId}_") }
+        prefs.edit().apply { keys.forEach(::remove) }.apply()
+    }
+
     /** Saves a widget's place on [screen]; true if it changed. */
     fun setBoundsFor(appWidgetId: Int, box: Backdrop.Box, screen: String): Boolean {
         if (knowsPlace(appWidgetId, screen) && boundsFor(appWidgetId, screen) == box) return false

@@ -19,6 +19,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -143,13 +144,21 @@ class ChooseDesignActivity : ComponentActivity() {
                             val known = store.knowsPlace(appWidgetId, com.sidequest.widgetmaker.widget.OneUiBackdrop.screenKey(this@ChooseDesignActivity))
                             Text(
                                 if (known) {
-                                    "Blur lined up with your wallpaper on this screen. Moved the widget? Tap it once to line it up again."
+                                    "Blur lined up with your wallpaper on this screen. Moved the widget? Tap Line up blur again, then tap the widget."
                                 } else {
-                                    "Blur not lined up yet on this screen: tap the widget once and it learns where it sits. " +
+                                    "Blur not lined up yet on this screen: tap the widget once, anywhere on it, and it learns where it sits. " +
                                         "(Android only tells apps where a widget is when it's tapped. On a foldable, do this once on each screen.)"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                             )
+                            // Moved it? Forget where it was, so the next tap anywhere on it lines the blur up again.
+                            if (known) {
+                                TextButton(onClick = {
+                                    store.forgetPlace(appWidgetId)
+                                    android.widget.Toast.makeText(this@ChooseDesignActivity, "Now tap the widget once, anywhere on it, to line up its blur.", android.widget.Toast.LENGTH_LONG).show()
+                                    apply(finishAfter = true)
+                                }) { Text("Line up blur again") }
+                            }
                         }
 
                         Text("Shape", style = MaterialTheme.typography.titleMedium)

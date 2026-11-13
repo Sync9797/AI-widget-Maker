@@ -330,7 +330,10 @@ private fun DesignWidget(
     val art = PanelArt.build(context, theme, panel, look, onScreen)
     // On a bigger screen (an open foldable) the content can grow with the widget.
     val k = Shapes.scale(panel, look)
-    val paint = Paint(art.styler, albumArt, k)
+    // Until a blurred widget knows where it sits, its parts don't take taps of their own: any tap then
+    // lands on the panel, which is the only tap that says where the widget is. (A pill that is all text
+    // otherwise never learns it.) Once it knows, the parts' own taps come back.
+    val paint = Paint(art.styler, albumArt, k, partTaps = !(theme.frosted && onScreen == null))
     Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Box(GlanceModifier.size(panel.width.dp, panel.height.dp).then(open)) {
             // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.
@@ -374,7 +377,7 @@ private fun DesignWidget(
  * match the phone's current palette (wallpaper or a One UI color palette) and
  * light or dark mode, with nothing cached in this app.
  */
-private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? = null, val k: Float = 1f) {
+private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? = null, val k: Float = 1f, val partTaps: Boolean = true) {
     operator fun invoke(role: Role, design: String?): ColorProvider {
         // Colors that mean something (a red Charge) stay as they are in every theme.
         if (role == Role.Level) return ColorProvider(Color(Colors.argb(design)))
@@ -387,7 +390,7 @@ private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? =
 private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base: GlanceModifier = GlanceModifier) {
     // Its own tap, if it has one: a headline's article, a calendar entry, the clock app...
     val context = androidx.glance.LocalContext.current
-    val tap = Taps.forNode(node)?.let { Taps.resolve(it, tokens) }
+    val tap = if (paint.partTaps) Taps.forNode(node)?.let { Taps.resolve(it, tokens) } else null
     val modifier = tap?.let {
         // Music buttons act at once, without opening anything.
         if (it is TapAction.Media) base.clickable(actionSendBroadcast(MusicControlReceiver.intent(context, it.command)))

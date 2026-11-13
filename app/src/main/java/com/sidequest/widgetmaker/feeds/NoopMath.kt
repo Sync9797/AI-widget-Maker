@@ -1,6 +1,7 @@
 package com.sidequest.widgetmaker.feeds
 
 import java.time.ZoneId
+import kotlin.math.roundToInt
 
 /** Turns the not-NOOP fork's shared snapshot into widget values. Free of Android, so it can be tested. */
 object NoopMath {
@@ -15,6 +16,11 @@ object NoopMath {
         val connected: Boolean,
         val updatedAtMs: Long,
         val series: String,
+        /** Today's hourly stress, "epochSec:level:moving,...", "-" for an unscored hour. */
+        val stress: String = "",
+        /** The Coach brief (Markdown, as NOOP writes it) and when it was written; "" and 0 when none. */
+        val brief: String = "",
+        val briefAtMs: Long = 0L,
     )
 
     /**
@@ -45,9 +51,80 @@ object NoopMath {
         }
         out.putAll(HealthMath.heartChart(points, zone))
         if (s.heart > 0) out["health.heart.last"] = s.heart.toString()
+        out.putAll(stress(s.stress, zone))
+        out.putAll(coach(s.brief, s.briefAtMs, zone))
         if (s.battery >= 0) out["noop.battery"] = "${s.battery}%"
         out["noop.connected"] = if (s.connected) "Connected" else "Not connected"
         out["health.source"] = "NOOP"
+        return out
+    }
+
+    /**
+     * Today's stress (NOOP's 0-3 scale) as widget values: noop.stress (the latest scored hour),
+     * .label, .pct (of 3), .avg, .peak and .peakAt, and for a chart .series (levels x100, so a chart
+     * from 0 to 300 matches NOOP's) with .start, .mid and .end times. Empty before an hour is scored.
+     */
+    fun stress(encoded: String, zone: ZoneId): Map<String, String> {
+        val points = encoded.split(',').mapNotNull { part ->
+            val bits = part.split(':')
+            if (bits.size != 3) return@mapNotNull null
+            val ts = bits[0].toLongOrNull() ?: return@mapNotNull null
+            val level = bits[1].toDoubleOrNull() ?: return@mapNotNull null
+            ts to level.coerceIn(0.0, 3.0)
+        }.sortedBy { it.first }
+        if (points.isEmpty()) return emptyMap()
+        fun one(v: Double) = String.format(java.util.Locale.US, "%.1f", v)
+        val clock = java.time.format.DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.US)
+        fun time(sec: Long) = java.time.Instant.ofEpochSecond(sec).atZone(zone).format(clock)
+        val latest = points.last().second
+        val peak = points.maxBy { it.second }
+        val first = points.first().first
+        val last = points.last().first
+        return mapOf(
+            "noop.stress" to one(latest),
+            "noop.stress.label" to when {
+                latest < 1.0 -> "Low"
+                latest < 2.0 -> "Moderate"
+                else -> "High"
+            },
+            "noop.stress.pct" to (latest / 3 * 100).roundToInt().toString(),
+            "noop.stress.avg" to one(points.map { it.second }.average()),
+            "noop.stress.peak" to one(peak.second),
+            "noop.stress.peakAt" to time(peak.first),
+            "noop.stress.series" to points.joinToString(",") { (it.second * 100).roundToInt().toString() },
+            "noop.stress.start" to time(first),
+            "noop.stress.mid" to time(first + (last - first) / 2),
+            "noop.stress.end" to time(last),
+        )
+    }
+
+    /**
+     * The Coach brief as widget values, its Markdown made plain: noop.coach (all of it), .title (its
+     * heading, else "Coach brief"), .body (without the heading), .summary (the first point) and .time
+     * (when it was written: the time today, else the day). Empty when there is no brief.
+     */
+    fun coach(brief: String, atMs: Long, zone: ZoneId, today: java.time.LocalDate = java.time.LocalDate.now(zone)): Map<String, String> {
+        val lines = brief.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        if (lines.isEmpty()) return emptyMap()
+        fun plain(line: String) = line
+            .replace(Regex("^#+\\s*"), "")
+            .replace(Regex("^[*-]\\s+"), "• ")
+            .replace("**", "")
+            .replace("__", "")
+            .trim()
+        val heading = lines.first().takeIf { it.startsWith("#") }?.let(::plain)
+        val body = (if (heading != null) lines.drop(1) else lines).map(::plain)
+        val out = mutableMapOf(
+            "noop.coach" to (listOfNotNull(heading) + body).joinToString("\n"),
+            "noop.coach.title" to (heading ?: "Coach brief"),
+            "noop.coach.body" to body.joinToString("\n"),
+            "noop.coach.summary" to (body.firstOrNull()?.removePrefix("• ") ?: heading.orEmpty()),
+        )
+        if (atMs > 0) {
+            val at = java.time.Instant.ofEpochMilli(atMs).atZone(zone)
+            out["noop.coach.time"] = if (at.toLocalDate() == today) at.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.US))
+            else at.format(java.time.format.DateTimeFormatter.ofPattern("EEE MMM d", java.util.Locale.US))
+        }
         return out
     }
 
@@ -64,6 +141,8 @@ object NoopMath {
         }
         val parts = mutableListOf(heart, if (points > 0) "$points-minute trace" else "no trace yet")
         if (s.charge >= 0) parts += "Charge ${s.charge}%"
+        parts += if (s.stress.any { it.isDigit() }) "stress shared" else "no stress yet"
+        parts += if (s.brief.isNotBlank()) "coach brief shared" else "no coach brief"
         parts += if (s.connected) "strap connected" else "strap not connected"
         val age = if (s.updatedAtMs <= 0L) "never updated" else {
             val min = ((nowMs - s.updatedAtMs) / 60_000L).coerceAtLeast(0L)

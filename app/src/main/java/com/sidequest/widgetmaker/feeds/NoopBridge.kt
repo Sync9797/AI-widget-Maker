@@ -47,6 +47,7 @@ object NoopBridge {
             context.contentResolver.query(Uri.parse("content://$pkg.share/snapshot"), null, null, null, null)?.use { c ->
                 if (!c.moveToFirst()) return@use null
                 fun int(name: String) = c.getColumnIndex(name).takeIf { it >= 0 }?.let { c.getInt(it) } ?: -1
+                fun str(name: String) = c.getColumnIndex(name).takeIf { it >= 0 }?.let { c.getString(it) }.orEmpty()
                 NoopMath.Snapshot(
                     charge = int("recovery"),
                     rest = int("rest"),
@@ -56,7 +57,11 @@ object NoopBridge {
                     battery = int("battery"),
                     connected = int("connected") == 1,
                     updatedAtMs = c.getColumnIndex("updated_at").takeIf { it >= 0 }?.let { c.getLong(it) } ?: 0L,
-                    series = c.getColumnIndex("hr_series").takeIf { it >= 0 }?.let { c.getString(it) }.orEmpty(),
+                    series = str("hr_series"),
+                // Newer not-NOOP builds also share today's stress and the Coach brief.
+                stress = str("stress_series"),
+                brief = str("coach_brief"),
+                briefAtMs = c.getColumnIndex("coach_brief_at").takeIf { it >= 0 }?.let { c.getLong(it) } ?: 0L,
                 )
             }
         }.getOrNull()

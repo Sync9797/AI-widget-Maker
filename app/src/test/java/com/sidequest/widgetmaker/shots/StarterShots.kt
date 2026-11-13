@@ -58,7 +58,10 @@ class StarterShots {
             .setIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY, 64)
         // Previews refresh on a timer; drive the clock by hand so the test can settle.
         compose.mainClock.autoAdvance = false
+        // -Dshots.only=Title,Title draws just those starters.
+        val only = System.getProperty("shots.only")?.split(',')?.map { it.trim() }?.toSet()
         val shots = WidgetTheme.everywhere.flatMap { theme -> Starters.all.mapIndexed { i, s -> Triple(theme, i, s) } }
+            .filter { only == null || it.third.title in only }
         var current by mutableStateOf(shots.first())
         compose.setContent {
             val (theme, _, starter) = current
@@ -147,7 +150,19 @@ class StarterShots {
     }
 
     private companion object {
-        val SAMPLE = mapOf(
+        // not-NOOP's stress and Coach brief, as the bridge would turn them into values.
+        private val NOOP_SAMPLE = com.sidequest.widgetmaker.feeds.NoopMath.stress(
+            "1762927200:0.1:0,1762930800:-:0,1762934400:2.8:0,1762938000:1.5:0,1762941600:1.3:0,1762945200:2.9:0,1762948800:2.0:0," +
+                "1762952400:1.5:0,1762956000:0.8:0,1762959600:2.6:0,1762963200:2.2:0,1762966800:2.0:0,1762970400:1.9:0,1762974000:2.7:0,1762977600:2.8:0,1762981200:1.6:0",
+            java.time.ZoneOffset.UTC,
+        ) + com.sidequest.widgetmaker.feeds.NoopMath.coach(
+            "### Today's Coaching Brief\n* **Readiness:** Your **charge is 67%** with an **HRV of 108ms** and a rock-solid **RHR of 45bpm**: you are in the green zone today.\n" +
+                "* **Training Plan:** Hit a quality session today to capitalise on that strong HRV, or a sharp 45-minute Zone 2 effort.\n" +
+                "* **Charge Booster:** Prioritise an early wind-down and extend your sleep tonight.",
+            1763011680000L, java.time.ZoneOffset.UTC, today = java.time.LocalDate.of(2025, 11, 13),
+        )
+
+        val SAMPLE = NOOP_SAMPLE + mapOf(
             "weather.temp" to "72°", "weather.feelsLike" to "70°", "weather.high" to "78°", "weather.low" to "55°",
             "weather.rain" to "40%", "weather.wind" to "9 mph", "weather.condition" to "Partly cloudy",
             "weather.icon" to "cloud", "weather.place" to "Austin",

@@ -112,7 +112,7 @@ object Taps {
         "calendar" -> TapKind.calendar
         "traffic" -> TapKind.commute
         "battery", "charging" -> TapKind.battery
-        "health" -> TapKind.health
+        "health", "noop" -> TapKind.health
         "mq" -> TapKind.game
         "music" -> TapKind.music
         else -> null

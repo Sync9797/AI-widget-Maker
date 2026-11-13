@@ -54,6 +54,11 @@ data class Look(
     val squareCells: Boolean = true,
     /** Bigger widgets (like on a foldable's inner screen) can grow their text and icons too. */
     val autoScale: AutoScale = AutoScale.more,
+    /**
+     * Premium finish: a soft sheen across the top of each panel and an edge that catches the light
+     * at the top and fades toward the bottom, like polished glass, instead of a flat even outline.
+     */
+    val premium: Boolean = true,
 )
 
 /** How a widget grows when it's bigger than a standard 2×2 (an open foldable, a tablet, a 4×4). */

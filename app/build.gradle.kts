@@ -108,4 +108,6 @@ kotlin {
 // -PshotsOnly="Title,Title" draws just those starters in StarterShots.
 tasks.withType<Test>().configureEach {
     (project.findProperty("shotsOnly") as String?)?.let { systemProperty("shots.only", it) }
+    // -PshotsApp draws each section of the app (AppShots).
+    if (project.hasProperty("shotsApp")) systemProperty("shots.app", "1")
 }

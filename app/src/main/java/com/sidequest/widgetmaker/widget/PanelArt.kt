@@ -23,6 +23,9 @@ class PanelArt(
     val styler: Styler,
 ) {
     companion object {
+        /** A lit edge reads brighter at the top than a plain one, so its color starts stronger. */
+        private fun brighter(color: Int): Int = (minOf(255, (color ushr 24) * 2) shl 24) or (color and 0xFFFFFF)
+
         fun build(context: Context, theme: WidgetTheme, panel: Panel, look: Look, onScreen: Backdrop.Box?): PanelArt {
             val density = context.resources.displayMetrics.density
             val pxW = (panel.width * density).roundToInt()
@@ -31,10 +34,14 @@ class PanelArt(
             val scale = outW.toFloat() / pxW
             val radius = panel.radius * density * scale
             val edgePx = look.edge * density * scale
+            /** The edge over the fill: the premium finish (sheen and a lit edge), or a plain even edge. */
+            fun edge(color: Int, sheen: Int): Bitmap? =
+                if (look.premium) ShapePainter.finish(panel.shape, outW, outH, radius, maxOf(edgePx, density * scale), brighter(color), sheen)
+                else ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, color)
             return when (theme) {
                 WidgetTheme.glass -> PanelArt(
                     ShapePainter.glass(panel.shape, outW, outH, radius), false,
-                    ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, 0x4DFFFFFF),
+                    edge(0x4DFFFFFF, sheen = 0x1A),
                     AiWidget.styler(context, theme),
                 )
                 WidgetTheme.oneui, WidgetTheme.ambient -> {
@@ -44,13 +51,13 @@ class PanelArt(
                         ?: OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH)
                     PanelArt(
                         ShapePainter.clip(frost.bitmap, panel.shape, radius), false,
-                        ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, if (frost.light) 0x73FFFFFF else 0x33FFFFFF),
+                        edge(if (frost.light) 0x73FFFFFF else 0x33FFFFFF, sheen = 0x12),
                         AiWidget.styler(context, theme, backdropLight = frost.light),
                     )
                 }
                 WidgetTheme.material, WidgetTheme.original -> PanelArt(
                     ShapePainter.mask(panel.shape, outW, outH, radius), true,
-                    ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, 0x26FFFFFF),
+                    edge(0x26FFFFFF, sheen = 0x14),
                     AiWidget.styler(context, theme),
                 )
             }

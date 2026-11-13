@@ -126,8 +126,11 @@ class StarterShots {
                         row.forEach { DesignPreview(clock, PreviewSize.Square, theme, shape = it) }
                     }
                 }
-                Text("Stadium and ticket at other sizes", color = Color.White)
+                Text("Leaf with One UI-style weather; stadium, ticket and pebble at other sizes", color = Color.White)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    val weather = Starters.all.first { it.title == "Weather forecast" }.design
+                    DesignPreview(weather, PreviewSize.Square, theme, shape = WidgetShape.leaf)
+                    DesignPreview(weather, PreviewSize.Wide, theme, shape = WidgetShape.leaf)
                     DesignPreview(pill, PreviewSize.Tall, theme, shape = WidgetShape.stadium)
                     DesignPreview(pill, PreviewSize.Strip, theme, shape = WidgetShape.stadium)
                     DesignPreview(clock, PreviewSize.Wide, theme, shape = WidgetShape.ticket)

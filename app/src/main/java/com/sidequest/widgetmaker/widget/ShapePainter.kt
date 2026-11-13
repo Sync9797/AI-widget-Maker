@@ -43,7 +43,7 @@ object ShapePainter {
             when (shape) {
                 WidgetShape.rounded, WidgetShape.pill -> addRoundRect(r, rad, rad, Path.Direction.CW)
                 WidgetShape.stadium -> min(r.width(), r.height()).div(2).let { addRoundRect(r, it, it, Path.Direction.CW) }
-                WidgetShape.clover -> polar(this, r, square = true) { t -> 0.8 + 0.2 * cos(4 * t) }
+                WidgetShape.clover -> polar(this, r, square = true) { t -> 0.86 + 0.14 * cos(4 * t - PI) }
                 WidgetShape.flower -> polar(this, r, square = true) { t -> 0.88 + 0.12 * cos(6 * t) }
                 WidgetShape.pebble -> polar(this, r, square = false) { t -> 1 + 0.06 * cos(2 * t + 0.6) + 0.04 * cos(3 * t + 1.9) }
                 WidgetShape.ticket -> ticket(this, r, rad)
@@ -97,8 +97,9 @@ object ShapePainter {
         val maxY = ts.maxOf { abs(radius(it) * sin(it)) }
         val cx = r.centerX(); val cy = r.centerY()
         val side = min(r.width(), r.height()) / 2
-        val a = (if (square) side else r.width() / 2) / maxX
-        val b = (if (square) side else r.height() / 2) / maxY
+        // A square shape scales evenly, so its leaves or petals stay the same size all round.
+        val a = if (square) side / max(maxX, maxY) else r.width() / 2 / maxX
+        val b = if (square) side / max(maxX, maxY) else r.height() / 2 / maxY
         ts.forEachIndexed { i, t ->
             val rr = radius(t)
             val x = cx + a * rr * cos(t); val y = cy + b * rr * sin(t)

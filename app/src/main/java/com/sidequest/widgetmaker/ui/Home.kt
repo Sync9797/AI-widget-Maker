@@ -96,7 +96,9 @@ fun MakerScreen(viewModel: MakerViewModel, start: Page = Page.Create) {
     val making = state.draft != null || state.chat != null
     LaunchedEffect(making) { if (making) section = Page.Create }
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    // A Surface, so text everywhere takes the theme's color (the wide layout has no Scaffold to set it).
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= WIDE
         val columns = if (wide) 2 else 1
         if (wide) {
@@ -113,6 +115,7 @@ fun MakerScreen(viewModel: MakerViewModel, start: Page = Page.Create) {
                 Box(Modifier.fillMaxSize().padding(padding).imePadding()) { SectionContent(section, state, viewModel, columns, ::go) }
             }
         }
+    }
     }
 }
 
@@ -420,7 +423,9 @@ private fun <T> PreviewGrid(
                             .padding(10.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        DesignPreview(design(item), PreviewSize.Square, theme, Modifier.fillMaxWidth())
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            DesignPreview(design(item), PreviewSize.Square, theme)
+                        }
                         Spacer(Modifier.size(2.dp))
                         Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
                         Text(about(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)

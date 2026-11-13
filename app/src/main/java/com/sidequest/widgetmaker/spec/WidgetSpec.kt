@@ -118,6 +118,11 @@ data class ColumnNode(
     val background: String? = null,
     val cornerRadius: Int = 0,
     val padding: Int = 0,
+    /**
+     * Scrolls when its children don't fit, like a list widget (a long Coach brief). Give it "grow" so
+     * it takes the room that's left; each child is one row of the list. One per widget at most.
+     */
+    val scroll: Boolean = false,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

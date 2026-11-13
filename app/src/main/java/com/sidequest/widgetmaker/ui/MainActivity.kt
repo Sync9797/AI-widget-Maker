@@ -97,6 +97,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Coming back from setting a wallpaper or allowing access to it: read it again for the blur.
+        com.sidequest.widgetmaker.widget.OneUiBackdrop.forgetCached()
         viewModel.refreshWidgets()
     }
 }

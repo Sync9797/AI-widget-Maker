@@ -102,9 +102,12 @@ class TapActivity : ComponentActivity() {
  */
 private fun TapActivity.learnPlace() {
     val id = intent?.getIntExtra(TapIntents.WIDGET, -1) ?: -1
-    val bounds = intent?.sourceBounds ?: return
-    if (id < 0 || bounds.width() < 8 || bounds.height() < 8) return
+    if (id < 0) return
     val store = DesignStore(this)
+    val bounds = intent?.sourceBounds
+    // What this tap told us, for the widget's settings to show (so a blur that won't line up can be traced).
+    store.noteTap(id, bounds?.let { Backdrop.Box(it.left, it.top, it.right, it.bottom) }, OneUiBackdrop.screenKey(this))
+    if (bounds == null || bounds.width() < 8 || bounds.height() < 8) return
     val moved = store.setBoundsFor(id, Backdrop.Box(bounds.left, bounds.top, bounds.right, bounds.bottom), OneUiBackdrop.screenKey(this))
     if (moved && store.themeFor(id).frosted) {
         val app = applicationContext

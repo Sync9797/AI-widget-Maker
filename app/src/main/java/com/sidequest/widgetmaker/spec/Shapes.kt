@@ -18,6 +18,16 @@ enum class WidgetShape(val label: String) {
     arch("Arch"),
     /** Material 3 Expressive's scalloped circle. */
     cookie("Cookie"),
+    /** Material 3 Expressive's four-leaf clover: one bold value or icon. */
+    clover("Clover"),
+    /** A softer, rounder scallop than the cookie, with six petals. */
+    flower("Flower"),
+    /** A smooth, slightly lopsided river stone that fills its cell. */
+    pebble("Pebble"),
+    /** A rounded card with a half-circle notch in each side, like a ticket stub. */
+    ticket("Ticket"),
+    /** A capsule along the cell's longer side: tall in a 1×2 or 1×3, made for a single column. */
+    stadium("Stadium"),
 }
 
 /** How all widgets look, set in Settings → Widget look. */
@@ -86,7 +96,13 @@ object Shapes {
     /** Height to width of One UI's own 2×2 widgets (about 380 by 360). */
     const val ONE_UI_RATIO = 1.055f
 
-    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.arch)
+    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.arch, WidgetShape.ticket)
+
+    /** Shapes drawn as big as the shorter side allows, centered in their cell. */
+    val ROUND_SHAPES = setOf(WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower)
+
+    /** The notch radius of a [WidgetShape.ticket] [w]×[h] across (the same unit in, same unit out). */
+    fun ticketNotch(w: Float, h: Float): Float = min(h * 0.12f, w * 0.07f)
 
     /**
      * The panel for a widget of [width]×[height] dp: its size after the inset
@@ -109,7 +125,7 @@ object Shapes {
         // or the height set in Settings → Widget look (which applies to every pill, whatever its cell).
         if (shape == WidgetShape.pill) h = min(h, maxH ?: (w * PILL_RATIO).roundToInt().coerceIn(PILL_MIN, PILL_MAX))
         // A circle or cookie is as big as the shorter side allows.
-        if (shape == WidgetShape.circle || shape == WidgetShape.cookie) {
+        if (shape in ROUND_SHAPES) {
             w = min(w, h)
             h = w
         }
@@ -118,7 +134,9 @@ object Shapes {
             WidgetShape.squircle -> (look.cornerRadius ?: design.cornerRadius) * 3 / 2
             WidgetShape.pill -> min(w, h) / 2
             WidgetShape.arch -> w / 2
-            WidgetShape.circle, WidgetShape.cookie -> w / 2
+            WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower -> w / 2
+            WidgetShape.pebble, WidgetShape.stadium -> min(w, h) / 2
+            WidgetShape.ticket -> look.cornerRadius ?: design.cornerRadius
         }.coerceIn(0, min(w, h) / 2)
         val p = design.padding
         return when (shape) {
@@ -134,6 +152,18 @@ object Shapes {
             // Content sits in the square inside the circle.
             WidgetShape.circle -> (w * 0.13).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             WidgetShape.cookie -> (w * 0.13).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            // The clover's leaves dip deeper between them, so content keeps further in.
+            WidgetShape.clover -> (w * 0.17).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            WidgetShape.flower -> (w * 0.15).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            WidgetShape.pebble -> Panel(w, h, shape, radius, max(p / 2, (w * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()))
+            // Content clears the notches in the sides.
+            WidgetShape.ticket -> Panel(w, h, shape, radius, max(p, ticketNotch(w.toFloat(), h.toFloat()).roundToInt() + 6), p, p)
+            // A tall capsule keeps content off its round ends; a wide one is a pill.
+            WidgetShape.stadium -> when {
+                h >= w * 1.6 -> Panel(w, h, shape, radius, min(p, max(4, w / 6)), max(p, (w * 0.42).roundToInt()), max(p, (w * 0.42).roundToInt()))
+                w >= h * 1.6 -> Panel(w, h, shape, radius, max(p, (h * 0.42).roundToInt()), min(p, max(4, h / 6)), min(p, max(4, h / 6)))
+                else -> (min(w, h) * 0.13).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            }
         }
     }
 }

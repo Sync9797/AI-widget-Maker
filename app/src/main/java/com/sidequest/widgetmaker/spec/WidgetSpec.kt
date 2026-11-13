@@ -17,7 +17,7 @@ data class WidgetDesign(
     val background: String = "#E61E1E2E",
     val cornerRadius: Int = 24,
     val padding: Int = 14,
-    /** The panel's outline: rounded, pill, circle, squircle, arch or cookie. */
+    /** The panel's outline: rounded, pill, circle, squircle, arch, cookie, clover, flower, pebble, ticket or stadium. */
     val shape: WidgetShape = WidgetShape.rounded,
     /** The whole widget fills up to a value, like a battery (see [Fill]). */
     val fill: Fill? = null,

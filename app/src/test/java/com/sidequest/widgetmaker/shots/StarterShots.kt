@@ -121,8 +121,17 @@ class StarterShots {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text("Shapes · ${theme.label}", color = Color.White)
+                WidgetShape.entries.chunked(6).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        row.forEach { DesignPreview(clock, PreviewSize.Square, theme, shape = it) }
+                    }
+                }
+                Text("Stadium and ticket at other sizes", color = Color.White)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    WidgetShape.entries.forEach { DesignPreview(clock, PreviewSize.Square, theme, shape = it) }
+                    DesignPreview(pill, PreviewSize.Tall, theme, shape = WidgetShape.stadium)
+                    DesignPreview(pill, PreviewSize.Strip, theme, shape = WidgetShape.stadium)
+                    DesignPreview(clock, PreviewSize.Wide, theme, shape = WidgetShape.ticket)
+                    DesignPreview(clock, PreviewSize.Tall, theme, shape = WidgetShape.pebble)
                 }
                 Text("Oval 1-row widgets, max height 64 · edge 1.5 · radius 32", color = Color.White)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {

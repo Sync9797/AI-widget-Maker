@@ -21,6 +21,8 @@ object NoopMath {
         /** The Coach brief (Markdown, as NOOP writes it) and when it was written; "" and 0 when none. */
         val brief: String = "",
         val briefAtMs: Long = 0L,
+        /** The last 24 hours of heart rate from NOOP's history, 5-minute averages, "epochSec:bpm,...". */
+        val day: String = "",
     )
 
     /**
@@ -42,14 +44,11 @@ object NoopMath {
             out["health.heart.last"] = s.heart.toString()
             if (!s.heartStale) out["health.heart"] = s.heart.toString()
         }
-        val points = s.series.split(',').mapNotNull { p ->
-            val i = p.indexOf(':')
-            if (i <= 0) return@mapNotNull null
-            val ts = p.substring(0, i).toLongOrNull() ?: return@mapNotNull null
-            val bpm = p.substring(i + 1).toIntOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
-            HealthMath.Pulse(ts * 1000, bpm)
-        }
-        out.putAll(HealthMath.heartChart(points, zone))
+        // The day's history when the fork shares it (it holds everything offloaded from the strap);
+        // else the 3-hour trace, which only grows while live heart rate streams.
+        val day = pulses(s.day)
+        if (day.size >= 2) out["noop.heart.day"] = "1"
+        out.putAll(HealthMath.heartChart(if (day.size >= 2) day else pulses(s.series), zone))
         if (s.heart > 0) out["health.heart.last"] = s.heart.toString()
         out.putAll(stress(s.stress, zone))
         out.putAll(coach(s.brief, s.briefAtMs, zone))
@@ -57,6 +56,15 @@ object NoopMath {
         out["noop.connected"] = if (s.connected) "Connected" else "Not connected"
         out["health.source"] = "NOOP"
         return out
+    }
+
+    /** "epochSec:bpm,..." as pulses; malformed pairs and zero bpm are skipped. */
+    private fun pulses(encoded: String): List<HealthMath.Pulse> = encoded.split(',').mapNotNull { p ->
+        val i = p.indexOf(':')
+        if (i <= 0) return@mapNotNull null
+        val ts = p.substring(0, i).toLongOrNull() ?: return@mapNotNull null
+        val bpm = p.substring(i + 1).toIntOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
+        HealthMath.Pulse(ts * 1000, bpm)
     }
 
     /**
@@ -139,7 +147,12 @@ object NoopMath {
             s.heartStale -> "heart rate ${s.heart} (not live)"
             else -> "heart rate ${s.heart} live"
         }
-        val parts = mutableListOf(heart, if (points > 0) "$points-minute trace" else "no trace yet")
+        val dayPoints = s.day.split(',').count { it.indexOf(':') > 0 }
+        val parts = mutableListOf(heart, when {
+            dayPoints > 0 -> "${(dayPoints * 5 + 59) / 60}h of history"
+            points > 0 -> "$points-minute trace"
+            else -> "no trace yet"
+        })
         if (s.charge >= 0) parts += "Charge ${s.charge}%"
         parts += if (s.stress.any { it.isDigit() }) "stress shared" else "no stress yet"
         parts += if (s.brief.isNotBlank()) "coach brief shared" else "no coach brief"
@@ -162,7 +175,8 @@ object NoopMath {
      */
     fun merge(healthConnect: Map<String, String>, noop: Map<String, String>): Map<String, String> {
         val out = healthConnect.toMutableMap()
-        val hcHasChart = healthConnect.containsKey("health.heart.series")
+        // Health Connect's full day beats the fork's 3-hour trace, but not the fork's own day history.
+        val hcHasChart = healthConnect.containsKey("health.heart.series") && !noop.containsKey("noop.heart.day")
         noop.forEach { (k, v) ->
             val chartKey = k.startsWith("health.heart.") && k != "health.heart.last" || k == "health.heartMin" || k == "health.heartMid" || k == "health.heartMax"
             if (!(hcHasChart && chartKey)) out[k] = v

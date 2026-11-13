@@ -62,6 +62,7 @@ object NoopBridge {
                 stress = str("stress_series"),
                 brief = str("coach_brief"),
                 briefAtMs = c.getColumnIndex("coach_brief_at").takeIf { it >= 0 }?.let { c.getLong(it) } ?: 0L,
+                day = str("hr_day"),
                 )
             }
         }.getOrNull()

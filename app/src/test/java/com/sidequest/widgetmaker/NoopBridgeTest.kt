@@ -113,4 +113,20 @@ class NoopBridgeTest {
         assertEquals(ring, ring.fitted(120))
         assertEquals(16, ring.fitted(6).size)
     }
+
+    @Test
+    fun theDaysHistoryDrawsTheChartWhenShared() {
+        val withDay = snap.copy(day = "0:55,300:58,600:90,900:62")
+        val v = NoopMath.values(withDay, ZoneOffset.UTC)
+        assertEquals("55", v["health.heartMin"])
+        assertEquals("12:00 AM", v["health.heart.start"])
+        assertEquals("12:15 AM", v["health.heart.end"])
+        // The live reading stays the latest value.
+        assertEquals("62", v["health.heart.last"])
+        // It wins over Health Connect's chart; the 3-hour trace doesn't.
+        val hc = mapOf("health.heart.series" to "70,71", "health.heartMin" to "70")
+        assertEquals("55", NoopMath.merge(hc, v)["health.heartMin"])
+        assertEquals("70", NoopMath.merge(hc, NoopMath.values(snap, ZoneOffset.UTC))["health.heartMin"])
+        assertTrue(NoopMath.describe(withDay, 0).contains("1h of history"))
+    }
 }

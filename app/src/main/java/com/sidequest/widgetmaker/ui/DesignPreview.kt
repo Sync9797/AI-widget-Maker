@@ -32,6 +32,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -107,13 +108,8 @@ fun DesignPreview(
     shape: WidgetShape? = null,
 ) {
     val context = LocalContext.current
-    var tokens by remember { mutableStateOf(AiWidget.currentTokens(context)) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(30_000)
-            tokens = AiWidget.currentTokens(context)
-        }
-    }
+    // Shared by every preview and worked out off the main thread (see PreviewTokens).
+    val tokens by PreviewTokens.state(context).collectAsState()
     // Read each time, so previews follow Settings → Widget look as soon as it changes.
     val usedLook = look ?: DesignStore(context).look
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, usedLook, shape)

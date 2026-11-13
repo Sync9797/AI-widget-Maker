@@ -22,8 +22,28 @@ object NoopBridge {
      * The snapshot of the NOOP build that shares and updated last (two builds can sit side by side,
      * and only the one paired with the strap stays fresh); null when none shares.
      */
-    fun read(context: Context): NoopMath.Snapshot? =
-        Health.NOOP_PACKAGES.mapNotNull { readFrom(context, it) }.maxByOrNull { it.updatedAtMs }
+    fun read(context: Context): NoopMath.Snapshot? {
+        val now = android.os.SystemClock.elapsedRealtime()
+        cached?.let { (at, snap) -> if (now - at < CACHE_MS) return snap }
+        val pm = context.packageManager
+        // Only builds that are installed: asking for an absent one still costs a round trip.
+        val snap = Health.NOOP_PACKAGES
+            .filter { runCatching { pm.getPackageInfo(it, 0) }.isSuccess }
+            .mapNotNull { readFrom(context, it) }
+            .maxByOrNull { it.updatedAtMs }
+        cached = now to snap
+        return snap
+    }
+
+    /**
+     * A read is reused for this long. Several widgets redrawing together, or a screen of previews,
+     * would otherwise each ask not-NOOP, and each ask can start it and read its database.
+     */
+    private const val CACHE_MS = 15_000L
+    @Volatile private var cached: Pair<Long, NoopMath.Snapshot?>? = null
+
+    /** Forgets the last read, so the next one asks not-NOOP again (when it says its data changed). */
+    fun invalidate() { cached = null }
 
     /**
      * What the Check screen says about not-NOOP: each installed NOOP build, and whether it shares.
@@ -34,6 +54,7 @@ object NoopBridge {
         val installed = Health.NOOP_PACKAGES.filter { pm.getLaunchIntentForPackage(it) != null }
         if (installed.isEmpty()) return listOf("not-NOOP: not installed, so health widgets use Health Connect only")
         val now = System.currentTimeMillis()
+        invalidate()
         return installed.map { pkg ->
             val name = runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg)
             val snap = readFrom(context, pkg)
@@ -76,6 +97,7 @@ object NoopBridge {
 class NoopChangedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext
+        NoopBridge.invalidate()
         val pending = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {

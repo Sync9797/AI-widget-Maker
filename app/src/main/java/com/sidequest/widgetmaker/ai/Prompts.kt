@@ -70,7 +70,9 @@ from 201.
 Elements ("type" picks one; leave out any field to use its default):
 - {"type":"column","children":[...],"align":"start|center|end","verticalAlign":"top|center|bottom",
    "background":color,"cornerRadius":dp,"padding":dp}   stacks children top to bottom
-- {"type":"row", same fields as column}   places children left to right
+  add "scroll":true (and "grow":true) for a list that scrolls when it doesn't fit: long text, many items.
+  At most one per widget; each child is one row of the list.
+- {"type":"row", same fields as column (but no scroll)}   places children left to right
 - {"type":"text","text":"...","size":14,"color":"#FFFFFFFF","weight":"light|normal|medium|bold",
    "align":"start|center|end","maxLines":2,"trendOf":null,"upColor":"#FF4ADE80","downColor":"#FFF87171"}
    set "trendOf" to a value like "{crypto.BTC.change}" to color the text upColor when it rises and
@@ -159,7 +161,8 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
   (of 3, for levels or a ring), {noop.stress.avg}, {noop.stress.peak}, {noop.stress.peakAt} "9:00 AM",
   {noop.stress.series} (for a chart with "min":0,"max":300), {noop.stress.start}, {noop.stress.mid}, {noop.stress.end}.
 - not-NOOP's Coach brief: {noop.coach} all of it, {noop.coach.title}, {noop.coach.body}, {noop.coach.summary}
-  (its first point), {noop.coach.time} when it was written. Give it maxLines to fit.
+  (its first point), {noop.coach.1} to {noop.coach.12} each point on its own, {noop.coach.time} when it was
+  written. A long brief reads best in a scrolling column of the points.
 - Sleep extras: {health.sleep.bed} "11:42 PM", {health.sleep.wake} "7:05 AM"; the last 7 nights, N = 1
   (oldest) to 7 (last night): {health.sleep.nN.day} "Mon", {health.sleep.nN} "7h 2m", {health.sleep.nN.pct}
   (0-100, for a bar per night).

@@ -394,7 +394,18 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
         else base.clickable(actionStartActivity(TapIntents.intent(context, it)))
     } ?: base
     when (node) {
-        is ColumnNode -> Column(
+        // A scrolling list: the launcher scrolls it (a ListView underneath), one row per child.
+        is ColumnNode -> if (node.scroll) androidx.glance.appwidget.lazy.LazyColumn(
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
+            horizontalAlignment = horizontal(node.align),
+        ) {
+            node.children.filter(fit::shows).forEach { child ->
+                item {
+                    val wide = if (spansWidth(child)) GlanceModifier.fillMaxWidth() else GlanceModifier
+                    GlanceNode(child, tokens, paint, fit, wide)
+                }
+            }
+        } else Column(
             modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
             horizontalAlignment = horizontal(node.align),
             verticalAlignment = vertical(node.verticalAlign),

@@ -106,6 +106,9 @@ object NoopMath {
         )
     }
 
+    /** How many of the brief's points get their own value (noop.coach.1 to .12). */
+    const val COACH_POINTS = 12
+
     /**
      * The Coach brief as widget values, its Markdown made plain: noop.coach (all of it), .title (its
      * heading, else "Coach brief"), .body (without the heading), .summary (the first point) and .time
@@ -128,6 +131,8 @@ object NoopMath {
             "noop.coach.body" to body.joinToString("\n"),
             "noop.coach.summary" to (body.firstOrNull()?.removePrefix("• ") ?: heading.orEmpty()),
         )
+        // Each point on its own, for a scrolling list (noop.coach.1 is the first).
+        body.take(COACH_POINTS).forEachIndexed { i, line -> out["noop.coach.${i + 1}"] = line }
         if (atMs > 0) {
             val at = java.time.Instant.ofEpochMilli(atMs).atZone(zone)
             out["noop.coach.time"] = if (at.toLocalDate() == today) at.format(java.time.format.DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.US))

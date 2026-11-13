@@ -11,6 +11,7 @@ import com.sidequest.widgetmaker.widget.ChartArt
 import com.sidequest.widgetmaker.spec.TimerNode
 import com.sidequest.widgetmaker.widget.accentColor
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -160,7 +161,8 @@ fun DesignPreview(
 private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit, modifier: Modifier) {
     when (node) {
         is ColumnNode -> Column(
-            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding)
+                .then(if (node.scroll) Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()) else Modifier),
             horizontalAlignment = when (node.align) {
                 HAlign.start -> Alignment.Start
                 HAlign.center -> Alignment.CenterHorizontally

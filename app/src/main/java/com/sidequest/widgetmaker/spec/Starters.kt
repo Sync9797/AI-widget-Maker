@@ -807,7 +807,7 @@ object Starters {
              {"type":"text","text":"Average {noop.stress.avg} today","size":12,"color":"#FF5A6472","maxLines":1,"show":{"minHeight":200,"minWidth":250,"ifSet":"{noop.stress}"}}]}}""",
         ),
         Triple(
-            "Coach brief", "not-NOOP's daily Coach brief: the first point on a small widget, the whole brief on a big one. Turn the brief on in not-NOOP.",
+            "Coach brief", "not-NOOP's daily Coach brief, point by point; scroll it to read it all. Turn the brief on in not-NOOP.",
             """{"name":"Coach brief","background":"#F20D1626","cornerRadius":28,"padding":16,"root":
             {"type":"column","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -816,10 +816,33 @@ object Starters {
               {"type":"text","text":"{noop.coach.time}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":200}}]},
              {"type":"spacer","size":8},
              {"type":"text","text":"Turn on the Coach brief in not-NOOP to see it here.","size":13,"color":"#CCFFFFFF","maxLines":3,"show":{"ifEmpty":"{noop.coach}"}},
-             {"type":"text","text":"{noop.coach.summary}","size":13,"color":"#FFFFFFFF","maxLines":5,"show":{"maxHeight":249,"ifSet":"{noop.coach}"}},
-             {"type":"text","text":"{noop.coach.title}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"show":{"minHeight":250,"ifSet":"{noop.coach}"}},
-             {"type":"spacer","size":6,"show":{"minHeight":250,"ifSet":"{noop.coach}"}},
-             {"type":"text","text":"{noop.coach.body}","size":13,"color":"#E6FFFFFF","maxLines":18,"show":{"minHeight":250,"ifSet":"{noop.coach}"}}]}}""",
+             {"type":"column","scroll":true,"grow":true,"show":{"ifSet":"{noop.coach}"},"children":[
+              {"type":"text","text":"{noop.coach.title}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":2,"show":{"minHeight":200}},
+              {"type":"spacer","size":6,"show":{"minHeight":200}},
+              {"type":"text","text":"{noop.coach.1}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.1}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.1}"}},
+              {"type":"text","text":"{noop.coach.2}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.2}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.2}"}},
+              {"type":"text","text":"{noop.coach.3}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.3}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.3}"}},
+              {"type":"text","text":"{noop.coach.4}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.4}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.4}"}},
+              {"type":"text","text":"{noop.coach.5}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.5}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.5}"}},
+              {"type":"text","text":"{noop.coach.6}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.6}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.6}"}},
+              {"type":"text","text":"{noop.coach.7}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.7}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.7}"}},
+              {"type":"text","text":"{noop.coach.8}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.8}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.8}"}},
+              {"type":"text","text":"{noop.coach.9}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.9}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.9}"}},
+              {"type":"text","text":"{noop.coach.10}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.10}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.10}"}},
+              {"type":"text","text":"{noop.coach.11}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.11}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.11}"}},
+              {"type":"text","text":"{noop.coach.12}","size":13,"color":"#E6FFFFFF","maxLines":20,"show":{"ifSet":"{noop.coach.12}"}},
+              {"type":"spacer","size":6,"show":{"ifSet":"{noop.coach.12}"}}]}]}}""",
         ),
     )
 }

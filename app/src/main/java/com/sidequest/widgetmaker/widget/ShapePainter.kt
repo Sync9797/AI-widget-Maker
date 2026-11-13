@@ -42,6 +42,12 @@ object ShapePainter {
         return Path().apply {
             when (shape) {
                 WidgetShape.rounded, WidgetShape.pill -> addRoundRect(r, rad, rad, Path.Direction.CW)
+                WidgetShape.stadium -> min(r.width(), r.height()).div(2).let { addRoundRect(r, it, it, Path.Direction.CW) }
+                WidgetShape.clover -> polar(this, r, square = true) { t -> 0.86 + 0.14 * cos(4 * t - PI) }
+                // Five petals, one pointing up (screen y runs down, so up is t = 3π/2).
+                WidgetShape.flower -> polar(this, r, square = true) { t -> 0.87 + 0.13 * cos(5 * (t + PI / 2)) }
+                WidgetShape.pebble -> polar(this, r, square = false) { t -> 1 + 0.06 * cos(2 * t + 0.6) + 0.04 * cos(3 * t + 1.9) }
+                WidgetShape.ticket -> ticket(this, r, rad)
                 WidgetShape.circle -> addOval(r, Path.Direction.CW)
                 WidgetShape.arch -> {
                     val bottom = min(rad * 0.35f, r.width() / 6)
@@ -79,6 +85,42 @@ object ShapePainter {
             if (i == 0) path.moveTo(x.toFloat(), y.toFloat()) else path.lineTo(x.toFloat(), y.toFloat())
         }
         path.close()
+    }
+
+    /**
+     * A closed outline whose distance from the center follows [radius] (at angle t, in radians),
+     * scaled so its widest point touches the box: a circle's box when [square], else [r] itself.
+     */
+    private fun polar(path: Path, r: RectF, square: Boolean, radius: (Double) -> Double) {
+        val steps = 360
+        val pts = (0..steps).map { val t = 2 * PI * it / steps; radius(t).let { rr -> rr * cos(t) to rr * sin(t) } }
+        // Centered on the outline's own bounds, so a shape that reaches further one way (five petals)
+        // still sits in the middle of its cell.
+        val minX = pts.minOf { it.first }; val maxX = pts.maxOf { it.first }
+        val minY = pts.minOf { it.second }; val maxY = pts.maxOf { it.second }
+        val spanX = (maxX - minX) / 2; val spanY = (maxY - minY) / 2
+        val midX = (maxX + minX) / 2; val midY = (maxY + minY) / 2
+        val side = min(r.width(), r.height()) / 2
+        // A square shape scales evenly, so its leaves or petals stay the same size all round.
+        val a = if (square) side / max(spanX, spanY) else r.width() / 2 / spanX
+        val b = if (square) side / max(spanX, spanY) else r.height() / 2 / spanY
+        pts.forEachIndexed { i, (px, py) ->
+            val x = r.centerX() + a * (px - midX); val y = r.centerY() + b * (py - midY)
+            if (i == 0) path.moveTo(x.toFloat(), y.toFloat()) else path.lineTo(x.toFloat(), y.toFloat())
+        }
+        path.close()
+    }
+
+    /** A rounded card with a half-circle notch cut into the middle of each side. */
+    private fun ticket(path: Path, r: RectF, rad: Float) {
+        val notch = com.sidequest.widgetmaker.spec.Shapes.ticketNotch(r.width(), r.height())
+        val card = Path().apply { addRoundRect(r, rad, rad, Path.Direction.CW) }
+        val holes = Path().apply {
+            addCircle(r.left, r.centerY(), notch, Path.Direction.CW)
+            addCircle(r.right, r.centerY(), notch, Path.Direction.CW)
+        }
+        card.op(holes, Path.Op.DIFFERENCE)
+        path.addPath(card)
     }
 
     /** A white silhouette of the shape, to be tinted with the panel's color (Material 3 colors stay live this way). */

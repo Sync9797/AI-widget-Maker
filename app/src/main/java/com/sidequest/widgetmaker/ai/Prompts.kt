@@ -38,7 +38,9 @@ The widget is drawn from a tree of elements. The top level is:
 {"name": short name, "background": color, "cornerRadius": dp, "padding": dp, "shape": shape, "root": element}
 "shape" is the panel's outline: "rounded" (default), "pill" (capsule, for 1-row widgets), "circle",
 "squircle", "arch" (round top), or "cookie" (Material 3 Expressive's scalloped circle; for a single
-bold value like a day number). Circles and cookies keep content near the middle.
+bold value like a day number), "clover" (four leaves; one bold value or icon), "flower" (five round petals),
+"pebble" (a smooth river stone), "ticket" (notched sides; countdowns, events) or "stadium" (a capsule, tall
+in a 1x2 or 1x3; one column). Circles, cookies, clovers and flowers keep content near the middle.
 
 Colors are "#RRGGBB" or "#AARRGGBB" (the AA part is opacity; "#CC000000" is 80% black).
 Sizes are in dp (text sizes in sp). Every element may set "grow": true to take the leftover

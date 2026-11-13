@@ -524,7 +524,7 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text("Premium finish", style = MaterialTheme.typography.bodyLarge)
+            Text("Glassier glass", style = MaterialTheme.typography.bodyLarge)
             Text("A soft sheen across the top of each widget and an edge that catches the light, like polished glass.", style = MaterialTheme.typography.bodySmall)
         }
         Switch(checked = look.premium, onCheckedChange = { update(look.copy(premium = it)) })

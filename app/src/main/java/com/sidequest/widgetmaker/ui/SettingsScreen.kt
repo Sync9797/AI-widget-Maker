@@ -76,29 +76,21 @@ import androidx.compose.ui.platform.LocalContext
 /** Settings: the Claude key, and the data sources widgets can show. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> Unit) {
-    BackHandler(onBack = onBack)
+fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, header: @Composable () -> Unit) {
     var apiKey by remember { mutableStateOf(viewModel.apiKey) }
     var form by remember { mutableStateOf(SourcesForm.from(state.sources)) }
     val context = LocalContext.current
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
-            )
-        },
-    ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        header()
+        // The sections in two columns on a big screen, each going under the shorter column so far.
+        Masonry(columns, 14.dp) {
             Section("Widget style", "Restyles the colors of all your widgets. Layouts stay as designed.") {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     WidgetTheme.everywhere.forEach { theme ->
@@ -279,6 +271,7 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
                 Field("Within (miles, Ticketmaster only)", form.radiusMiles, "25", KeyboardType.Number) { form = form.copy(radiusMiles = it) }
             }
 
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = {
@@ -297,8 +290,8 @@ fun SettingsScreen(viewModel: MakerViewModel, state: MakerState, onBack: () -> U
             state.sourcesStatus?.let {
                 Text(it, color = if (it.startsWith("Saved.")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
             }
+            }
             if (state.snapshot.values.isNotEmpty()) LatestValues(state.snapshot)
-            Spacer(Modifier.height(24.dp))
         }
     }
 }
@@ -528,6 +521,14 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
         }
     }
     Text(look.autoScale.about, style = MaterialTheme.typography.bodySmall)
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Premium finish", style = MaterialTheme.typography.bodyLarge)
+            Text("A soft sheen across the top of each widget and an edge that catches the light, like polished glass.", style = MaterialTheme.typography.bodySmall)
+        }
+        Switch(checked = look.premium, onCheckedChange = { update(look.copy(premium = it)) })
+    }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {

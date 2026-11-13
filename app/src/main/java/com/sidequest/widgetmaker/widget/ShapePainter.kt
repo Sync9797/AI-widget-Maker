@@ -157,6 +157,34 @@ object ShapePainter {
         return clip(fill, shape, radius)
     }
 
+    /**
+     * The premium finish over a panel: a soft white sheen fading out down its top half, and an edge
+     * [thickness] pixels wide in [color] at the top, fading to a third of it at the bottom (light from
+     * above, like polished glass). [sheen] is the sheen's strength at the top, 0 to 255.
+     */
+    fun finish(shape: WidgetShape, w: Int, h: Int, radius: Float, thickness: Float, color: Int, sheen: Int): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        if (sheen > 0) {
+            canvas.drawPath(path(shape, w.toFloat(), h.toFloat(), radius), Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = LinearGradient(0f, 0f, 0f, h * 0.55f, (sheen shl 24) or 0xFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP)
+            })
+        }
+        if (thickness > 0.2f) {
+            val alpha = color ushr 24
+            val rgb = color and 0xFFFFFF
+            canvas.drawPath(
+                path(shape, w.toFloat(), h.toFloat(), radius, inset = thickness / 2),
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.STROKE
+                    strokeWidth = thickness
+                    shader = LinearGradient(0f, 0f, 0f, h.toFloat(), (alpha shl 24) or rgb, ((alpha / 3) shl 24) or rgb, Shader.TileMode.CLAMP)
+                },
+            )
+        }
+        return out
+    }
+
     /** A soft bright edge along the shape, [thickness] pixels wide; null for none. */
     fun edge(shape: WidgetShape, w: Int, h: Int, radius: Float, thickness: Float, color: Int): Bitmap? {
         if (thickness <= 0.2f) return null

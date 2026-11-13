@@ -59,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.sidequest.widgetmaker.feeds.FeedWorker
 import com.sidequest.widgetmaker.ai.ClaudeApp
 import com.sidequest.widgetmaker.spec.SavedDesign
@@ -104,13 +105,37 @@ class MainActivity : ComponentActivity() {
 fun MakerTheme(content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val context = LocalContext.current
-    val colors = when {
+    val base = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         dark -> darkColorScheme()
         else -> lightColorScheme()
     }
-    MaterialTheme(colorScheme = colors, content = content)
+    // Premium: in the dark, deep near-black surfaces (with a hint of the phone's palette) so the
+    // widgets glow on them; cards step up in gentle tones of the same.
+    val colors = if (!dark) base else base.copy(
+        background = androidx.compose.ui.graphics.Color(0xFF0B0C10),
+        surface = androidx.compose.ui.graphics.Color(0xFF0B0C10),
+        surfaceContainerLowest = androidx.compose.ui.graphics.Color(0xFF050608),
+        surfaceContainerLow = androidx.compose.ui.graphics.Color(0xFF121318),
+        surfaceContainer = androidx.compose.ui.graphics.Color(0xFF16181E),
+        surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF1E2028),
+        surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFF272A33),
+    )
+    val type = androidx.compose.material3.Typography().let { t ->
+        t.copy(
+            headlineLarge = t.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+            titleLarge = t.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+            titleMedium = t.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        )
+    }
+    val shapes = androidx.compose.material3.Shapes(
+        small = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        medium = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        large = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+        extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+    )
+    MaterialTheme(colorScheme = colors, typography = type, shapes = shapes, content = content)
 }
 
 private val IDEAS = listOf(
@@ -126,234 +151,8 @@ private val IDEAS = listOf(
     "Cozy night mode: moon icon, time and day of the week",
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MakerScreen(viewModel: MakerViewModel) {
-    val state by viewModel.state.collectAsState()
-    var showSettings by rememberSaveable { mutableStateOf(false) }
-
-    if (showSettings) {
-        SettingsScreen(viewModel, state, onBack = {
-            viewModel.clearSourcesStatus()
-            showSettings = false
-        })
-        return
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("AI Widget Maker") },
-                actions = { TextButton(onClick = { showSettings = true }) { Text("Settings") } },
-            )
-        },
-    ) { padding ->
-        // An open foldable or a tablet gets two panes: making widgets on one side, yours on the other
-        // (split down the middle, where a book-style fold's hinge is).
-        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(padding).imePadding()) {
-            val twoPanes = maxWidth >= 600.dp
-            if (twoPanes) {
-                Row(Modifier.fillMaxSize()) {
-                    Pane(Modifier.weight(1f)) { CreatePane(state, viewModel, columns = 3) }
-                    androidx.compose.material3.VerticalDivider()
-                    Pane(Modifier.weight(1f)) { WidgetsPane(state, viewModel, startOpen = true) }
-                }
-            } else {
-                Pane(Modifier.fillMaxSize()) {
-                    CreatePane(state, viewModel, columns = 2)
-                    WidgetsPane(state, viewModel, startOpen = false)
-                }
-            }
-        }
-    }
-}
-
-/** One scrolling column of the main screen. */
-@Composable
-private fun Pane(modifier: Modifier, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    Column(
-        modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        content = content,
-    )
-}
-
-/** Describing a widget, the draft being made, and the ready-made designs by section. */
-@Composable
-private fun CreatePane(state: MakerState, viewModel: MakerViewModel, columns: Int) {
-    state.update.available?.let { UpdateCard(it, state.update, viewModel::installUpdate, viewModel::laterUpdate) }
-    HealthAccessCard()
-    val draft = state.draft
-    val chat = state.chat
-    if (chat != null) {
-        ChatCard(
-            chat = chat,
-            onPaste = viewModel::pasteChatReply,
-            onFix = viewModel::askClaudeToFix,
-            onReopen = viewModel::reopenChat,
-            onCancel = viewModel::cancelChat,
-        )
-    } else if (draft == null) {
-        DescribeCard(busy = state.busy, free = !state.hasApiKey, onGenerate = viewModel::generate)
-        MyDesigns(state.saved.filter { it.madeByYou }, state.theme, columns, onPick = viewModel::useAgain)
-        StarterSections(theme = state.theme, columns = columns, onPick = viewModel::useStarter)
-    } else {
-        DraftCard(
-            draft = draft,
-            busy = state.busy,
-            onRefine = viewModel::refine,
-            onSave = { viewModel.saveDraft(thenPin = false) },
-            onSaveAndAdd = { viewModel.saveDraft(thenPin = true) },
-            onDiscard = viewModel::discardDraft,
-            theme = state.theme,
-            free = !state.hasApiKey,
-            onShape = viewModel::setDraftShape,
-        )
-    }
-    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-    state.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
-}
-
-/** Your widgets: the ones on the home screen, and saved designs that aren't, each in a fold-away list. */
-@Composable
-private fun WidgetsPane(state: MakerState, viewModel: MakerViewModel, startOpen: Boolean) {
-    val active = state.saved.filter { it.id in state.placed }
-    val others = state.saved.filter { it.id !in state.placed }
-    Collapsible("Active widgets", "${active.size} on your home screen", startOpen) {
-        if (active.isEmpty()) {
-            Text(
-                "None yet. Save a design and tap Add to home screen, or long-press your home screen → Widgets → AI Widget Maker. " +
-                    "Widgets you remove from the home screen leave this list by themselves.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        active.forEach { saved ->
-            SavedCard(
-                saved = saved,
-                count = state.placed[saved.id] ?: 0,
-                onAdd = { size -> viewModel.pin(saved, size) },
-                onEdit = { viewModel.edit(saved) },
-                onDelete = { viewModel.delete(saved) },
-                theme = state.theme,
-            )
-        }
-    }
-    if (others.isNotEmpty()) {
-        Collapsible("Saved designs", "${others.size} not on your home screen", false) {
-            others.forEach { saved ->
-                SavedCard(
-                    saved = saved,
-                    count = 0,
-                    onAdd = { size -> viewModel.pin(saved, size) },
-                    onEdit = { viewModel.edit(saved) },
-                    onDelete = { viewModel.delete(saved) },
-                    theme = state.theme,
-                )
-            }
-        }
-    }
-    InfoCard(
-        title = "On your lock screen",
-        body = "The widget also offers itself to lock screens. On a Samsung phone: long-press " +
-            "the lock screen, tap Widgets, and look for AI Widget Maker. If it isn't listed, " +
-            "your One UI version only allows Samsung's own lock screen widgets for now; " +
-            "it will still work on your home screen.",
-    )
-    Spacer(Modifier.height(24.dp))
-}
-
-/** A titled card that opens and closes. */
-@Composable
-private fun Collapsible(title: String, summary: String, startOpen: Boolean, content: @Composable () -> Unit) {
-    var open by rememberSaveable(title) { mutableStateOf(startOpen) }
-    Card(Modifier.fillMaxWidth()) {
-        Column {
-            Row(
-                Modifier.fillMaxWidth().clickable { open = !open }.padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(summary, style = MaterialTheme.typography.bodySmall)
-                }
-                Text(if (open) "▲" else "▼", style = MaterialTheme.typography.bodyMedium)
-            }
-            androidx.compose.animation.AnimatedVisibility(open) {
-                Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    content()
-                }
-            }
-        }
-    }
-}
-
-/** The designs you made with Claude, as a gallery to start new widgets from (kept even when not on the home screen). */
-@Composable
-private fun MyDesigns(mine: List<SavedDesign>, theme: WidgetTheme, columns: Int, onPick: (SavedDesign) -> Unit) {
-    Collapsible(
-        "My designs",
-        if (mine.isEmpty()) "Widgets you make with Claude are kept here" else "${mine.size} made by you · tap one to make another from it",
-        startOpen = mine.isNotEmpty(),
-    ) {
-        if (mine.isEmpty()) {
-            Text(
-                "Describe a widget above (or change a ready-made one with Claude) and save it: it's kept here to use again, " +
-                    "even after you take it off your home screen.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        mine.chunked(columns).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { saved ->
-                    Card(
-                        Modifier.weight(1f).clickable { onPick(saved) },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
-                    ) {
-                        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            DesignPreview(saved.design, PreviewSize.Square, theme, Modifier.fillMaxWidth())
-                            Text(saved.design.name, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                            Text(saved.prompt, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-                        }
-                    }
-                }
-                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-        }
-    }
-}
-
-/** Ready-made designs, grouped (Weather, Health...): tap a group to open its grid. */
-@Composable
-private fun StarterSections(theme: WidgetTheme, columns: Int, onPick: (Starters.Starter) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Or start from one of these", style = MaterialTheme.typography.titleMedium)
-        Starters.all.groupBy { it.category }.toSortedMap(compareBy { it.ordinal }).forEach { (category, starters) ->
-            Collapsible(category.label, "${starters.size} " + if (starters.size == 1) "design" else "designs", false) {
-                starters.chunked(columns).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        row.forEach { starter ->
-                            Card(
-                                Modifier.weight(1f).clickable { onPick(starter) },
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
-                            ) {
-                                Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    DesignPreview(starter.design, PreviewSize.Square, theme, Modifier.fillMaxWidth())
-                                    Text(starter.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                                    Text(starter.about, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-                                }
-                            }
-                        }
-                        // Keep the last row's cards the same width as the others.
-                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DescribeCard(busy: Boolean, free: Boolean, onGenerate: (String) -> Unit) {
+internal fun DescribeCard(busy: Boolean, free: Boolean, onGenerate: (String) -> Unit) {
     var text by rememberSaveable { mutableStateOf("") }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -381,7 +180,7 @@ private fun DescribeCard(busy: Boolean, free: Boolean, onGenerate: (String) -> U
 }
 
 @Composable
-private fun DraftCard(
+internal fun DraftCard(
     draft: Draft,
     busy: Boolean,
     onRefine: (String) -> Unit,
@@ -430,7 +229,7 @@ private fun DraftCard(
 
 /** Waiting for Claude's reply from the Claude app or claude.ai. */
 @Composable
-private fun ChatCard(
+internal fun ChatCard(
     chat: ChatRequest,
     onPaste: () -> Unit,
     onFix: () -> Unit,
@@ -470,7 +269,7 @@ private fun ChatCard(
 
 /** Ready-made designs: no AI needed. */
 @Composable
-private fun SavedCard(
+internal fun SavedCard(
     saved: SavedDesign,
     count: Int,
     onAdd: (com.sidequest.widgetmaker.widget.WidgetSize) -> Unit,
@@ -526,7 +325,7 @@ private fun SavedCard(
 }
 
 @Composable
-private fun InfoCard(title: String, body: String, action: Pair<String, () -> Unit>? = null) {
+internal fun InfoCard(title: String, body: String, action: Pair<String, () -> Unit>? = null) {
     Card(
         Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -540,7 +339,7 @@ private fun InfoCard(title: String, body: String, action: Pair<String, () -> Uni
 }
 
 @Composable
-private fun BusyButton(label: String, busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
+internal fun BusyButton(label: String, busy: Boolean, enabled: Boolean, onClick: () -> Unit) {
     Button(onClick = onClick, enabled = enabled && !busy, modifier = Modifier.widthIn(min = 140.dp)) {
         if (busy) {
             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -557,7 +356,7 @@ private fun BusyButton(label: String, busy: Boolean, enabled: Boolean, onClick: 
  * added in an update (HRV, blood oxygen... for NOOP) need allowing once.
  */
 @Composable
-private fun HealthAccessCard() {
+internal fun HealthAccessCard() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val on = remember { com.sidequest.widgetmaker.feeds.Feeds(context).settings.health }
     if (!on) return

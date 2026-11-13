@@ -15,8 +15,8 @@ android {
         applicationId = "com.sidequest.widgetmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 31
-        versionName = "0.9.19"
+        versionCode = 32
+        versionName = "0.10.0"
         // Which commit this is (set by the GitHub build), so the app can tell when a newer build is out.
         buildConfigField("String", "GIT_SHA", "\"${System.getenv("GITHUB_SHA") ?: "dev"}\"")
     }
@@ -108,4 +108,6 @@ kotlin {
 // -PshotsOnly="Title,Title" draws just those starters in StarterShots.
 tasks.withType<Test>().configureEach {
     (project.findProperty("shotsOnly") as String?)?.let { systemProperty("shots.only", it) }
+    // -PshotsApp draws each section of the app (AppShots).
+    if (project.hasProperty("shotsApp")) systemProperty("shots.app", "1")
 }

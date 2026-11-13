@@ -110,7 +110,7 @@ object DesignParser {
             text = node.text.take(200),
             size = node.size.coerceIn(8, 72),
             color = Colors.orDefault(node.color, "#FFFFFFFF"),
-            maxLines = node.maxLines.coerceIn(1, 6),
+            maxLines = node.maxLines.coerceIn(1, 20),
             trendOf = node.trendOf?.take(60),
             upColor = Colors.orDefault(node.upColor, "#FF4ADE80"),
             downColor = Colors.orDefault(node.downColor, "#FFF87171"),

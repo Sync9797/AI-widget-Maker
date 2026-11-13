@@ -54,4 +54,20 @@ class NoopBridgeTest {
         listOf("com.noop.whoop", "com.not.noop.oop", "com.not.noop.oop.staging", "com.not.noop.oop.debug", "com.not.noop.oop.demo")
             .forEach { assertTrue(it, it in Health.NOOP_PACKAGES) }
     }
+
+    @Test
+    fun theCheckScreenSaysWhatTheForkShares() {
+        val now = 11 * 60_000L
+        val fresh = snap.copy(updatedAtMs = 60_000L)
+        assertEquals(
+            "heart rate 62 live, 3-minute trace, Charge 75%, strap connected, updated 10 min ago",
+            NoopMath.describe(fresh, now),
+        )
+        val empty = snap.copy(charge = -1, heart = -1, connected = false, updatedAtMs = 0, series = "")
+        assertEquals("no heart rate yet, no trace yet, strap not connected, never updated", NoopMath.describe(empty, now))
+        assertEquals(
+            "heart rate 62 (not live), 3-minute trace, Charge 75%, strap connected, updated 2 h ago",
+            NoopMath.describe(fresh.copy(heartStale = true), 60_000L + 2 * 3_600_000L),
+        )
+    }
 }

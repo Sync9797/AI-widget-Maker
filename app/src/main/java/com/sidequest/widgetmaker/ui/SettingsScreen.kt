@@ -609,8 +609,8 @@ private fun HealthControls(on: Boolean, onChange: (Boolean) -> Unit) {
     if (status == Health.Status.Ready || status == Health.Status.Partly) {
         TextButton(onClick = {
             report = listOf("Checking…")
-            scope.launch { report = Health.diagnose(context) }
-        }) { Text("Check what Health Connect shares") }
+            scope.launch { report = com.sidequest.widgetmaker.feeds.NoopBridge.diagnose(context) + Health.diagnose(context) }
+        }) { Text("Check where health data comes from") }
     }
     report?.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
 }

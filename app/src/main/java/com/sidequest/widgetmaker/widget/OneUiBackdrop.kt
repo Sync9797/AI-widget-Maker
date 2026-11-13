@@ -93,6 +93,19 @@ object OneUiBackdrop {
     private fun wallpaperId(context: Context): Int =
         runCatching { WallpaperManager.getInstance(context).getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
 
+    /**
+     * The wallpaper as the screen shows it (cropped to the screen's shape, the way the blur reads it),
+     * at most [maxWidth] pixels wide; null when it can't be read.
+     */
+    fun screenPicture(context: Context, maxWidth: Int = 720): Bitmap? {
+        val wall = wallpaper(context) ?: return null
+        val (sw, sh) = screenSize(context)
+        val area = Backdrop.wallpaperArea(wall.width, wall.height, sw, sh, Backdrop.Box(0, 0, sw, sh))
+        val crop = Bitmap.createBitmap(wall, area.left, area.top, area.width, area.height)
+        val w = min(maxWidth, crop.width)
+        return Bitmap.createScaledBitmap(crop, w, max(1, (crop.height.toLong() * w / crop.width).toInt()), true)
+    }
+
     /** Forgets the wallpaper read last, so the next drawing reads it again (after access is allowed). */
     fun forgetCached() {
         cached = null
@@ -188,7 +201,7 @@ object OneUiBackdrop {
     /** Which screen this is, like "1080x2400" (a foldable's cover and inner screens differ). */
     fun screenKey(context: Context): String = screenSize(context).let { (w, h) -> "${w}x$h" }
 
-    private fun screenSize(context: Context): Pair<Int, Int> {
+    fun screenSize(context: Context): Pair<Int, Int> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val bounds = context.getSystemService(WindowManager::class.java).maximumWindowMetrics.bounds
             return bounds.width() to bounds.height()

@@ -147,7 +147,8 @@ class ChooseDesignActivity : ComponentActivity() {
                                     "Blur lined up with your wallpaper on this screen. Moved the widget? Tap Line up blur again, then tap the widget."
                                 } else {
                                     "Blur not lined up yet on this screen: tap the widget once, anywhere on it, and it learns where it sits. " +
-                                        "(Android only tells apps where a widget is when it's tapped. On a foldable, do this once on each screen.)"
+                                        "If your home screen doesn't say (the line below tells), use Place blur by hand. " +
+                                        "(On a foldable, do this once on each screen.)"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                             )
@@ -161,6 +162,20 @@ class ChooseDesignActivity : ComponentActivity() {
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            // Home screens that don't say where a widget is (Samsung's) can still be lined up by hand.
+                            var placing by remember { mutableStateOf(false) }
+                            OutlinedButton(onClick = { placing = true }) { Text("Place blur by hand") }
+                            if (placing) {
+                                com.sidequest.widgetmaker.ui.PlaceBlurDialog(
+                                    appWidgetId,
+                                    onSaved = {
+                                        placing = false
+                                        android.widget.Toast.makeText(this@ChooseDesignActivity, "Blur placed.", android.widget.Toast.LENGTH_SHORT).show()
+                                        apply()
+                                    },
+                                    onDismiss = { placing = false },
+                                )
+                            }
                             // Moved it? Forget where it was, so the next tap anywhere on it lines the blur up again.
                             if (known) {
                                 TextButton(onClick = {

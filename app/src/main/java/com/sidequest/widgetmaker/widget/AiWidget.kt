@@ -117,7 +117,7 @@ class AiWidget : GlanceAppWidget() {
                 // The widget as a whole opens the app for what it shows (or this app, if nothing fits).
                 // It goes through the tap screen, which also learns where the widget is (for the One UI blur).
                 val whole = Taps.forWidget(saved.design)?.let { Taps.resolve(it, tokens) }
-                val open = GlanceModifier.clickable(actionStartActivity(TapIntents.root(context, appWidgetId, whole)))
+                val open = TapIntents.root(context, appWidgetId, whole)
                 DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open, inputs.art)
             }
         }
@@ -320,7 +320,7 @@ private fun DesignWidget(
     look: Look,
     shape: WidgetShape?,
     onScreen: Backdrop.Box?,
-    open: GlanceModifier,
+    open: android.content.Intent,
     albumArt: android.graphics.Bitmap? = null,
 ) {
     val context = androidx.glance.LocalContext.current
@@ -335,7 +335,7 @@ private fun DesignWidget(
     // otherwise never learns it.) Once it knows, the parts' own taps come back.
     val paint = Paint(art.styler, albumArt, k, partTaps = !(theme.frosted && onScreen == null))
     Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Box(GlanceModifier.size(panel.width.dp, panel.height.dp).then(open)) {
+        Box(GlanceModifier.size(panel.width.dp, panel.height.dp)) {
             // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.
             Image(
                 provider = ImageProvider(art.fill),
@@ -360,6 +360,8 @@ private fun DesignWidget(
             art.edge?.let {
                 Image(ImageProvider(it), contentDescription = null, modifier = GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
             }
+            // The panel's own tap, under the content: parts without a tap of their own let it through.
+            AndroidRemoteViews(remoteViews = tapLayer(context, open), modifier = GlanceModifier.fillMaxSize())
             Box(
                 GlanceModifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp),
             ) {
@@ -663,4 +665,22 @@ fun iconRes(name: IconName): Int = when (name) {
     IconName.next -> R.drawable.icon_next
     IconName.previous -> R.drawable.icon_previous
     IconName.weather -> R.drawable.icon_sun
+}
+
+/**
+ * An invisible layer that opens [intent] when tapped. Glance seals its taps (immutable PendingIntents),
+ * and Android drops everything a launcher adds to a sealed tap, including where the widget is on the
+ * screen; this one is left open (mutable), so the tap arrives with the widget's place and the One UI
+ * blur can line up. The intent is explicit (this app's tap screen), as an open tap must be.
+ */
+private fun tapLayer(context: Context, intent: android.content.Intent): android.widget.RemoteViews {
+    val pending = android.app.PendingIntent.getActivity(
+        context,
+        intent.getIntExtra(TapIntents.WIDGET, 0),
+        intent,
+        android.app.PendingIntent.FLAG_MUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+    return android.widget.RemoteViews(context.packageName, R.layout.tap_layer).apply {
+        setOnClickPendingIntent(R.id.tap_layer, pending)
+    }
 }

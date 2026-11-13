@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An invisible layer under a widget's content that takes its taps (see AiWidget's tapLayer). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tap_layer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />

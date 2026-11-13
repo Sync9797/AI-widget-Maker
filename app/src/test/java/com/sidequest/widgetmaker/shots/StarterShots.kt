@@ -162,7 +162,7 @@ class StarterShots {
         }
     }
 
-    private companion object {
+    companion object {
         // not-NOOP's stress and Coach brief, as the bridge would turn them into values.
         private val NOOP_SAMPLE = com.sidequest.widgetmaker.feeds.NoopMath.stress(
             "1762927200:0.1:0,1762930800:-:0,1762934400:2.8:0,1762938000:1.5:0,1762941600:1.3:0,1762945200:2.9:0,1762948800:2.0:0," +

@@ -20,7 +20,7 @@ enum class WidgetShape(val label: String) {
     cookie("Cookie"),
     /** Material 3 Expressive's four-leaf clover: one bold value or icon. */
     clover("Clover"),
-    /** A softer, rounder scallop than the cookie, with six petals. */
+    /** Five round petals, one pointing up: bolder than the cookie's scallops. */
     flower("Flower"),
     /** A smooth, slightly lopsided river stone that fills its cell. */
     pebble("Pebble"),
@@ -154,7 +154,7 @@ object Shapes {
             WidgetShape.cookie -> (w * 0.13).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             // The clover's leaves dip deeper between them, so content keeps further in.
             WidgetShape.clover -> (w * 0.17).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
-            WidgetShape.flower -> (w * 0.15).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            WidgetShape.flower -> (w * 0.18).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             WidgetShape.pebble -> Panel(w, h, shape, radius, max(p / 2, (w * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()))
             // Content clears the notches in the sides.
             WidgetShape.ticket -> Panel(w, h, shape, radius, max(p, ticketNotch(w.toFloat(), h.toFloat()).roundToInt() + 6), p, p)

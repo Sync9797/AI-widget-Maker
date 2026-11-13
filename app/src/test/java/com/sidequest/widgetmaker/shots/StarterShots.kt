@@ -62,6 +62,7 @@ class StarterShots {
         val only = System.getProperty("shots.only")?.split(',')?.map { it.trim() }?.toSet()
         val shots = WidgetTheme.everywhere.flatMap { theme -> Starters.all.mapIndexed { i, s -> Triple(theme, i, s) } }
             .filter { only == null || it.third.title in only }
+        if (shots.isEmpty()) return
         var current by mutableStateOf(shots.first())
         compose.setContent {
             val (theme, _, starter) = current

@@ -292,7 +292,30 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
             }
             }
             if (state.snapshot.values.isNotEmpty()) LatestValues(state.snapshot)
+            Credits()
         }
+    }
+}
+
+/** Open-source work the app ships with, and its license. */
+@Composable
+private fun Credits() {
+    val context = LocalContext.current
+    var showLicense by remember { mutableStateOf(false) }
+    Section("Credits", "Open-source work in this app.") {
+        Text("Weather icons: Meteocons by Bas Milius (github.com/basmilius/meteocons), MIT License.", style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = { showLicense = true }) { Text("Read the license") }
+    }
+    if (showLicense) {
+        val text = remember {
+            runCatching { context.resources.openRawResource(com.sidequest.widgetmaker.R.raw.meteocons_license).bufferedReader().readText() }.getOrDefault("")
+        }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showLicense = false },
+            title = { Text("Meteocons license") },
+            text = { Text(text, style = MaterialTheme.typography.bodySmall, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            confirmButton = { TextButton(onClick = { showLicense = false }) { Text("Close") } },
+        )
     }
 }
 
@@ -532,6 +555,21 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
         }
     }
     Text(look.autoScale.about, style = MaterialTheme.typography.bodySmall)
+
+    Text("Weather icons", style = MaterialTheme.typography.bodyLarge)
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        com.sidequest.widgetmaker.spec.WeatherIcons.entries.forEach { style ->
+            FilterChip(look.weatherIcons == style, { update(look.copy(weatherIcons = style)) }, { Text(style.label) })
+        }
+    }
+    Text(
+        when (look.weatherIcons) {
+            com.sidequest.widgetmaker.spec.WeatherIcons.classic -> "Simple flat icons in your widget's colors."
+            com.sidequest.widgetmaker.spec.WeatherIcons.meteocons -> "Meteocons by Bas Milius: detailed weather icons in their own colors."
+            com.sidequest.widgetmaker.spec.WeatherIcons.animated -> "Meteocons, with the current weather's icon animated on your home screen (the forecast's stay still, to spare the battery)."
+        },
+        style = MaterialTheme.typography.bodySmall,
+    )
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {

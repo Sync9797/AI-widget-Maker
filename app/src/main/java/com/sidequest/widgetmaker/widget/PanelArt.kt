@@ -86,7 +86,7 @@ class PanelArt(
                 )
                 WidgetTheme.liquid -> {
                     // Clear glass: the wallpaper barely blurred, with a bright rim and corner glints.
-                    val frost = OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH, tone, clear = true)
+                    val frost = OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH, tone, clear = true, sharp = look.liquidClarity == com.sidequest.widgetmaker.spec.LiquidClarity.clear)
                     PanelArt(
                         ShapePainter.clip(frost.bitmap, panel.shape, radius), false,
                         ShapePainter.liquidRim(panel.shape, outW, outH, radius, maxOf(edgePx, density * scale) * 1.4f),

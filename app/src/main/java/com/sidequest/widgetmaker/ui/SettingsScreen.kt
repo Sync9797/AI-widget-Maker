@@ -119,6 +119,7 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (state.theme == WidgetTheme.oneui || state.theme == WidgetTheme.liquid) OneUiBlurControls(onChanged = viewModel::refreshWidgets)
+                if (state.theme == WidgetTheme.liquid) LiquidClarityChips(onChanged = viewModel::refreshWidgets)
                 if (state.theme == WidgetTheme.material) MaterialSwatches()
             }
 
@@ -570,14 +571,15 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
     var look by remember { mutableStateOf(DesignStore(context).look) }
     /** Saves and redraws the home screen widgets. */
     fun update(new: Look) {
-        look = new
-        onChange(new)
+        // Liquid glass's clarity is set in another section: keep what's saved for it.
+        look = new.copy(liquidClarity = DesignStore(context).look.liquidClarity)
+        onChange(look)
     }
     /** While a slider moves: only the preview follows; it's saved when let go. */
     fun preview(new: Look) {
         look = new
     }
-    val save = { onChange(look) }
+    val save = { onChange(look.copy(liquidClarity = DesignStore(context).look.liquidClarity)) }
     val samples = remember { Starters.all }
     val wide = samples.first { it.title == "Battery" }.design
     val square = samples.first { it.title == "Clock and weather" }.design
@@ -855,4 +857,23 @@ private fun MonsterQuestControls(on: Boolean, onChange: (Boolean) -> Unit) {
         },
         style = MaterialTheme.typography.bodySmall,
     )
+}
+
+/** Liquid glass: soft (fine while swiping pages) or clear (sharper when still). */
+@Composable
+private fun LiquidClarityChips(onChanged: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val store = remember { com.sidequest.widgetmaker.data.DesignStore(context) }
+    var look by remember { mutableStateOf(store.look.liquidClarity) }
+    Text("Liquid glass clarity", style = MaterialTheme.typography.bodyLarge)
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        com.sidequest.widgetmaker.spec.LiquidClarity.entries.forEach { c ->
+            FilterChip(look == c, {
+                look = c
+                store.look = store.look.copy(liquidClarity = c)
+                onChanged()
+            }, { Text(c.label) })
+        }
+    }
+    Text(look.about, style = MaterialTheme.typography.bodySmall)
 }

@@ -227,6 +227,11 @@ class AiWidgetLargeReceiver : AiWidgetReceiver()
 open class AiWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AiWidget()
 
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        DarkModeWatch.watch(context)
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
         val store = DesignStore(context)
@@ -470,8 +475,8 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             val mcName = if (paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.classic) null else Meteocons.nameFor(node, tokens)
             val mc = mcName?.let { Meteocons.frames(context, it) }?.takeIf { it.isNotEmpty() }
             val mcSize = (node.size * paint.k * mcScale(node.size)).dp
-            val animated = if (mcName != null && mc != null && paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.animated && Meteocons.isNow(node)) {
-                Meteocons.flipper(context, mcName)
+            val animated = if (mcName != null && mc != null && paint.weatherIcons.moves && Meteocons.isNow(node)) {
+                Meteocons.flipper(context, mcName, calm = paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.calm)
             } else null
             when {
                 animated != null -> AndroidRemoteViews(remoteViews = animated, modifier = modifier.size(mcSize))

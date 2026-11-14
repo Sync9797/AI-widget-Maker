@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         CrashLog.install(this)
         FeedWorker.schedule(this)
+        com.sidequest.widgetmaker.widget.DarkModeWatch.watch(this)
         openFrom(intent)
         // Settings → Updates: look for a newer build each time the app opens.
         if (savedInstanceState == null && com.sidequest.widgetmaker.update.Updater.checkOnStart(this)) viewModel.checkForUpdates(quiet = true)

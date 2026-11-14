@@ -573,6 +573,14 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
     }
     Text(look.autoScale.about, style = MaterialTheme.typography.bodySmall)
 
+    Text("Glass tone (One UI and Ambient)", style = MaterialTheme.typography.bodyLarge)
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        com.sidequest.widgetmaker.spec.GlassTone.entries.forEach { tone ->
+            FilterChip(look.glassTone == tone, { update(look.copy(glassTone = tone)) }, { Text(tone.label) })
+        }
+    }
+    Text(look.glassTone.about, style = MaterialTheme.typography.bodySmall)
+
     Text("Weather icons", style = MaterialTheme.typography.bodyLarge)
     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         com.sidequest.widgetmaker.spec.WeatherIcons.entries.forEach { style ->
@@ -583,7 +591,8 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
         when (look.weatherIcons) {
             com.sidequest.widgetmaker.spec.WeatherIcons.classic -> "Simple flat icons in your widget's colors."
             com.sidequest.widgetmaker.spec.WeatherIcons.meteocons -> "Meteocons by Bas Milius: detailed weather icons in their own colors."
-            com.sidequest.widgetmaker.spec.WeatherIcons.animated -> "Meteocons, with the current weather's icon animated on your home screen (the forecast's stay still, to spare the battery)."
+            com.sidequest.widgetmaker.spec.WeatherIcons.animated -> "Meteocons, with the current weather's icon always animated on your home screen (the forecast's stay still, to spare the battery)."
+            com.sidequest.widgetmaker.spec.WeatherIcons.calm -> "Meteocons, with the current weather's icon playing for 6 seconds, then resting for 24, so it isn't distracting. It plays first whenever the widget redraws."
         },
         style = MaterialTheme.typography.bodySmall,
     )

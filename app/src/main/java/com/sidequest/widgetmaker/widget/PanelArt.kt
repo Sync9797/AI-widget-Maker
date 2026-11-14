@@ -56,13 +56,17 @@ class PanelArt(
             val scale = outW.toFloat() / pxW
             val radius = panel.radius * density * scale
             val edgePx = look.edge * density * scale
+            // The glass's tone: like the phone's dark mode unless Settings says otherwise (null: by the wallpaper).
+            val phoneDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            val tone = look.glassTone.light(phoneDark)
             /** The edge over the fill: the premium finish (sheen and a lit edge), or a plain even edge. */
             fun edge(color: Int, sheen: Int): Bitmap? =
                 if (look.premium) ShapePainter.finish(panel.shape, outW, outH, radius, maxOf(edgePx, density * scale), brighter(color), sheen)
                 else ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, color)
             if (mood != null && theme != WidgetTheme.material) {
                 // Over the frosted wallpaper it's nearly solid, so a hint of the blur still shows through.
-                val under = if (theme.frosted) OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH).bitmap else null
+                val under = if (theme.frosted) OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH, tone).bitmap else null
                 return PanelArt(
                     ShapePainter.clip(moodFill(mood, outW, outH, under), panel.shape, radius), false,
                     edge(0x40FFFFFF, sheen = 0x14),
@@ -78,11 +82,12 @@ class PanelArt(
                 WidgetTheme.oneui, WidgetTheme.ambient -> {
                     // Ambient: frosted album art while something plays; otherwise the wallpaper, as One UI.
                     val cover = if (theme == WidgetTheme.ambient) com.sidequest.widgetmaker.music.Music.art(context) else null
-                    val frost = cover?.let { OneUiBackdrop.renderArt(it, pxW, pxH, outW, outH) }
-                        ?: OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH)
+                    val frost = cover?.let { OneUiBackdrop.renderArt(it, pxW, pxH, outW, outH, tone) }
+                        ?: OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH, tone)
                     PanelArt(
+                        // One UI's own widgets have no visible rim, so the edge is only a whisper.
                         ShapePainter.clip(frost.bitmap, panel.shape, radius), false,
-                        edge(if (frost.light) 0x73FFFFFF else 0x33FFFFFF, sheen = 0x12),
+                        edge(if (frost.light) 0x2EFFFFFF else 0x1AFFFFFF, sheen = 0x08),
                         AiWidget.styler(context, theme, backdropLight = frost.light),
                     )
                 }

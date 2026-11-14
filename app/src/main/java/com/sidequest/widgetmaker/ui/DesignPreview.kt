@@ -218,14 +218,22 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             else com.sidequest.widgetmaker.widget.Meteocons.nameFor(node, tokens)
                 ?.let { com.sidequest.widgetmaker.widget.Meteocons.frames(context, it) }?.takeIf { it.isNotEmpty() }
             if (mc != null) {
-                // Animated as on the home screen: the current weather's frames, 10 a second.
-                val animate = paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.animated &&
+                // Animated as on the home screen: the current weather's frames, 10 a second
+                // (now and then: 6 seconds of it, then 24 at rest on the first frame).
+                val animate = paint.weatherIcons.moves &&
                     com.sidequest.widgetmaker.widget.Meteocons.isNow(node) && mc.size > 1
+                val calm = paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.calm
                 var frame by remember(mc) { mutableStateOf(0) }
-                if (animate) LaunchedEffect(mc) {
+                if (animate) LaunchedEffect(mc, calm) {
+                    val step = com.sidequest.widgetmaker.widget.Meteocons.FRAME_MS.toLong()
+                    val play = com.sidequest.widgetmaker.widget.Meteocons.CALM_PLAY_MS / step
                     while (true) {
-                        delay(com.sidequest.widgetmaker.widget.Meteocons.FRAME_MS.toLong())
-                        frame = (frame + 1) % mc.size
+                        repeat(if (calm) play.toInt() else Int.MAX_VALUE) {
+                            delay(step)
+                            frame = (frame + 1) % mc.size
+                        }
+                        frame = 0
+                        delay(com.sidequest.widgetmaker.widget.Meteocons.CALM_PLAY_MS.toLong() * com.sidequest.widgetmaker.widget.Meteocons.CALM_STILLS)
                     }
                 }
                 Image(

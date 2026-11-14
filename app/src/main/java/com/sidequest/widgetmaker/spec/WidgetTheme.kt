@@ -43,8 +43,11 @@ enum class WidgetTheme(val label: String) {
         /** The styles for every widget (Ambient is for music widgets only). */
         val everywhere: List<WidgetTheme> get() = entries.filter { it != ambient }
 
-        /** Whether a theme takes on the weather's color for weather widgets (Settings → Weather moods). */
-        fun takesMoods(theme: WidgetTheme) = theme != material && theme != tonal && theme != outline
+        /**
+         * Whether a theme takes on the weather's color for weather widgets (Settings → Weather moods). Not the
+         * ones whose point is their own look: Material 3 and Tonal's colors, Outline's no panel, Liquid glass's clear glass.
+         */
+        fun takesMoods(theme: WidgetTheme) = theme != material && theme != tonal && theme != outline && theme != liquid
 
         /** Whether a design shows music, so it can use the Ambient style. */
         fun playsMusic(design: WidgetDesign): Boolean {

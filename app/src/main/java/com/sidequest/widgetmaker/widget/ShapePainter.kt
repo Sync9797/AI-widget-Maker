@@ -56,6 +56,16 @@ object ShapePainter {
                 }
                 WidgetShape.circle -> addOval(r, Path.Direction.CW)
                 WidgetShape.sideCircle -> sideCircle(this, r)
+                WidgetShape.gem -> gem(this, r)
+                // Eight soft scallops; twelve small rays.
+                WidgetShape.softBurst -> polar(this, r, square = true) { t -> 0.9 + 0.1 * cos(8 * t) }
+                WidgetShape.sunny -> polar(this, r, square = true) { t -> 0.94 + 0.06 * cos(12 * t) }
+                // A squircle whose sides puff out a little between its corners.
+                WidgetShape.puffy -> polar(this, r, square = false) { t ->
+                    val c = abs(cos(t)); val sn = abs(sin(t))
+                    val n = 3.2
+                    (1.0 / (c.pow(n) + sn.pow(n)).pow(1 / n)) * (1 + 0.035 * cos(8 * t))
+                }
                 WidgetShape.arch -> {
                     val bottom = min(rad * 0.35f, r.width() / 6)
                     addRoundRect(r, floatArrayOf(r.width() / 2, r.width() / 2, r.width() / 2, r.width() / 2, bottom, bottom, bottom, bottom), Path.Direction.CW)
@@ -136,6 +146,20 @@ object ShapePainter {
             }, Path.Op.UNION)
         }
         path.addPath(shape)
+    }
+
+    /** A rounded square turned 45° (Material 3 Expressive's gem), as big as the box allows. */
+    private fun gem(path: Path, r: RectF) {
+        val box = min(r.width(), r.height())
+        // A rounded square of side a, corner radius c, turned 45°, reaches (a/2 - c)·√2 + c from its middle.
+        val ratio = 0.3f
+        val a = box / 2 / ((0.5f - ratio) * 1.41421356f + ratio)
+        val c = a * ratio
+        val square = Path().apply {
+            addRoundRect(RectF(r.centerX() - a / 2, r.centerY() - a / 2, r.centerX() + a / 2, r.centerY() + a / 2), c, c, Path.Direction.CW)
+            transform(android.graphics.Matrix().apply { setRotate(45f, r.centerX(), r.centerY()) })
+        }
+        path.addPath(square)
     }
 
     /** A rounded card with a half-circle notch cut into the middle of each side. */

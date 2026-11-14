@@ -34,6 +34,14 @@ enum class WidgetShape(val label: String) {
     leafReverse("Reverse leaf"),
     /** A capsule slanting up to the right, two round ends on a diagonal, like Pixel's Material You weather. */
     sideCircle("Side circle"),
+    /** Material 3 Expressive's gem: a rounded square turned on its point, like a soft diamond. */
+    gem("Gem"),
+    /** Eight soft scallops, Material 3 Expressive's "soft burst". */
+    softBurst("Soft burst"),
+    /** A rounded square with gently wavy, puffed-out sides. */
+    puffy("Puffy"),
+    /** Twelve small rounded rays, like a sun or a seal. */
+    sunny("Sunny"),
 }
 
 /** How all widgets look, set in Settings → Widget look. */
@@ -164,7 +172,10 @@ object Shapes {
     val LEAF_REVERSE_CORNERS = floatArrayOf(LEAF_CORNERS[3], LEAF_CORNERS[2], LEAF_CORNERS[1], LEAF_CORNERS[0])
 
     /** Shapes drawn as big as the shorter side allows, centered in their cell. */
-    val ROUND_SHAPES = setOf(WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower, WidgetShape.sideCircle)
+    val ROUND_SHAPES = setOf(
+        WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower, WidgetShape.sideCircle,
+        WidgetShape.gem, WidgetShape.softBurst, WidgetShape.puffy, WidgetShape.sunny,
+    )
 
     /** A [WidgetShape.sideCircle]'s round ends: their radius as a part of its side (their centers sit that far in from the corners). */
     const val SIDE_CIRCLE_END = 0.36f
@@ -202,7 +213,8 @@ object Shapes {
             WidgetShape.squircle -> (look.cornerRadius ?: design.cornerRadius) * 3 / 2
             WidgetShape.pill -> min(w, h) / 2
             WidgetShape.arch -> w / 2
-            WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower, WidgetShape.sideCircle -> w / 2
+            WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower, WidgetShape.sideCircle,
+            WidgetShape.gem, WidgetShape.softBurst, WidgetShape.puffy, WidgetShape.sunny -> w / 2
             WidgetShape.pebble, WidgetShape.stadium -> min(w, h) / 2
             WidgetShape.ticket -> look.cornerRadius ?: design.cornerRadius
             WidgetShape.leaf, WidgetShape.leafReverse -> (min(w, h) * LEAF_CORNERS.max()).roundToInt()
@@ -226,6 +238,10 @@ object Shapes {
             WidgetShape.flower -> (w * 0.18).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             // The slant's middle is widest: content keeps to the square that fits across it.
             WidgetShape.sideCircle -> (w * 0.22).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            // A gem's points leave the least room: content keeps to the square inside it.
+            WidgetShape.gem -> (w * 0.22).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            WidgetShape.softBurst, WidgetShape.sunny -> (w * 0.16).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            WidgetShape.puffy -> (w * 0.1).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             WidgetShape.pebble -> Panel(w, h, shape, radius, max(p / 2, (w * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()))
             WidgetShape.leaf, WidgetShape.leafReverse -> Panel(w, h, shape, radius, p, p, p)
             // Content clears the notches in the sides.

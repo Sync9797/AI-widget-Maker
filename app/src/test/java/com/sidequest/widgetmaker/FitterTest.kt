@@ -38,6 +38,17 @@ class FitterTest {
     }
 
     @Test
+    fun shortcutsOpenTheirAppAndPillsParse() {
+        assertEquals(com.sidequest.widgetmaker.spec.TapAction.App("com.anthropic.claude"), com.sidequest.widgetmaker.spec.Taps.resolve("app:com.anthropic.claude", tokens))
+        assertEquals(null, com.sidequest.widgetmaker.spec.Taps.resolve("app:bad package!", tokens))
+        val claude = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Claude" }.design
+        assertEquals("app:com.anthropic.claude", com.sidequest.widgetmaker.spec.Taps.forWidget(claude))
+        val pill = com.sidequest.widgetmaker.spec.DesignParser.parse("""{"name":"P","root":{"type":"progress","height":34,"text":"{battery}%"}}""").root as com.sidequest.widgetmaker.spec.ProgressNode
+        assertTrue(pill.pill)
+        assertEquals(34, pill.height)
+    }
+
+    @Test
     fun everyConnectedDeviceIsListedAndWidgetsCanHideSome() {
         val values = DevicesMath.values(
             listOf(

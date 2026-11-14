@@ -43,7 +43,8 @@ bold value like a day number), "clover" (four leaves; one bold value or icon), "
 in a 1x2 or 1x3; one column) or "leaf" (One UI's weather card: every corner its own size, the big curve top
 right, so an icon sits well there) or "leafReverse" (the leaf flipped top to bottom: the big curve bottom right,
 like One UI's countdown card) or "sideCircle" (a capsule slanting up to the right, like Pixel's weather; one
-big number with an icon tucked bottom left). Circles, cookies, clovers, flowers and side circles keep content
+big number with an icon tucked bottom left), "gem" (a soft diamond), "softBurst" (eight soft scallops),
+"puffy" (a squircle with gently wavy sides) or "sunny" (twelve small rays). Circles, cookies, clovers, flowers and side circles keep content
 near the middle.
 
 Colors are "#RRGGBB" or "#AARRGGBB" (the AA part is opacity; "#CC000000" is 80% black).

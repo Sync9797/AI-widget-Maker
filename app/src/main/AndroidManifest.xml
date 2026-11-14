@@ -29,6 +29,8 @@
     <!-- Lets the app see whether the Claude app is installed, to hand it a widget request. -->
     <queries>
         <package android:name="com.anthropic.claude" />
+        <!-- Gemini, for its shortcut widget. -->
+        <package android:name="com.google.android.apps.bard" />
         <!-- Health Connect, and Side Quest (the game shares a summary for its widgets). -->
         <package android:name="com.google.android.apps.healthdata" />
         <package android:name="com.monsterquest.app" />

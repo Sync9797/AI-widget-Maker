@@ -22,7 +22,7 @@ object Starters {
         game("Side Quest"),
     }
 
-    private val EVERYDAY = setOf("Daily briefing", "Smart stack", "Countdown")
+    private val EVERYDAY = setOf("Daily briefing", "Smart stack", "Countdown", "Claude", "Gemini")
 
     fun categoryOf(s: Starter): Category {
         if (s.title in EVERYDAY) return Category.everyday
@@ -174,15 +174,11 @@ object Starters {
 
     private const val DEVICE_LEVELS = """"levels":[{"from":0,"color":"#FFFF5C5C"},{"from":20,"color":"#FFFFB74D"},{"from":40,"color":"#FF4CD964"}]"""
 
-    /** Device [n]'s battery as a bar: its icon, name and percent over a bar in its level's color. */
+    /** Device [n]'s battery as a pill like One UI's: its icon and percent inside a bar filled to its level. */
     private fun deviceBar(n: Int, show: String) = """
         {"type":"column","show":{$show"ifSet":"{devices.$n.name}"},"children":[
-         {"type":"row","verticalAlign":"center","children":[
-          {"type":"icon","name":"bluetooth","live":"{devices.$n.icon}","size":16,"color":"#FFFFFFFF"},
-          {"type":"text","text":" {devices.$n.name}","size":13,"color":"#E6FFFFFF","maxLines":1,"grow":true},
-          {"type":"text","text":"{devices.$n.pct}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
-         {"type":"spacer","size":4},
-         {"type":"progress","value":"{devices.$n.level}","height":7,"color":"#FF4CD964","trackColor":"#26FFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS},
+         {"type":"progress","value":"{devices.$n.level}","height":34,"color":"#FF4CD964","trackColor":"#26FFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS,
+          "iconLive":"{devices.$n.icon}","text":"{devices.$n.pct}","textSize":15},
          {"type":"spacer","size":8}]}"""
 
     /** Device [n]'s battery as a ring with its percent, and its icon under it on taller widgets. */
@@ -530,6 +526,32 @@ object Starters {
               {"type":"spacer","size":8}]},
              {"type":"spacer","size":4,"show":{"minHeight":130}},
              {"type":"text","text":"{traffic.distance}","size":11,"color":"#99FFFFFF","align":"center","maxLines":1,"show":{"minHeight":300}}]}}""",
+        ),
+        Triple(
+            "Claude", "A shortcut that opens the Claude app, with its own icon. Pick a shape like Gem or Soft burst for fun.",
+            """{"name":"Claude","background":"#E6262422","cornerRadius":28,"padding":12,"root":
+            {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.anthropic.claude","children":[
+             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
+              {"type":"appicon","packageName":"com.anthropic.claude","size":36},
+              {"type":"text","text":"  Claude","size":17,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+             {"type":"column","align":"center","show":{"minHeight":130},"children":[
+              {"type":"appicon","packageName":"com.anthropic.claude","size":56},
+              {"type":"spacer","size":8},
+              {"type":"text","text":"Claude","size":17,"color":"#FFFFFFFF","weight":"bold","align":"center","maxLines":1},
+              {"type":"text","text":"Ask, write and think it through","size":12,"color":"#B3FFFFFF","align":"center","maxLines":2,"show":{"minHeight":200}}]}]}}""",
+        ),
+        Triple(
+            "Gemini", "A shortcut that opens the Gemini app, with its own icon. Pick a shape like Gem or Soft burst for fun.",
+            """{"name":"Gemini","background":"#E61B2033","cornerRadius":28,"padding":12,"root":
+            {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.google.android.apps.bard","children":[
+             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
+              {"type":"appicon","packageName":"com.google.android.apps.bard","size":36},
+              {"type":"text","text":"  Gemini","size":17,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+             {"type":"column","align":"center","show":{"minHeight":130},"children":[
+              {"type":"appicon","packageName":"com.google.android.apps.bard","size":56},
+              {"type":"spacer","size":8},
+              {"type":"text","text":"Gemini","size":17,"color":"#FFFFFFFF","weight":"bold","align":"center","maxLines":1},
+              {"type":"text","text":"Ask Gemini anything","size":12,"color":"#B3FFFFFF","align":"center","maxLines":2,"show":{"minHeight":200}}]}]}}""",
         ),
         Triple(
             "Agenda card", "Side Quest's date card: what's next at the top, today's date big at the bottom.",

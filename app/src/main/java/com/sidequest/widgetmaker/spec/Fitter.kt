@@ -72,6 +72,7 @@ object Fitter {
             is IconNode -> node.size * k * 1.12f
             is RingNode -> node.size * k
             is ArtNode -> node.size * k
+            is AppIconNode -> node.size * k
             is TimerNode -> textWidth("00:00", node.size * k)
             is SpacerNode -> if (node.grow) 0f else node.size * k
             is RowNode -> kids(node).sumOf { width(it, k).toDouble() }.toFloat() + 2 * node.padding * k
@@ -90,6 +91,7 @@ object Fitter {
             is IconNode -> node.size * k
             is RingNode -> node.size * k
             is ArtNode -> node.size * k
+            is AppIconNode -> node.size * k
             is TimerNode -> node.size * k * 1.18f
             is ProgressNode -> node.height * k
             is DividerNode -> node.thickness * k

@@ -103,6 +103,7 @@ object Taps {
                 is SleepNode -> add(TapKind.health)
                 is MonthNode -> repeat(3) { add(TapKind.calendar) }
                 is MapNode -> repeat(3) { add(TapKind.commute) }
+                is ScaleNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
                 is AppIconNode -> Unit
                 is ChartNode -> TOKEN.findAll(node.series).forEach { add(kindOf(it.groupValues[1])) }
                 is RingNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }

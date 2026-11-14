@@ -169,6 +169,8 @@ data class TextNode(
      * down), measuring it itself, so it's never cut short.
      */
     val autoFit: Boolean = false,
+    /** A small pill behind the text, in the theme's container color: dates like "03", tags like "P.M.". */
+    val chip: Boolean = false,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -252,6 +254,12 @@ data class ProgressNode(
     val text: String? = null,
     val textSize: Int = 15,
     val textColor: String = "#FFFFFFFF",
+    /**
+     * Blocks instead of a bar: this many (2 to 10) that fill up with the value, like a level meter.
+     * [vertical] stacks them bottom to top, [height] tall; otherwise they run left to right.
+     */
+    val segments: Int = 0,
+    val vertical: Boolean = false,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -333,10 +341,42 @@ data class ChartNode(
     /** Fixed bottom and top of the scale (like 0 and 300 for stress); null fits the series. */
     val min: Int? = null,
     val max: Int? = null,
+    /** "line" (a line with a fading fill) or "ticks" (fine bars, like a sound meter). */
+    val style: String = "line",
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
 ) : Node
+
+/**
+ * A ruler of tick marks, like a thermometer: [value] marked in [color] on a scale from [min] to [max] (numbers or
+ * values like "{weather.low}"). [vertical] runs it bottom to top, [length] dp long (0: as long as the room there is).
+ */
+@Serializable
+@SerialName("scale")
+data class ScaleNode(
+    val value: String,
+    val min: String = "0",
+    val max: String = "100",
+    val vertical: Boolean = true,
+    val length: Int = 110,
+    val ticks: Int = 21,
+    val color: String = "#FF2FA7B8",
+    val tickColor: String = "#66FFFFFF",
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node {
+    /** Where [value] sits from 0 (min) to 1 (max), or null without data. */
+    fun fraction(tokens: Tokens): Float? {
+        fun num(s: String) = Regex("-?[0-9]+(\\.[0-9]+)?").find(tokens.fill(s).replace(",", ""))?.value?.toFloatOrNull()
+        val v = num(value) ?: return null
+        val lo = num(min) ?: return null
+        val hi = num(max) ?: return null
+        if (hi <= lo) return 0.5f
+        return ((v - lo) / (hi - lo)).coerceIn(0f, 1f)
+    }
+}
 
 /**
  * A ring filled to [value] (0-100), like NOOP's Charge, Effort and Rest,

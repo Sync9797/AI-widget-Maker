@@ -138,11 +138,12 @@ object DesignParser {
             tap = node.tap?.take(80),
             color = Colors.orDefault(node.color, "#FF7CF29C"),
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
-            height = node.height.coerceIn(2, if (node.pill) 64 else 24),
             iconLive = node.iconLive?.take(60),
             text = node.text?.take(60),
             textSize = node.textSize.coerceIn(8, 32),
             textColor = Colors.orDefault(node.textColor, "#FFFFFFFF"),
+            segments = if (node.segments <= 0) 0 else node.segments.coerceIn(2, 10),
+            height = if (node.segments > 0 && node.vertical) node.height.coerceIn(20, 240) else node.height.coerceIn(2, if (node.pill) 64 else 24),
         )
         is DividerNode -> node.copy(
             show = sanitize(node.show),
@@ -190,6 +191,15 @@ object DesignParser {
             tap = node.tap?.take(80),
             height = node.height.coerceIn(40, 400),
             cornerRadius = node.cornerRadius.coerceIn(0, 60),
+        )
+        is ScaleNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            value = node.value.take(60), min = node.min.take(60), max = node.max.take(60),
+            length = if (node.length <= 0) 0 else node.length.coerceIn(30, 400),
+            ticks = node.ticks.coerceIn(3, 60),
+            color = Colors.orDefault(node.color, "#FF2FA7B8"),
+            tickColor = Colors.orDefault(node.tickColor, "#66FFFFFF"),
         )
         is MonthNode -> node.copy(
             show = sanitize(node.show),

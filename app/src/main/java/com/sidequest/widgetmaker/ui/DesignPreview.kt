@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -212,6 +214,9 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             modifier = if (node.highlight) {
                 modifier.background(textColor(node, tokens).let { (role, c) -> paint(role, c) }, RoundedCornerShape((6 * paint.k).dp))
                     .padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
+            } else if (node.chip) {
+                modifier.background(paint(Role.Container, "#262FA7B8"), RoundedCornerShape(50))
+                    .padding(horizontal = (9 * paint.k).dp, vertical = (4 * paint.k).dp)
             } else modifier,
             color = textColor(node, tokens).let { (role, c) -> if (node.highlight) Color(com.sidequest.widgetmaker.spec.Styler.contrast(paint(role, c).toArgb())) else paint(role, c) },
             fontSize = (node.size * paint.k).sp,
@@ -270,7 +275,27 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
             )
         }
-        is ProgressNode -> if (node.pill) {
+        is ProgressNode -> if (node.segments > 0) {
+            val filled = Math.round(tokens.progress(node.value) * node.segments)
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            val off = paint(Role.Track, node.trackColor)
+            val gap = (1.5f * paint.k).dp
+            if (node.vertical) {
+                Column(modifier.width((node.height * 0.4f * paint.k).dp).height((node.height * paint.k).dp)) {
+                    for (i in 0 until node.segments) {
+                        Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = gap).clip(RoundedCornerShape((3 * paint.k).dp))
+                            .background(if (i >= node.segments - filled) on else off))
+                    }
+                }
+            } else {
+                Row(modifier.fillMaxWidth().height((node.height * paint.k).dp)) {
+                    for (i in 0 until node.segments) {
+                        Box(Modifier.weight(1f).fillMaxHeight().padding(horizontal = gap).clip(RoundedCornerShape((3 * paint.k).dp))
+                            .background(if (i < filled) on else off))
+                    }
+                }
+            }
+        } else if (node.pill) {
             val h = (node.height * paint.k).dp
             Box(modifier.fillMaxWidth().height(h).clip(RoundedCornerShape(h / 2)), contentAlignment = Alignment.CenterStart) {
                 LinearProgressIndicator(
@@ -315,8 +340,10 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
         is ChartNode -> {
             val density = LocalContext.current.resources.displayMetrics.density
             val values = ChartArt.parse(tokens.fill(node.series))
-            val bmp = remember(values, fit.width, node.height, paint.k) {
-                ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density, node.min, node.max).asImageBitmap()
+            val bmp = remember(values, fit.width, node.height, paint.k, node.style) {
+                val w = (fit.width * density).toInt(); val h = (node.height * paint.k * density).toInt()
+                (if (node.style == "ticks") ChartArt.ticks(values, w, h, 2.4f * density, min = node.min, max = node.max)
+                else ChartArt.line(values, w, h, 2.2f * density, node.min, node.max)).asImageBitmap()
             }
             Image(bmp, null, modifier.fillMaxWidth().height((node.height * paint.k).dp), contentScale = ContentScale.FillBounds,
                 colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)))
@@ -361,6 +388,25 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.ScaleNode -> {
+            val density = LocalContext.current.resources.displayMetrics.density
+            val (wDp, hDp) = if (node.vertical) 30f * paint.k to (if (node.grow || node.length <= 0) fit.inner * 0.8f else node.length.toFloat()) * paint.k
+            else fit.width.toFloat() to 22f * paint.k
+            val sized = if (node.vertical) {
+                if (node.grow || node.length <= 0) modifier.width(wDp.dp).fillMaxHeight() else modifier.size(wDp.dp, hDp.dp)
+            } else modifier.fillMaxWidth().height(hDp.dp)
+            val f = node.fraction(tokens)
+            val ruler = remember(wDp, hDp, node.ticks, node.vertical) {
+                ChartArt.scale((wDp * density).toInt(), (hDp * density).toInt(), node.ticks, node.vertical, density, false, null).asImageBitmap()
+            }
+            val mark = remember(wDp, hDp, node.ticks, node.vertical, f) {
+                ChartArt.scale((wDp * density).toInt(), (hDp * density).toInt(), node.ticks, node.vertical, density, true, f).asImageBitmap()
+            }
+            Box(sized) {
+                Image(ruler, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(paint(Role.Text, node.tickColor)))
+                if (f != null) Image(mark, null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)))
+            }
+        }
         is com.sidequest.widgetmaker.spec.AppIconNode -> {
             val context = LocalContext.current
             val px = (node.size * paint.k * context.resources.displayMetrics.density).toInt()

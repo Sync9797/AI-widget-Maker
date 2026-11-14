@@ -89,6 +89,8 @@ object FeedParsers {
             out["weather.h$i.icon"] = weatherIcon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
             out["weather.h$i.mc"] = meteocon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
         }
+        // The next 12 hours' temperatures as numbers, for charts ("48,49,51,...").
+        (0..12).mapNotNull { temps?.at(it)?.roundToInt() }.takeIf { it.size > 1 }?.let { out["weather.hours.temps"] = it.joinToString(",") }
         outlook(times, codes, rain)?.let {
             out["weather.outlook"] = it
             // Only something worth saying: rain, snow or storms coming. Empty on a dry day.
@@ -481,6 +483,9 @@ object FeedParsers {
             lastDay = day
             out["calendar.${i + 1}.date"] = day.format(DateTimeFormatter.ofPattern("MMM d", Locale.US)).uppercase(Locale.US)
             out["calendar.${i + 1}.time"] = if (e.allDay) "All day" else e.start.toLocalTime().format(DateTimeFormatter.ofPattern("h:mm a", Locale.US))
+            // For date chips: the day of the month ("03") and the start time without AM/PM ("3:30").
+            out["calendar.${i + 1}.dayNum"] = day.format(DateTimeFormatter.ofPattern("dd", Locale.US))
+            out["calendar.${i + 1}.clock"] = if (e.allDay) "All day" else e.start.toLocalTime().format(DateTimeFormatter.ofPattern("h:mm", Locale.US))
             out["calendar.${i + 1}.day"] = if (first) out["calendar.${i + 1}.date"]!! else ""
             out["calendar.${i + 1}.heading"] = if (!first) "" else {
                 val name = day.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US))

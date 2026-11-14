@@ -50,6 +50,8 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxHeight
+import androidx.glance.layout.width
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
@@ -146,6 +148,8 @@ class AiWidget : GlanceAppWidget() {
             theme.frosted -> Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
             // Tonal: [backdropLight] is the phone's light mode.
             theme == WidgetTheme.tonal -> Styler(theme, { slot, dark -> tonalTone(context, slot, dark) }, backdropLight)
+            // Studio: [backdropLight] is the phone's light mode; its colors are its own.
+            theme == WidgetTheme.studio -> Styler(theme, { slot, dark -> Baseline.color(slot, dark) }, backdropLight)
             theme == WidgetTheme.outline || theme == WidgetTheme.timeOfDay -> Styler(theme, { slot, dark -> Baseline.color(slot, dark) }, backdropLight)
             else -> Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) })
         }
@@ -496,9 +500,13 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
         is TextNode -> {
             val (role, color) = textColor(node, tokens)
             // Highlighted (today in a calendar): a small block in the text's color, the text cut out of it.
-            val marked = if (node.highlight) {
-                modifier.background(paint(role, color)).cornerRadius((6 * paint.k).dp).padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
-            } else modifier
+            val marked = when {
+                node.highlight -> modifier.background(paint(role, color)).cornerRadius((6 * paint.k).dp).padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
+                // A pill behind the text in the theme's container color.
+                node.chip -> modifier.background(paint(Role.Container, "#262FA7B8")).cornerRadius((node.size * paint.k).dp)
+                    .padding(horizontal = (9 * paint.k).dp, vertical = (4 * paint.k).dp)
+                else -> modifier
+            }
             // A line too wide for its room: the home screen shrinks it to fit, measuring it itself.
             if (node.autoFit && !node.highlight) {
                 AndroidRemoteViews(
@@ -548,7 +556,30 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 )
             }
         }
-        is ProgressNode -> if (node.pill) {
+        is ProgressNode -> if (node.segments > 0) {
+            // A level meter: blocks that fill up with the value (bottom to top when vertical).
+            val filled = Math.round(tokens.progress(node.value) * node.segments)
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            val off = paint(Role.Track, node.trackColor)
+            val gap = (1.5f * paint.k).dp
+            if (node.vertical) {
+                Column(modifier.width((node.height * 0.4f * paint.k).dp).height((node.height * paint.k).dp)) {
+                    for (i in 0 until node.segments) {
+                        Box(GlanceModifier.defaultWeight().fillMaxWidth().padding(vertical = gap)) {
+                            Box(GlanceModifier.fillMaxSize().background(if (i >= node.segments - filled) on else off).cornerRadius((3 * paint.k).dp)) {}
+                        }
+                    }
+                }
+            } else {
+                Row(modifier.fillMaxWidth().height((node.height * paint.k).dp)) {
+                    for (i in 0 until node.segments) {
+                        Box(GlanceModifier.defaultWeight().fillMaxHeight().padding(horizontal = gap)) {
+                            Box(GlanceModifier.fillMaxSize().background(if (i < filled) on else off).cornerRadius((3 * paint.k).dp)) {}
+                        }
+                    }
+                }
+            }
+        } else if (node.pill) {
             // One UI's battery pill: the bar fills a fully rounded pill, with an icon and the value inside it.
             val h = (node.height * paint.k).dp
             Box(modifier.fillMaxWidth().height(h).cornerRadius(h / 2), contentAlignment = Alignment.CenterStart) {
@@ -583,8 +614,12 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
         is ChartNode -> {
             val density = context.resources.displayMetrics.density
             val values = ChartArt.parse(tokens.fill(node.series))
+            val w = (fit.width * density).toInt(); val h = (node.height * paint.k * density).toInt()
             Image(
-                provider = ImageProvider(ChartArt.line(values, (fit.width * density).toInt(), (node.height * paint.k * density).toInt(), 2.2f * density, node.min, node.max)),
+                provider = ImageProvider(
+                    if (node.style == "ticks") ChartArt.ticks(values, w, h, 2.4f * density, min = node.min, max = node.max)
+                    else ChartArt.line(values, w, h, 2.2f * density, node.min, node.max),
+                ),
                 contentDescription = null,
                 modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
                 contentScale = ContentScale.FillBounds,
@@ -638,6 +673,23 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.ScaleNode -> {
+            // A tick ruler, with the value's tick over it in the accent color.
+            val density = context.resources.displayMetrics.density
+            val (wDp, hDp) = if (node.vertical) 30f * paint.k to (if (node.grow || node.length <= 0) fit.inner * 0.8f else node.length.toFloat()) * paint.k
+            else fit.width.toFloat() to 22f * paint.k
+            val sized = if (node.vertical) {
+                if (node.grow || node.length <= 0) modifier.width(wDp.dp).fillMaxHeight() else modifier.size(wDp.dp, hDp.dp)
+            } else modifier.fillMaxWidth().height(hDp.dp)
+            val f = node.fraction(tokens)
+            fun art(marker: Boolean) = ChartArt.scale((wDp * density).toInt(), (hDp * density).toInt(), node.ticks, node.vertical, density, marker, f)
+            Box(sized) {
+                Image(provider = ImageProvider(art(false)), contentDescription = null, modifier = GlanceModifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(paint(Role.Text, node.tickColor)))
+                if (f != null) Image(provider = ImageProvider(art(true)), contentDescription = null, modifier = GlanceModifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(paint(Role.Accent, node.color)))
+            }
+        }
         is com.sidequest.widgetmaker.spec.AppIconNode -> {
             val icon = AppIcons.bitmap(context, node.packageName, (node.size * paint.k * context.resources.displayMetrics.density).toInt())
             val size = (node.size * paint.k).dp

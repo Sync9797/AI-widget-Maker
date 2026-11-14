@@ -165,8 +165,11 @@ object OneUiBackdrop {
         // 2. Blur it, see how bright it is, and frost it like One UI does.
         val pixels = IntArray(smallW * smallH)
         small.getPixels(pixels, 0, smallW, 0, 0, smallW, smallH)
-        // Liquid glass ([clear]) is barely blurred, so the wallpaper still reads through it.
-        Backdrop.blur(pixels, smallW, smallH, radius = if (clear) max(1, min(smallW, smallH) / 24) else max(2, min(smallW, smallH) / 8))
+        // Liquid glass ([clear]) is blurred nearly as much as One UI's: a widget can't tell when you swipe between
+        // home screen pages, and a sharp copy of the wallpaper visibly slides over the still wallpaper behind it,
+        // where a soft one hardly shows (why One UI's own widgets fall back to a plain blur while pages move).
+        // Its clearness comes from the lighter veil and the bright rim instead.
+        Backdrop.blur(pixels, smallW, smallH, radius = if (clear) max(2, min(smallW, smallH) / 10) else max(2, min(smallW, smallH) / 8))
         val isLight = light ?: (Backdrop.luminance(pixels) > Backdrop.LIGHT_ABOVE)
         // Matched by eye to One UI 8's own widgets over the same wallpaper: its glass keeps the wallpaper's
         // colors rich (more so in the dark), under a veil about half way to white, or half way to black.

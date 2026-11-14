@@ -466,12 +466,14 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
         is IconNode -> {
             // A weather icon as a Meteocon (in its own colors, a touch bigger: its art has room around it),
             // the current weather's animated when chosen; else the classic icon, tinted.
-            val mc = if (paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.classic) null
-            else Meteocons.nameFor(node, tokens)?.let { Meteocons.frames(context, it) }?.takeIf { it.isNotEmpty() }
+            val mcName = if (paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.classic) null else Meteocons.nameFor(node, tokens)
+            val mc = mcName?.let { Meteocons.frames(context, it) }?.takeIf { it.isNotEmpty() }
             val mcSize = (node.size * paint.k * mcScale(node.size)).dp
+            val animated = if (mcName != null && mc != null && paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.animated && Meteocons.isNow(node)) {
+                Meteocons.flipper(context, mcName)
+            } else null
             when {
-                mc != null && mc.size > 1 && paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.animated && Meteocons.isNow(node) ->
-                    AndroidRemoteViews(remoteViews = Meteocons.flipper(context, mc), modifier = modifier.size(mcSize))
+                animated != null -> AndroidRemoteViews(remoteViews = animated, modifier = modifier.size(mcSize))
                 mc != null -> Image(provider = ImageProvider(mc[0]), contentDescription = null, modifier = modifier.size(mcSize))
                 else -> Image(
                     provider = ImageProvider(iconRes(node, tokens)),

@@ -44,6 +44,11 @@ class AppShots {
         File(context.filesDir, "feeds.json").writeText(
             DesignParser.json.encodeToString(FeedSnapshot.serializer(), FeedSnapshot(StarterShots.SAMPLE, System.currentTimeMillis())),
         )
+        // Saved designs, so Active and Mine have cards to show.
+        val store = com.sidequest.widgetmaker.data.DesignStore(context)
+        com.sidequest.widgetmaker.spec.Starters.all.forEachIndexed { i, st ->
+            store.save(com.sidequest.widgetmaker.spec.SavedDesign("s$i", st.title, st.design, createdAt = i.toLong()))
+        }
         val vm = MakerViewModel(context as android.app.Application)
         compose.mainClock.autoAdvance = false
         var page by mutableStateOf(Page.Create)

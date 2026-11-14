@@ -205,6 +205,7 @@ private fun LazyStaggeredGridScope.full(key: String, content: @Composable () -> 
 
 /** Describing a widget, or the draft being made; then ideas to start from. */
 private fun LazyStaggeredGridScope.CreateItems(state: MakerState, viewModel: MakerViewModel) {
+    full("crash") { CrashCard() }
     state.update.available?.let { release ->
         full("update") { UpdateCard(release, state.update, viewModel::installUpdate, viewModel::laterUpdate) }
     }
@@ -264,7 +265,8 @@ private fun LazyStaggeredGridScope.WidgetsItems(state: MakerState, viewModel: Ma
 
 /** The widgets on your home screen, each with its actions. */
 private fun LazyStaggeredGridScope.ActiveItems(state: MakerState, viewModel: MakerViewModel, onGo: (Page) -> Unit) {
-    val active = state.saved.filter { it.id in state.placed }
+    // One card per design, even if a save went in twice (the same key twice would crash the list).
+    val active = state.saved.distinctBy { it.id }.filter { it.id in state.placed }
     if (active.isEmpty()) {
         full("empty") {
             InfoCard(
@@ -290,8 +292,9 @@ private fun LazyStaggeredGridScope.ActiveItems(state: MakerState, viewModel: Mak
 
 /** Designs you made, and saved ones that aren't on your home screen. */
 private fun LazyStaggeredGridScope.MineItems(state: MakerState, viewModel: MakerViewModel, onGo: (Page) -> Unit) {
-    val made = state.saved.filter { it.madeByYou }
-    val others = state.saved.filter { !it.madeByYou && it.id !in state.placed }
+    val saved = state.saved.distinctBy { it.id }
+    val made = saved.filter { it.madeByYou }
+    val others = saved.filter { !it.madeByYou && it.id !in state.placed }
     if (made.isEmpty() && others.isEmpty()) {
         full("empty") {
             InfoCard(
@@ -310,6 +313,32 @@ private fun LazyStaggeredGridScope.MineItems(state: MakerState, viewModel: Maker
     }
     others.forEach { saved ->
         item(key = "m_${saved.id}") { SavedItem(saved, 0, state.theme, viewModel) }
+    }
+}
+
+/** After a crash: what went wrong, to copy and send (it stays on the phone otherwise). */
+@Composable
+private fun CrashCard() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var details by androidx.compose.runtime.remember { mutableStateOf(CrashLog.last(context)) }
+    val text = details ?: return
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("The app closed unexpectedly last time", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Copy the details and send them along, and it can be fixed. Nothing was sent anywhere.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(text.lineSequence().take(3).joinToString("\n"), style = MaterialTheme.typography.bodySmall, maxLines = 3)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.Button(onClick = {
+                    val clip = context.getSystemService(android.content.ClipboardManager::class.java)
+                    clip?.setPrimaryClip(android.content.ClipData.newPlainText("AI Widget Maker crash", text))
+                    android.widget.Toast.makeText(context, "Crash details copied", android.widget.Toast.LENGTH_SHORT).show()
+                }) { Text("Copy crash details") }
+                androidx.compose.material3.TextButton(onClick = { CrashLog.clear(context); details = null }) { Text("Dismiss") }
+            }
+        }
     }
 }
 

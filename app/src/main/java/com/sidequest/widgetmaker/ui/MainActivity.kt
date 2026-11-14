@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        CrashLog.install(this)
         FeedWorker.schedule(this)
         openFrom(intent)
         // Settings → Updates: look for a newer build each time the app opens.

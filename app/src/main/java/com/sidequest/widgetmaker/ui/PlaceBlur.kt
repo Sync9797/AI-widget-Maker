@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -69,7 +71,8 @@ fun PlaceBlurDialog(appWidgetId: Int, onSaved: () -> Unit, onDismiss: () -> Unit
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Clear of the status and navigation bars, so Save and Cancel are never under them.
+            Column(Modifier.systemBarsPadding().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Place the blur", style = MaterialTheme.typography.titleLarge)
                 Text(
                     "Drag the outline to where this widget sits on your home screen, then Save. Its blur then shows " +
@@ -91,7 +94,10 @@ fun PlaceBlurDialog(appWidgetId: Int, onSaved: () -> Unit, onDismiss: () -> Unit
                         val k = minOf(fitW / sw, fitH / sh)
                         val boxW = with(density) { (sw * k).toDp() }
                         val boxH = with(density) { (sh * k).toDp() }
-                        Box(Modifier.size(boxW, boxH).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
+                        Box(
+                            Modifier.size(boxW, boxH).clip(RoundedCornerShape(20.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp)),
+                        ) {
                             Image(picture.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
                             Box(
                                 Modifier

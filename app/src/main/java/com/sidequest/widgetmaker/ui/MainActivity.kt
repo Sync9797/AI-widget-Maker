@@ -90,10 +90,14 @@ class MainActivity : ComponentActivity() {
     private fun openFrom(intent: Intent?) {
         intent?.getStringExtra(EXTRA_EDIT)?.let { viewModel.editById(it) }
         intent?.removeExtra(EXTRA_EDIT)
+        intent?.getIntExtra(EXTRA_ASSIGN, -1)?.takeIf { it >= 0 }?.let { viewModel.startAssign(it) }
+        intent?.removeExtra(EXTRA_ASSIGN)
     }
 
     companion object {
         const val EXTRA_EDIT = "edit_design"
+        /** A home-screen widget id: pick a design for it (from its settings' Change design). */
+        const val EXTRA_ASSIGN = "assign_widget"
     }
 
     override fun onResume() {
@@ -103,6 +107,10 @@ class MainActivity : ComponentActivity() {
         viewModel.refreshWidgets()
     }
 }
+
+/** A hairline edge on cards: a touch of light that lifts them off the background, like glass. */
+@Composable
+fun cardEdge() = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
 
 @Composable
 fun MakerTheme(content: @Composable () -> Unit) {
@@ -125,16 +133,34 @@ fun MakerTheme(content: @Composable () -> Unit) {
         surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF1E2028),
         surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFF272A33),
     )
+    // Inter (SIL Open Font License; see Settings → Credits): clean and neutral, close to Helvetica and One UI Sans.
+    val inter = androidx.compose.ui.text.font.FontFamily(
+        androidx.compose.ui.text.font.Font(com.sidequest.widgetmaker.R.font.inter_regular, FontWeight.Normal),
+        androidx.compose.ui.text.font.Font(com.sidequest.widgetmaker.R.font.inter_medium, FontWeight.Medium),
+        androidx.compose.ui.text.font.Font(com.sidequest.widgetmaker.R.font.inter_semibold, FontWeight.SemiBold),
+        androidx.compose.ui.text.font.Font(com.sidequest.widgetmaker.R.font.inter_bold, FontWeight.Bold),
+    )
     val type = androidx.compose.material3.Typography().let { t ->
+        fun androidx.compose.ui.text.TextStyle.inter() = copy(fontFamily = inter)
         t.copy(
-            headlineLarge = t.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
-            titleLarge = t.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-            titleMedium = t.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            displayLarge = t.displayLarge.inter(), displayMedium = t.displayMedium.inter(), displaySmall = t.displaySmall.inter(),
+            headlineLarge = t.headlineLarge.inter().copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp),
+            headlineMedium = t.headlineMedium.inter().copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+            headlineSmall = t.headlineSmall.inter().copy(fontWeight = FontWeight.SemiBold),
+            titleLarge = t.titleLarge.inter().copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
+            titleMedium = t.titleMedium.inter().copy(fontWeight = FontWeight.SemiBold),
+            titleSmall = t.titleSmall.inter().copy(fontWeight = FontWeight.SemiBold),
+            bodyLarge = t.bodyLarge.inter(), bodyMedium = t.bodyMedium.inter(), bodySmall = t.bodySmall.inter(),
+            labelLarge = t.labelLarge.inter().copy(fontWeight = FontWeight.SemiBold),
+            labelMedium = t.labelMedium.inter().copy(fontWeight = FontWeight.Medium),
+            labelSmall = t.labelSmall.inter().copy(fontWeight = FontWeight.Medium),
         )
     }
+    // Rounded everywhere: text fields (extraSmall), chips (small), cards and sheets alike.
     val shapes = androidx.compose.material3.Shapes(
-        small = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        medium = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        small = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+        medium = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
         large = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
         extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
     )
@@ -152,12 +178,24 @@ private val IDEAS = listOf(
     "Pastel sunset gradient vibe with a greeting and the time",
     "A battery widget with a glowing progress bar",
     "Cozy night mode: moon icon, time and day of the week",
+    "My next calendar event with a countdown to it",
+    "Steps today as a ring, with calories underneath",
+    "A frosted pill with what's playing and play/pause",
+    "Days until my next trip, big and bold",
+    "Last night's sleep with a bar of the stages",
+    "Morning card: greeting, weather and my first meeting",
+    "Hourly forecast for the next 4 hours with rain chances",
+    "Minimal date in huge serif-style numbers",
+    "Stress today as a line chart with the peak",
+    "A Side Quest card with my party and their health",
+    "Phone status: battery, storage and memory as bars",
+    "World clock: my time and Tokyo side by side",
 )
 
 @Composable
 internal fun DescribeCard(busy: Boolean, free: Boolean, onGenerate: (String) -> Unit) {
     var text by rememberSaveable { mutableStateOf("") }
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth(), border = cardEdge()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Describe a widget", style = MaterialTheme.typography.titleLarge)
             OutlinedTextField(
@@ -167,8 +205,23 @@ internal fun DescribeCard(busy: Boolean, free: Boolean, onGenerate: (String) -> 
                 minLines = 3,
                 placeholder = { Text("A dark glassy clock with today's date and my battery…") },
             )
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IDEAS.forEach { idea -> SuggestionChip(onClick = { text = idea }, label = { Text(idea) }) }
+            // Three ideas, different every time the app opens, to spark one of your own. They wrap, never cut off.
+            val ideas = remember { IDEAS.shuffled().take(3) }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ideas.forEach { idea ->
+                    androidx.compose.material3.Surface(
+                        onClick = { text = idea },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                        border = cardEdge(),
+                    ) {
+                        Text(
+                            "✦  $idea",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        )
+                    }
+                }
             }
             BusyButton(if (free) "Design in Claude (free)" else "Design it", busy = busy, enabled = text.isNotBlank()) { onGenerate(text) }
             if (free) {
@@ -196,7 +249,7 @@ internal fun DraftCard(
 ) {
     var change by remember(draft) { mutableStateOf("") }
     var size by rememberSaveable { mutableStateOf(PreviewSize.Wide) }
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth(), border = cardEdge()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(draft.design.name, style = MaterialTheme.typography.titleLarge)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -239,7 +292,7 @@ internal fun ChatCard(
     onReopen: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth(), border = cardEdge()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Finish in Claude", style = MaterialTheme.typography.titleLarge)
             val first = if (chat.openedIn == ClaudeApp.Opened.App) {
@@ -282,7 +335,7 @@ internal fun SavedCard(
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
     var choosingSize by remember { mutableStateOf(false) }
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth(), border = cardEdge()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(saved.design.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             if (count > 1) Text("On $count widgets", style = MaterialTheme.typography.bodySmall)
@@ -378,7 +431,7 @@ internal fun HealthAccessCard() {
     }
     if (missing.isEmpty()) return
     val names = missing.mapNotNull { NAMES.entries.firstOrNull { (key, _) -> it.endsWith(key) }?.value }.distinct()
-    androidx.compose.material3.Card(Modifier.fillMaxWidth()) {
+    androidx.compose.material3.Card(Modifier.fillMaxWidth(), border = cardEdge()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Allow more health data", style = MaterialTheme.typography.titleMedium)
             Text(

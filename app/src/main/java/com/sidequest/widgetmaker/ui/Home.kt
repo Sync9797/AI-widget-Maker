@@ -95,10 +95,20 @@ fun MakerScreen(viewModel: MakerViewModel, start: Page = Page.Create) {
     // Starting from a ready-made design, editing one or using one again opens it in the creator.
     val making = state.draft != null || state.chat != null
     LaunchedEffect(making) { if (making) section = Page.Create }
+    // Picking a design for a widget opens the gallery; once picked, back to the home screen.
+    LaunchedEffect(state.assignTo) { if (state.assignTo != null) section = Page.Widgets }
+    val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
+    LaunchedEffect(state.assigned) { if (state.assigned) activity?.finish() }
 
     // A Surface, so text everywhere takes the theme's color (the wide layout has no Scaffold to set it).
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    // A soft glow of the accent color from the top corner, so the background has depth rather than a flat fill.
+    val glow = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+    BoxWithConstraints(
+        Modifier.fillMaxSize().background(
+            Brush.radialGradient(listOf(glow, Color.Transparent), center = androidx.compose.ui.geometry.Offset(0f, 0f), radius = 1400f),
+        ),
+    ) {
         val wide = maxWidth >= WIDE
         val columns = if (wide) 2 else 1
         if (wide) {
@@ -194,9 +204,11 @@ private fun Sheet(section: Page, columns: Int, items: LazyStaggeredGridScope.() 
 fun SectionHeader(section: Page) {
     Text(
         section.title,
-        modifier = Modifier.padding(top = 20.dp, bottom = 6.dp, start = 4.dp),
-        style = MaterialTheme.typography.headlineLarge,
-        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 24.dp, bottom = 8.dp, start = 4.dp),
+        // The title in a gradient of the accent colors.
+        style = MaterialTheme.typography.headlineLarge.copy(
+            brush = Brush.linearGradient(listOf(MaterialTheme.colorScheme.onSurface, MaterialTheme.colorScheme.primary)),
+        ),
     )
 }
 
@@ -247,6 +259,7 @@ private fun LazyStaggeredGridScope.CreateItems(state: MakerState, viewModel: Mak
 
 /** The ready-made designs: a search, then one card per category. */
 private fun LazyStaggeredGridScope.WidgetsItems(state: MakerState, viewModel: MakerViewModel) {
+    if (state.assignTo != null) full("assign") { AssignBanner(viewModel::cancelAssign) }
     full("search") { SearchBox() }
     val query = searchQuery.value.trim()
     val groups = Starters.all
@@ -257,7 +270,9 @@ private fun LazyStaggeredGridScope.WidgetsItems(state: MakerState, viewModel: Ma
     groups.forEach { (category, starters) ->
         item(key = "cat_${category.name}") {
             CategoryCard(category.label, starters.size) {
-                PreviewGrid(starters, state.theme, title = { it.title }, about = { it.about }, design = { it.design }, onPick = viewModel::useStarter)
+                PreviewGrid(starters, state.theme, title = { it.title }, about = { it.about }, design = { it.design }) { starter ->
+                    if (state.assignTo != null) viewModel.assign(starter = starter) else viewModel.useStarter(starter)
+                }
             }
         }
     }
@@ -304,15 +319,32 @@ private fun LazyStaggeredGridScope.MineItems(state: MakerState, viewModel: Maker
             )
         }
     }
+    if (state.assignTo != null) full("assign") { AssignBanner(viewModel::cancelAssign) }
     if (made.isNotEmpty()) {
         item(key = "made") {
             CategoryCard("Made by you", made.size, hint = "Tap one to make another from it") {
-                PreviewGrid(made, state.theme, title = { it.design.name }, about = { it.prompt }, design = { it.design }, onPick = viewModel::useAgain)
+                PreviewGrid(made, state.theme, title = { it.design.name }, about = { it.prompt }, design = { it.design }) { saved ->
+                    if (state.assignTo != null) viewModel.assign(saved = saved) else viewModel.useAgain(saved)
+                }
             }
         }
     }
     others.forEach { saved ->
         item(key = "m_${saved.id}") { SavedItem(saved, 0, state.theme, viewModel) }
+    }
+}
+
+/** Shown while picking a design for a home-screen widget: tap one to give it to the widget. */
+@Composable
+private fun AssignBanner(onCancel: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+        Row(Modifier.padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Pick a design for your widget", style = MaterialTheme.typography.titleMedium)
+                Text("Tap one here or under Mine, and your widget shows it.", style = MaterialTheme.typography.bodySmall)
+            }
+            androidx.compose.material3.TextButton(onClick = onCancel) { Text("Cancel") }
+        }
     }
 }
 
@@ -387,6 +419,7 @@ private fun CategoryCard(name: String, count: Int, hint: String? = null, content
     Card(
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        border = cardEdge(),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.Top) {

@@ -70,6 +70,10 @@ data class MakerState(
     /** Designs on the home screen now, and on how many widgets each. */
     val placed: Map<String, Int> = emptyMap(),
     val update: UpdateUi = UpdateUi(),
+    /** Picking a design for this home-screen widget (from its settings): a tap on a design gives it to the widget. */
+    val assignTo: Int? = null,
+    /** The pick is done: the app closes back to the home screen. */
+    val assigned: Boolean = false,
 )
 
 /** Checking for, downloading and installing a newer build. */
@@ -244,6 +248,30 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
     fun cancelChat() = _state.update { it.copy(chat = null) }
 
     /** A ready-made design becomes the draft, to save as is or change. */
+    /** Starts picking a design for the home-screen widget [appWidgetId]. */
+    fun startAssign(appWidgetId: Int) = _state.update { it.copy(assignTo = appWidgetId, assigned = false, draft = null, chat = null) }
+
+    fun cancelAssign() = _state.update { it.copy(assignTo = null) }
+
+    /**
+     * Gives the widget being picked for a design: [saved] as it is, or a ready-made one saved first.
+     * The widget redraws, and the app closes back to the home screen.
+     */
+    fun assign(saved: SavedDesign? = null, starter: Starters.Starter? = null) {
+        val widget = _state.value.assignTo ?: return
+        val design = saved ?: starter?.let { SavedDesign(UUID.randomUUID().toString(), it.title, it.design, System.currentTimeMillis(), custom = false) } ?: return
+        val app = getApplication<Application>()
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                if (saved == null) store.save(design)
+                store.assign(widget, design.id)
+            }
+            runCatching { com.sidequest.widgetmaker.widget.updateWidget(app, widget) }
+            _state.update { it.copy(assignTo = null, assigned = true) }
+            reload()
+        }
+    }
+
     fun useStarter(starter: Starters.Starter) {
         _state.update { it.copy(draft = Draft(null, starter.title, starter.design), error = null, message = null) }
     }

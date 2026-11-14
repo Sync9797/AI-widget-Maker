@@ -707,6 +707,6 @@ private fun tapLayer(context: Context, intent: android.content.Intent): android.
 
 /**
  * How much bigger a Meteocon is drawn than a classic icon of [size] dp: their art has room around it.
- * Small ones (in forecast rows) stay as designed, so the rows keep their room.
+ * Only a touch, so the text under a big one keeps its room; small ones (in forecast rows) stay as designed.
  */
-fun mcScale(size: Int): Float = if (size >= 24) 1.3f else 1f
+fun mcScale(size: Int): Float = if (size >= 24) 1.12f else 1f

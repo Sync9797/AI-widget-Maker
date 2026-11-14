@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.sidequest.widgetmaker.ui
 
 import android.appwidget.AppWidgetManager
@@ -6,6 +8,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.horizontalScroll
@@ -62,7 +74,7 @@ class ChooseDesignActivity : ComponentActivity() {
         setContent {
             // null: follow the app's theme (Settings → Widget style).
             var own by remember { mutableStateOf(if (store.hasOwnTheme(appWidgetId)) store.themeFor(appWidgetId) else null) }
-            var picked by remember { mutableStateOf(store.designFor(appWidgetId)?.id) }
+            val picked = remember { store.designFor(appWidgetId) }
             var shape by remember { mutableStateOf(store.shapeFor(appWidgetId)) }
             val theme = own ?: store.theme
 
@@ -78,9 +90,7 @@ class ChooseDesignActivity : ComponentActivity() {
                 refreshing = false
                 refreshNote = when {
                     snapshot == null -> "Couldn't refresh. Check your internet connection."
-                    snapshot.errors.isNotEmpty() ->
-                        "Updated ${snapshot.values["updated"].orEmpty()}, but: " +
-                            snapshot.errors.entries.joinToString("; ") { (k, v) -> "$k: $v" }
+                    snapshot.errors.isNotEmpty() -> "Updated ${snapshot.values["updated"].orEmpty()}, with some sources missing"
                     else -> "Updated ${snapshot.values["updated"].orEmpty()}"
                 }
             }
@@ -90,149 +100,168 @@ class ChooseDesignActivity : ComponentActivity() {
                 if (finishAfter) finish()
             }
 
+            /** Opens the app to pick another design for this widget (from the gallery or yours). */
+            fun pickAnother() {
+                startActivity(
+                    Intent(this@ChooseDesignActivity, MainActivity::class.java)
+                        .putExtra(MainActivity.EXTRA_ASSIGN, appWidgetId)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                )
+                finish()
+            }
+
             MakerTheme {
-                Surface {
-                    Column(
-                        Modifier.verticalScroll(rememberScrollState()).padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                // A sheet at the bottom of the screen, short enough that the home screen (and the widget on it)
+                // stays in view above; tapping above it closes it.
+                Box(Modifier.fillMaxSize()) {
+                    Box(
+                        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0x66000000))
+                            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { apply(finishAfter = true) },
+                    )
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().widthIn(max = 640.dp)
+                            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.62f).dp),
+                        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        tonalElevation = 6.dp,
                     ) {
-                        Text("Widget settings", style = MaterialTheme.typography.titleLarge)
-
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedButton(onClick = { refresh() }, enabled = !refreshing) {
-                                if (refreshing) {
-                                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                                    Spacer(Modifier.size(8.dp))
+                        Column(
+                            Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            // The grab handle.
+                            Box(
+                                Modifier.align(Alignment.CenterHorizontally).size(width = 40.dp, height = 4.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)),
+                            )
+                            // The widget being edited, live: style and shape changes show here at once.
+                            if (picked != null) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    DesignPreview(picked.design, previewSize(appWidgetId), theme, Modifier.weight(1f, fill = false), shape = shape)
                                 }
-                                Text("Refresh now")
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(picked.design.name, style = MaterialTheme.typography.titleLarge)
+                                        Text(refreshNote, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    androidx.compose.material3.IconButton(onClick = { refresh() }, enabled = !refreshing) {
+                                        if (refreshing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                        else androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Refresh, contentDescription = "Refresh now")
+                                    }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = ::pickAnother, modifier = Modifier.weight(1f)) { Text("Change design") }
+                                    OutlinedButton(onClick = {
+                                        startActivity(
+                                            Intent(this@ChooseDesignActivity, MainActivity::class.java)
+                                                .putExtra(MainActivity.EXTRA_EDIT, picked.id)
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                                        )
+                                        finish()
+                                    }, modifier = Modifier.weight(1f)) { Text("Edit it") }
+                                }
+                            } else {
+                                Text("Pick a design for this widget", style = MaterialTheme.typography.titleLarge)
+                                Button(onClick = ::pickAnother, modifier = Modifier.fillMaxWidth()) { Text(if (designs.isEmpty()) "Open AI Widget Maker" else "Choose a design") }
                             }
-                            Text(refreshNote, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                        }
 
-                        // Change the design this widget shows, in the app: describe the change, preview, save.
-                        picked?.let { id ->
-                            Button(onClick = {
-                                startActivity(
-                                    Intent(this@ChooseDesignActivity, MainActivity::class.java)
-                                        .putExtra(MainActivity.EXTRA_EDIT, id)
-                                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-                                )
-                                finish()
-                            }, modifier = Modifier.fillMaxWidth()) { Text("Change this design…") }
-                        }
-
-                        Text("Style", style = MaterialTheme.typography.titleMedium)
-                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(own == null, {
-                                own = null
-                                store.setThemeFor(appWidgetId, null)
-                                apply()
-                            }, { Text("App default (${store.theme.label})") })
-                            // Ambient (album art) only for widgets that show music.
-                            val music = picked?.let { id -> designs.firstOrNull { it.id == id } }?.design?.let(WidgetTheme::playsMusic) == true
-                            (if (music) WidgetTheme.entries else WidgetTheme.everywhere).forEach { t ->
-                                FilterChip(own == t, {
-                                    own = t
-                                    store.setThemeFor(appWidgetId, t)
+                            SheetLabel("Style")
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                FilterChip(own == null, {
+                                    own = null
+                                    store.setThemeFor(appWidgetId, null)
                                     apply()
-                                }, { Text(t.label) })
-                            }
-                        }
-
-                        // One UI and Ambient blur the wallpaper behind the widget: say whether this one knows where it is.
-                        if (theme.frosted) {
-                            val known = store.knowsPlace(appWidgetId, com.sidequest.widgetmaker.widget.OneUiBackdrop.screenKey(this@ChooseDesignActivity))
-                            Text(
-                                if (known) {
-                                    "Blur lined up with your wallpaper on this screen. Moved the widget? Tap Line up blur again, then tap the widget."
-                                } else {
-                                    "Blur not lined up yet on this screen: tap the widget once, anywhere on it, and it learns where it sits. " +
-                                        "If your home screen doesn't say (the line below tells), use Place blur by hand. " +
-                                        "(On a foldable, do this once on each screen.)"
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                            Text(
-                                com.sidequest.widgetmaker.widget.OneUiBackdrop.source(this@ChooseDesignActivity).description + ".",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                store.lastTap(appWidgetId) ?: "No tap on this widget's background yet.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            // Home screens that don't say where a widget is (Samsung's) can still be lined up by hand.
-                            var placing by remember { mutableStateOf(false) }
-                            OutlinedButton(onClick = { placing = true }) { Text("Place blur by hand") }
-                            if (placing) {
-                                com.sidequest.widgetmaker.ui.PlaceBlurDialog(
-                                    appWidgetId,
-                                    onSaved = {
-                                        placing = false
-                                        android.widget.Toast.makeText(this@ChooseDesignActivity, "Blur placed.", android.widget.Toast.LENGTH_SHORT).show()
+                                }, { Text("App default (${store.theme.label})") })
+                                // Ambient (album art) only for widgets that show music.
+                                val music = picked?.design?.let(WidgetTheme::playsMusic) == true
+                                (if (music) WidgetTheme.entries else WidgetTheme.everywhere).forEach { t ->
+                                    FilterChip(own == t, {
+                                        own = t
+                                        store.setThemeFor(appWidgetId, t)
                                         apply()
-                                    },
-                                    onDismiss = { placing = false },
-                                )
+                                    }, { Text(t.label) })
+                                }
                             }
-                            // Moved it? Forget where it was, so the next tap anywhere on it lines the blur up again.
-                            if (known) {
-                                TextButton(onClick = {
-                                    store.forgetPlace(appWidgetId)
-                                    android.widget.Toast.makeText(this@ChooseDesignActivity, "Now tap the widget once, anywhere on it, to line up its blur.", android.widget.Toast.LENGTH_LONG).show()
-                                    apply(finishAfter = true)
-                                }) { Text("Line up blur again") }
-                            }
-                        }
 
-                        Text("Shape", style = MaterialTheme.typography.titleMedium)
-                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(shape == null, {
-                                shape = null
-                                store.setShapeFor(appWidgetId, null)
-                                apply()
-                            }, { Text("Design's") })
-                            WidgetShape.entries.forEach { s ->
-                                FilterChip(shape == s, {
-                                    shape = s
-                                    store.setShapeFor(appWidgetId, s)
+                            SheetLabel("Shape")
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                FilterChip(shape == null, {
+                                    shape = null
+                                    store.setShapeFor(appWidgetId, null)
                                     apply()
-                                }, { Text(s.label) })
+                                }, { Text("Design's") })
+                                WidgetShape.entries.forEach { sh ->
+                                    FilterChip(shape == sh, {
+                                        shape = sh
+                                        store.setShapeFor(appWidgetId, sh)
+                                        apply()
+                                    }, { Text(sh.label) })
+                                }
                             }
-                        }
 
-                        Text("Design", style = MaterialTheme.typography.titleMedium)
-                        if (designs.isEmpty()) {
-                            Text("You haven't saved one yet. Make one in the app (or pick a ready-made one) and it will show up here.")
-                            Button(onClick = {
-                                startActivity(Intent(this@ChooseDesignActivity, MainActivity::class.java))
-                                finish()
-                            }) { Text("Open AI Widget Maker") }
-                        }
-                        designs.forEach { saved ->
-                            Column(
-                                Modifier.clickable {
-                                    picked = saved.id
-                                    store.assign(appWidgetId, saved.id)
-                                    apply()
-                                },
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                            ) {
+                            // One UI and Ambient blur the wallpaper behind the widget: where it sits decides what shows.
+                            if (theme.frosted) {
+                                SheetLabel("Blur")
+                                val known = store.knowsPlace(appWidgetId, com.sidequest.widgetmaker.widget.OneUiBackdrop.screenKey(this@ChooseDesignActivity))
                                 Text(
-                                    (if (saved.id == picked) "✓ " else "") + saved.design.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = if (saved.id == picked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    if (known) "Lined up with your wallpaper on this screen."
+                                    else "Not lined up yet: tap the widget once, or place it by hand.",
+                                    style = MaterialTheme.typography.bodyMedium,
                                 )
-                                DesignPreview(saved.design, PreviewSize.Square, theme, shape = shape)
+                                Text(
+                                    com.sidequest.widgetmaker.widget.OneUiBackdrop.source(this@ChooseDesignActivity).description + ". " +
+                                        (store.lastTap(appWidgetId) ?: "No tap on this widget yet."),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                var placing by remember { mutableStateOf(false) }
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(onClick = { placing = true }) { Text("Place by hand") }
+                                    if (known) TextButton(onClick = {
+                                        store.forgetPlace(appWidgetId)
+                                        android.widget.Toast.makeText(this@ChooseDesignActivity, "Now tap the widget once, anywhere on it, to line up its blur.", android.widget.Toast.LENGTH_LONG).show()
+                                        apply(finishAfter = true)
+                                    }) { Text("Line up again") }
+                                }
+                                if (placing) {
+                                    PlaceBlurDialog(
+                                        appWidgetId,
+                                        onSaved = {
+                                            placing = false
+                                            android.widget.Toast.makeText(this@ChooseDesignActivity, "Blur placed.", android.widget.Toast.LENGTH_SHORT).show()
+                                            apply()
+                                        },
+                                        onDismiss = { placing = false },
+                                    )
+                                }
                             }
+
+                            Button(onClick = { apply(finishAfter = true) }, modifier = Modifier.fillMaxWidth()) { Text("Done") }
                         }
-                        Button(onClick = { apply(finishAfter = true) }, modifier = Modifier.fillMaxWidth()) { Text("Done") }
                     }
                 }
             }
         }
     }
+
+    /** The preview size closest to the widget's cell, so the sheet shows it as it sits. */
+    private fun previewSize(appWidgetId: Int): PreviewSize {
+        val options = AppWidgetManager.getInstance(this).getAppWidgetOptions(appWidgetId)
+        val w = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).takeIf { it > 0 } ?: 160
+        val h = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT).takeIf { it > 0 } ?: 160
+        val wide = w >= 250
+        return when {
+            h <= 130 -> if (wide) PreviewSize.Strip else PreviewSize.Small
+            h >= 260 -> if (wide) PreviewSize.Large else PreviewSize.Tall
+            else -> if (wide) PreviewSize.Wide else PreviewSize.Square
+        }
+    }
+}
+
+/** A small heading in the widget settings sheet. */
+@androidx.compose.runtime.Composable
+private fun SheetLabel(text: String) {
+    Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
 }
 
 /** "Last updated 3:12 PM", from the saved data, or a hint if nothing has been fetched yet. */

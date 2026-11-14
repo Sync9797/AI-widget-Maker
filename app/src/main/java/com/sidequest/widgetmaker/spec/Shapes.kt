@@ -61,17 +61,42 @@ data class Look(
      * at the top and fades toward the bottom, like polished glass, instead of a flat even outline.
      */
     val premium: Boolean = true,
-    /** How weather icons look: the classic flat ones, Meteocons, or Meteocons with the current weather animated. */
-    val weatherIcons: WeatherIcons = WeatherIcons.animated,
+    /** How weather icons look: the classic flat ones, Meteocons, or Meteocons with the current weather animated (always, or now and then). */
+    val weatherIcons: WeatherIcons = WeatherIcons.calm,
     /** Weather widgets take the weather's color (sky blue, golden hour, rain, snow, clouds); at night they keep their look. */
     val weatherMoods: Boolean = true,
+    /** Whether the frosted glass (One UI, Ambient) is light or dark: like the phone's dark mode, by default. */
+    val glassTone: GlassTone = GlassTone.phone,
 )
+
+/** The frosted glass's tone (Settings → Widget look). */
+enum class GlassTone(val label: String, val about: String) {
+    phone("Match the phone", "Light glass in light mode, dark glass in dark mode, like Samsung's own widgets."),
+    wallpaper("Match the wallpaper", "Light glass over a light wallpaper, dark over a dark one."),
+    light("Always light", "Light glass with dark text."),
+    dark("Always dark", "Dark glass with light text."),
+    ;
+
+    /** Light glass or dark; null when it goes by the wallpaper's brightness. */
+    fun light(phoneDark: Boolean): Boolean? = when (this) {
+        phone -> !phoneDark
+        wallpaper -> null
+        light -> true
+        dark -> false
+    }
+}
 
 /** The weather icons' style (Settings → Widget look). Meteocons are by Bas Milius, MIT licensed. */
 enum class WeatherIcons(val label: String) {
     classic("Classic"),
     meteocons("Meteocons"),
-    animated("Animated Meteocons"),
+    animated("Always animated"),
+    /** Animated, but only now and then: it plays for a few seconds, then rests. */
+    calm("Animated now and then"),
+    ;
+
+    /** Whether the current weather's icon moves at all. */
+    val moves get() = this == animated || this == calm
 }
 
 /** How a widget grows when it's bigger than a standard 2×2 (an open foldable, a tablet, a 4×4). */

@@ -34,9 +34,29 @@ class MeteoconsTest {
             val count = frames.listFiles()!!.count { Regex("mc_${name}_\\d\\d\\.webp").matches(it.name) }
             assertEquals("frames in mc_anim_$name", count, Regex("@drawable/mc_${name}_\\d\\d").findAll(layout.readText()).count())
         }
+        // "Now and then": four rests on the first frame, then the animation last (the widget starts on it).
+        for (code in codes) for (day in listOf(true, false)) {
+            val name = FeedParsers.meteocon(code, day)
+            val calm = File("src/main/res/layout/mc_calm_$name.xml").readText()
+            assertEquals("rests in mc_calm_$name", Meteocons.CALM_STILLS, Regex("@drawable/mc_${name}_00\"").findAll(calm).count())
+            assertTrue("mc_calm_$name plays its animation last", calm.trimEnd().removeSuffix("</ViewFlipper>").trimEnd().endsWith("<include layout=\"@layout/mc_anim_$name\" />"))
+            assertTrue(calm.contains("android:flipInterval=\"${Meteocons.CALM_PLAY_MS}\""))
+        }
         assertEquals("clear_night", FeedParsers.meteocon(0, false))
         assertEquals("partly_cloudy_day_rain", FeedParsers.meteocon(80, true))
         assertEquals("thunderstorms_hail", FeedParsers.meteocon(99, false))
+    }
+
+    @Test
+    fun glassToneFollowsThePhoneByDefault() {
+        val look = com.sidequest.widgetmaker.spec.Look()
+        assertEquals(com.sidequest.widgetmaker.spec.GlassTone.phone, look.glassTone)
+        assertEquals(false, look.glassTone.light(phoneDark = true))
+        assertEquals(true, look.glassTone.light(phoneDark = false))
+        assertNull(com.sidequest.widgetmaker.spec.GlassTone.wallpaper.light(phoneDark = true))
+        assertEquals(true, com.sidequest.widgetmaker.spec.GlassTone.light.light(phoneDark = true))
+        assertEquals(false, com.sidequest.widgetmaker.spec.GlassTone.dark.light(phoneDark = false))
+        assertEquals(com.sidequest.widgetmaker.spec.WeatherIcons.calm, look.weatherIcons)
     }
 
     @Test

@@ -121,7 +121,7 @@ object OneUiBackdrop {
      * [onScreen] (its place on the home screen, once known; otherwise the
      * middle is assumed), [outW]×[outH] pixels, not yet cut to shape.
      */
-    fun render(context: Context, widthPx: Int, heightPx: Int, onScreen: Backdrop.Box?, outW: Int, outH: Int): Result {
+    fun render(context: Context, widthPx: Int, heightPx: Int, onScreen: Backdrop.Box?, outW: Int, outH: Int, light: Boolean? = null): Result {
         val (sw, sh) = screenSize(context)
         val w = max(8, widthPx)
         val h = max(8, heightPx)
@@ -136,14 +136,14 @@ object OneUiBackdrop {
             Bitmap.createScaledBitmap(crop, smallW, smallH, true)
         } ?: colorsBitmap(context, smallW, smallH, place, sw, sh)
 
-        return frost(small, outW, outH)
+        return frost(small, outW, outH, light = light)
     }
 
     /**
      * Ambient (music widgets): the album art, cut to the panel's shape like a
      * cover filling it, blurred and frosted the same way.
      */
-    fun renderArt(art: Bitmap, widthPx: Int, heightPx: Int, outW: Int, outH: Int): Result {
+    fun renderArt(art: Bitmap, widthPx: Int, heightPx: Int, outW: Int, outH: Int, light: Boolean? = null): Result {
         val w = max(8, widthPx)
         val h = max(8, heightPx)
         // Crop the middle of the art to the panel's shape, then shrink it (small blurs smoothly).
@@ -152,29 +152,33 @@ object OneUiBackdrop {
         val cropH = (h / scale).roundToInt().coerceIn(1, art.height)
         val crop = Bitmap.createBitmap(art, (art.width - cropW) / 2, (art.height - cropH) / 2, cropW, cropH)
         val small = Bitmap.createScaledBitmap(crop, max(8, w / 10), max(8, h / 10), true)
-        return frost(small, outW, outH, saturation = 1.35)
+        return frost(small, outW, outH, saturation = 1.45, light = light)
     }
 
-    /** Blurs [small], sees how bright it is, frosts it like One UI, and scales it up with a soft highlight. */
-    private fun frost(small: Bitmap, outW: Int, outH: Int, saturation: Double = 1.2): Result {
+    /**
+     * Blurs [small], frosts it like One UI, and scales it up with the faintest highlight. [light]: light glass
+     * or dark (like the phone's light or dark mode); null to go by how bright the wallpaper is.
+     */
+    private fun frost(small: Bitmap, outW: Int, outH: Int, saturation: Double = 1.35, light: Boolean? = null): Result {
         val smallW = small.width
         val smallH = small.height
         // 2. Blur it, see how bright it is, and frost it like One UI does.
         val pixels = IntArray(smallW * smallH)
         small.getPixels(pixels, 0, smallW, 0, 0, smallW, smallH)
         Backdrop.blur(pixels, smallW, smallH, radius = max(2, min(smallW, smallH) / 8))
-        Backdrop.saturate(pixels, saturation)
-        val light = Backdrop.luminance(pixels) > Backdrop.LIGHT_ABOVE
-        // A light veil, so the wallpaper's colors still show through (One UI's blur is see-through, not gray).
-        if (light) Backdrop.tint(pixels, 0xF6F6F8, 96) else Backdrop.tint(pixels, 0x1A1A1E, 64)
+        val isLight = light ?: (Backdrop.luminance(pixels) > Backdrop.LIGHT_ABOVE)
+        // Matched by eye to One UI 8's own widgets over the same wallpaper: its glass keeps the wallpaper's
+        // colors rich (more so in the dark), under a veil about half way to white, or half way to black.
+        Backdrop.saturate(pixels, if (isLight) saturation else saturation + 0.25)
+        if (isLight) Backdrop.tint(pixels, 0xF7F5F3, 120) else Backdrop.tint(pixels, 0x121212, 132)
         val frosted = Bitmap.createBitmap(pixels, smallW, smallH, Bitmap.Config.ARGB_8888)
 
-        // 3. Scale up smoothly, with a faint top highlight like light catching glass.
+        // 3. Scale up smoothly, with the faintest top highlight (One UI's glass has next to none).
         val out = Bitmap.createScaledBitmap(frosted, max(8, outW), max(8, outH), true).copy(Bitmap.Config.ARGB_8888, true)
         Canvas(out).drawRect(0f, 0f, out.width.toFloat(), out.height.toFloat(), Paint().apply {
-            shader = LinearGradient(0f, 0f, 0f, out.height * 0.45f, 0x1FFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP)
+            shader = LinearGradient(0f, 0f, 0f, out.height * 0.45f, 0x0AFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP)
         })
-        return Result(out, light)
+        return Result(out, isLight)
     }
 
     /** A soft gradient in the wallpaper's own colors, for when the picture itself can't be read. */

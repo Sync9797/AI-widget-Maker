@@ -54,9 +54,25 @@ object Meteocons {
     /** Whether this element shows the current weather (the one that animates, to spare the battery). */
     fun isNow(node: IconNode) = node.live?.trim()?.let { it == "{weather.icon}" } ?: (node.name == IconName.weather)
 
-    /** The Meteocon [name] stepping through its frames by itself, as a widget can animate; null if it has no animation. */
-    fun flipper(context: Context, name: String): RemoteViews? {
-        val layout = context.resources.getIdentifier("mc_anim_$name", "layout", context.packageName)
-        return if (layout == 0) null else RemoteViews(context.packageName, layout)
+    /** Now and then: plays this long ([CALM_STILLS] rests of the same length follow; see res/layout/mc_calm_*.xml). */
+    const val CALM_PLAY_MS = 6000
+
+    /** How many [CALM_PLAY_MS] spells it rests between plays. */
+    const val CALM_STILLS = 4
+
+    /**
+     * The Meteocon [name] stepping through its frames by itself, as a widget can animate; null if it has no
+     * animation. [calm]: only now and then, playing for 6 seconds then resting for 24 (and it starts playing
+     * each time the widget redraws). A widget can't tell when the home screen comes into view, but Android
+     * already stops the animation while the screen is off or the widget is out of sight.
+     */
+    fun flipper(context: Context, name: String, calm: Boolean = false): RemoteViews? {
+        val kind = if (calm) "mc_calm_" else "mc_anim_"
+        val layout = context.resources.getIdentifier(kind + name, "layout", context.packageName)
+        if (layout == 0) return null
+        return RemoteViews(context.packageName, layout).apply {
+            // Start on the animation (the last child), so it plays first and then rests.
+            if (calm) setDisplayedChild(R.id.mc_calm, CALM_STILLS)
+        }
     }
 }

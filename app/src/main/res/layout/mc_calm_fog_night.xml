@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated: the animated Meteocon "fog_night" (Bas Milius, MIT) now and then: it plays for 6 seconds, then rests
+     on its first frame for 24, so it isn't always moving. The widget shows the animation (the last child) first.
+     Only the outgoing view fades: the rests are the same frame, so stepping from one to the next shows nothing,
+     and the animation fades out over the rest rather than stopping dead. -->
+<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mc_calm"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:autoStart="true"
+    android:flipInterval="6000"
+    android:outAnimation="@android:anim/fade_out"
+    android:importantForAccessibility="no">
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/mc_fog_night_00" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/mc_fog_night_00" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/mc_fog_night_00" />
+    <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/mc_fog_night_00" />
+    <include layout="@layout/mc_anim_fog_night" />
+</ViewFlipper>

@@ -32,6 +32,8 @@ class FitterTest {
         val size = (fitted.children[0] as TextNode).size
         assertTrue("shrunk from 44 to $size", size < 44)
         assertTrue(size >= (44 * Fitter.MIN_TEXT).toInt())
+        // And the home screen shrinks it further if it must, so it's never cut short.
+        assertTrue((fitted.children[0] as TextNode).autoFit)
         // Text that fits keeps its size.
         val short = Fitter.fit(ColumnNode(children = listOf(TextNode("$1", size = 44, maxLines = 1))), 130f, 200f, 1f, tokens, shows = { true }).root as ColumnNode
         assertEquals(44, (short.children[0] as TextNode).size)

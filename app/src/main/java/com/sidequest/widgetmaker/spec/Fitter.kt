@@ -162,7 +162,8 @@ object Fitter {
             val w = width(text, k)
             if (w <= avail + 0.5f || w <= 0f) return text
             val size = max(ceil(text.size * MIN_TEXT).toInt(), (text.size * avail / w).toInt())
-            return if (size < text.size) text.copy(size = size) else text
+            // One line: the home screen also shrinks it to fit itself, as its measure is the real one.
+            return text.copy(size = min(size, text.size), autoFit = text.maxLines == 1 || !tokens.fill(text.text).trim().contains(' '))
         }
 
         fun rows(node: Node, avail: Float, k: Float): Node = when (node) {
@@ -190,7 +191,7 @@ object Fitter {
                 }
                 for ((i, _) in texts()) {
                     if (fixedWidth() <= inner + 0.5f) break
-                    children = children.toMutableList().also { it[i] = (it[i] as TextNode).copy(grow = true, maxLines = 1) }
+                    children = children.toMutableList().also { it[i] = (it[i] as TextNode).copy(grow = true, maxLines = 1, autoFit = true) }
                 }
                 val fitted = node.copy(children = children)
                 val widths = shares(fitted, inner, k)

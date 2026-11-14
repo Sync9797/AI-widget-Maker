@@ -164,6 +164,11 @@ data class TextNode(
     val levels: List<Level>? = null,
     /** Marked out, like today in a calendar: a small rounded block in the text's color, the text cut out of it. */
     val highlight: Boolean = false,
+    /**
+     * Set when fitting found the line too wide for its room: the home screen shrinks it to fit (from [size]
+     * down), measuring it itself, so it's never cut short.
+     */
+    val autoFit: Boolean = false,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

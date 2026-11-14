@@ -32,8 +32,8 @@ enum class WidgetTheme(val label: String) {
     /** No panel: the content on the wallpaper itself, inside a thin outline. */
     outline("Outline"),
     /**
-     * Soft studio cards: off-white (graphite in dark mode) with gentle depth, near-black text and a single teal
-     * accent for what matters, like a well-made watch face.
+     * Soft studio cards: off-white (graphite in dark mode) with gentle depth, near-black text and a single accent
+     * from the phone's color palette for what matters, like a well-made watch face.
      */
     studio("Studio"),
     ;
@@ -150,11 +150,12 @@ class Styler(
                     Role.Level -> original
                 }
             }
-            // Studio: [backdropLight] is the phone's light mode. One accent, teal; everything else ink or paper.
+            // Studio: [backdropLight] is the phone's light mode. One accent, from the phone's own palette;
+            // everything else ink or paper.
             WidgetTheme.studio -> {
                 val light = backdropLight
                 val ink = if (light) 0x15181B else 0xF2F4F5
-                val accent = if (light) 0xFF1E97A8.toInt() else 0xFF52C7D6.toInt()
+                val accent = material(MaterialSlot.Primary, !light)
                 when (role) {
                     Role.Background -> if (light) 0xFFF2F4F5.toInt() else 0xFF1D2023.toInt()
                     Role.Container -> withAlpha(accent, if (light) 0x26 else 0x33)

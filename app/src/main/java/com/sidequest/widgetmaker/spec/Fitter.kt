@@ -25,6 +25,9 @@ object Fitter {
     /** The smallest a single text gets to fit its line, as a part of its size, before it's cut short with "…". */
     const val MIN_TEXT = 0.5f
 
+    /** The smallest a text sharing a row's room gets (a title beside a time) before it ends in "…". */
+    const val MIN_SHARED = 0.85f
+
     data class Result(val root: Node, val k: Float)
 
     /**
@@ -168,6 +171,17 @@ object Fitter {
             return text.copy(size = min(size, text.size), autoFit = text.maxLines == 1 || !tokens.fill(text.text).trim().contains(' '))
         }
 
+        /**
+         * A text sharing a row's leftover room (a title beside a time or a value): only a little smaller, then
+         * cut short with "…" as usual, rather than shrinking to a size next to its neighbours.
+         */
+        fun eased(text: TextNode, avail: Float, k: Float): TextNode {
+            val w = width(text, k)
+            if (w <= avail + 0.5f || w <= 0f) return text
+            val size = max(ceil(text.size * MIN_SHARED).toInt(), (text.size * avail / w).toInt())
+            return if (size < text.size) text.copy(size = size) else text
+        }
+
         fun rows(node: Node, avail: Float, k: Float): Node = when (node) {
             is ColumnNode -> {
                 val inner = avail - 2 * node.padding * k
@@ -202,7 +216,7 @@ object Fitter {
                 fitted.copy(children = fitted.children.map { c ->
                     if (!shows(c)) c else {
                         val share = widths[w++]
-                        if (c is TextNode) shrunk(c, share, k) else rows(c, share, k)
+                        if (c is TextNode) (if (c.grow && node.children.count { shows(it) } > 1) eased(c, share, k) else shrunk(c, share, k)) else rows(c, share, k)
                     }
                 })
             }

@@ -149,7 +149,7 @@ class AiWidget : GlanceAppWidget() {
             // Tonal: [backdropLight] is the phone's light mode.
             theme == WidgetTheme.tonal -> Styler(theme, { slot, dark -> tonalTone(context, slot, dark) }, backdropLight)
             // Studio: [backdropLight] is the phone's light mode; its colors are its own.
-            theme == WidgetTheme.studio -> Styler(theme, { slot, dark -> Baseline.color(slot, dark) }, backdropLight)
+            theme == WidgetTheme.studio -> Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
             theme == WidgetTheme.outline || theme == WidgetTheme.timeOfDay -> Styler(theme, { slot, dark -> Baseline.color(slot, dark) }, backdropLight)
             else -> Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) })
         }

@@ -166,7 +166,8 @@ object Starters {
           {"type":"text","text":"${if (long) "{calendar.$n.heading}" else "{calendar.$n.day}"}","size":${if (long) 15 else 14},"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
          {"type":"row","verticalAlign":"center","tap":"{calendar.$n.link}","children":[
           $BAR,
-          {"type":"text","text":"{calendar.$n.time} ","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
+          {"type":"text","text":"{calendar.$n.time}","size":10,"color":"#FFFFFFFF","weight":"medium","maxLines":1,"chip":true},
+          {"type":"spacer","size":6},
           {"type":"text","text":"{calendar.$n}","size":13,"color":"#E6FFFFFF","maxLines":1,"grow":true}]}]}"""
 
     /** A small round "+" that starts a new event. */
@@ -220,7 +221,8 @@ object Starters {
               {"type":"icon","name":"weather","size":16,"color":"#FFFFD27A"},
               {"type":"text","text":" {weather.temp} {weather.condition}","size":13,"color":"#CCFFFFFF","maxLines":1}]},
              {"type":"spacer","size":14,"show":{"minHeight":200}},
-             {"type":"row","show":{"minHeight":200},"children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]},{"type":"column","show":{"minHeight":270},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
+             {"type":"row","show":{"minHeight":200},"children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]},
+             {"type":"chart","series":"{weather.hours.temps}","style":"ticks","height":26,"color":"#99FFFFFF","show":{"minHeight":240}},{"type":"column","show":{"minHeight":270},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
         ),
         Triple(
             "Weather forecast", "Like One UI's weather: now, rain or snow on the way (else today's high, low and feels-like) and your town at 2x2; the next hours when wider; the next 3 days when taller.",
@@ -238,12 +240,15 @@ object Starters {
                {"type":"text","text":"↑{weather.high} / ↓{weather.low} · Feels {weather.feelsLike}","size":12,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100,"ifEmpty":"{weather.event}"}},
                {"type":"row","show":{"minHeight":120},"children":[
                 {"type":"icon","name":"pin","size":12,"color":"#B3FFFFFF"},
-                {"type":"text","text":" {weather.place}","size":12,"color":"#B3FFFFFF","maxLines":1}]}]},
+                {"type":"text","text":" {weather.place}","size":12,"color":"#B3FFFFFF","maxLines":1}]},
+               {"type":"scale","value":"{weather.temp}","min":"{weather.low}","max":"{weather.high}","vertical":false,"ticks":25,"color":"#FFFFFFFF","tickColor":"#59FFFFFF","show":{"minHeight":170,"maxWidth":249}}]},
               {"type":"spacer","size":20,"show":{"minWidth":250}},
               {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
                ${hourRow(1, 0)},${hourRow(2, 0)},${hourRow(3, 140)},${hourRow(4, 140, divider = false)}]}]},
              {"type":"column","show":{"minHeight":300},"children":[
-              {"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},
+              {"type":"spacer","size":10},
+              {"type":"chart","series":"{weather.hours.temps}","style":"ticks","height":34,"color":"#B3FFFFFF"},
+              {"type":"spacer","size":8},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},
               ${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]},{"type":"column","show":{"minHeight":380},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","children":[{"type":"text","text":"Feels {weather.feelsLike}","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"Wind {weather.wind}","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"text","text":"Rain {weather.rain}","size":12,"color":"#CCFFFFFF","maxLines":1}]}]}]}}""",
         ),
         Triple(
@@ -317,91 +322,7 @@ object Starters {
               {"type":"icon","name":"bolt","size":18,"color":"#FFFFFFFF","show":{"ifSet":"{charging}"}},
               {"type":"text","text":"{battery}%","size":22,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
               {"type":"text","text":"  {charging}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minWidth":250}}]},
-             {"type":"text","text":"{battery.left}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minHeight":100,"maxHeight":219}},{"type":"column","show":{"minHeight":220},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"bolt","size":14,"color":"#FF7CF29C"},{"type":"text","text":" {battery.left}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true}]},{"type":"row","show":{"minHeight":250},"children":[{"type":"text","text":"Drain {battery.drain}","size":12,"color":"#99FFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{battery.temp}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8},{"type":"column","children":[{"type":"row","children":[{"type":"text","text":"Memory","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{phone.ram}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"progress","value":"{phone.ramPct}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":5,"levelOf":"{phone.ramPct}","levels":[{"from":0,"color":"#FF7CF29C"},{"from":70,"color":"#FFFFB74D"},{"from":90,"color":"#FFFF5C5C"}]},{"type":"spacer","size":6}]},{"type":"column","show":{"minHeight":290},"children":[{"type":"column","children":[{"type":"row","children":[{"type":"text","text":"Storage","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{phone.storage}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"progress","value":"{phone.storagePct}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":5,"levelOf":"{phone.storagePct}","levels":[{"from":0,"color":"#FF7CF29C"},{"from":70,"color":"#FFFFB74D"},{"from":90,"color":"#FFFF5C5C"}]},{"type":"spacer","size":6}]}]}]}]}}""",
-        ),
-        Triple(
-            "Weather scale", "Studio style: your town, the sky and the temperature, with a tick ruler from today's low to high marking where it is now.",
-            """{"name":"Weather scale","background":"#FFF2F4F5","cornerRadius":28,"padding":16,"root":
-            {"type":"row","verticalAlign":"center","children":[
-             {"type":"column","grow":true,"children":[
-              {"type":"text","text":"{weather.place}","size":17,"color":"#FF15181B","weight":"bold","maxLines":1},
-              {"type":"text","text":"{weather.condition}","size":12,"color":"#8C15181B","maxLines":1},
-              {"type":"spacer","grow":true},
-              {"type":"icon","name":"weather","size":30,"color":"#FFFFB020","show":{"minHeight":130}},
-              {"type":"spacer","size":4,"show":{"minHeight":130}},
-              {"type":"text","text":"{weather.temp}","size":30,"color":"#FF15181B","weight":"bold","maxLines":1},
-              {"type":"text","text":"H {weather.high}   L {weather.low}","size":11,"color":"#8C15181B","maxLines":1},
-              {"type":"text","text":"{weather.outlook}","size":11,"color":"#8C15181B","maxLines":2,"show":{"minHeight":250}}]},
-             {"type":"spacer","size":8},
-             {"type":"scale","value":"{weather.temp}","min":"{weather.low}","max":"{weather.high}","length":0,"ticks":21,"show":{"minHeight":130},"color":"#FF1E97A8","tickColor":"#5915181B"}]}}""",
-        ),
-        Triple(
-            "Hourly bars", "Studio style: now and the next 12 hours' temperatures as fine bars, like a sound meter.",
-            """{"name":"Hourly bars","background":"#FFF2F4F5","cornerRadius":28,"padding":16,"root":
-            {"type":"column","children":[
-              {"type":"text","text":"{weather.condition}","size":12,"color":"#8C15181B","maxLines":1},
-              {"type":"row","verticalAlign":"center","children":[
-               {"type":"text","text":"{weather.temp}","size":30,"color":"#FF15181B","weight":"bold","maxLines":1,"grow":true},
-               {"type":"icon","name":"weather","size":26,"color":"#FFFFB020"}]},
-              {"type":"text","text":"{weather.outlook}","size":11,"color":"#8C15181B","maxLines":2,"show":{"minHeight":250}},
-              {"type":"spacer","grow":true},
-              {"type":"row","children":[
-               {"type":"text","text":"Now","size":10,"color":"#8C15181B","grow":true},
-               {"type":"text","text":"{weather.low} – {weather.high}","size":10,"color":"#8C15181B"}]},
-              {"type":"spacer","size":4},
-              {"type":"chart","series":"{weather.hours.temps}","style":"ticks","height":64,"color":"#FF1E97A8"}]}}""",
-        ),
-        Triple(
-            "Next event", "Studio style: today's date, then your next event in a tinted card with its day and time as chips, and a + to add one.",
-            """{"name":"Next event","background":"#FFF2F4F5","cornerRadius":28,"padding":12,"root":
-            {"type":"column","children":[
-              {"type":"row","verticalAlign":"center","show":{"minHeight":130},"children":[
-               {"type":"spacer","size":4},
-               {"type":"icon","name":"calendar","size":13,"color":"#8C15181B"},
-               {"type":"clock","format":" EEEE, d MMM","size":12,"color":"#8C15181B"}]},
-              {"type":"spacer","size":8,"show":{"minHeight":130}},
-              {"type":"column","background":"#261E97A8","cornerRadius":20,"padding":12,"grow":true,"children":[
-               {"type":"row","children":[
-                {"type":"text","text":"Next","size":11,"color":"#FF1E97A8","weight":"medium","grow":true},
-                {"type":"row","background":"#FF15181B","cornerRadius":12,"padding":2,"tap":"calendar-new","children":[{"type":"text","text":" + ","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]}]},
-               {"type":"text","text":"{calendar.1}","size":14,"color":"#FF1E97A8","weight":"bold","maxLines":2,"show":{"ifSet":"{calendar.1}"}},
-               {"type":"text","text":"Nothing coming up","size":13,"color":"#8C15181B","show":{"ifEmpty":"{calendar.1}"}},
-               {"type":"spacer","grow":true},
-               {"type":"row","verticalAlign":"center","show":{"minHeight":130,"ifSet":"{calendar.1}"},"children":[
-                {"type":"text","text":"{calendar.1.date}","size":11,"color":"#8C15181B","grow":true,"maxLines":1},
-                {"type":"text","text":"{calendar.1.dayNum}","size":12,"color":"#FF1E97A8","weight":"bold","chip":true},
-                {"type":"spacer","size":4},
-                {"type":"text","text":"{calendar.1.clock}","size":12,"color":"#FF1E97A8","weight":"bold","chip":true}]}]},
-              {"type":"text","text":"Then {calendar.2} · {calendar.2.when}","size":11,"color":"#8C15181B","maxLines":1,"show":{"minHeight":250,"ifSet":"{calendar.2}"}}]}}""",
-        ),
-        Triple(
-            "Highlighted event", "Studio style: the date big, then your next event with an accent bar, when and where.",
-            """{"name":"Highlighted event","background":"#FFF2F4F5","cornerRadius":28,"padding":16,"root":
-            {"type":"column","children":[
-              {"type":"clock","format":"d MMM yyyy","size":20,"color":"#FF15181B","weight":"bold"},
-              {"type":"row","verticalAlign":"center","children":[
-               {"type":"icon","name":"calendar","size":12,"color":"#8C15181B"},
-               {"type":"text","text":" Next event","size":11,"color":"#8C15181B"}]},
-              {"type":"spacer","grow":true},
-              {"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.1}"},"children":[
-               {"type":"text","text":"▍","size":40,"color":"#FF1E97A8","levelOf":"1","levels":[{"from":0,"color":"#FF1E97A8"}],"maxLines":1},
-               {"type":"column","grow":true,"children":[
-                {"type":"text","text":"{calendar.1}","size":14,"color":"#FF15181B","weight":"bold","maxLines":1},
-                {"type":"text","text":"{calendar.1.when}","size":12,"color":"#8C15181B","maxLines":1},
-                {"type":"text","text":"{calendar.1.where}","size":12,"color":"#8C15181B","maxLines":1,"show":{"ifSet":"{calendar.1.where}"}}]}]},
-              {"type":"text","text":"Nothing coming up","size":13,"color":"#8C15181B","show":{"ifEmpty":"{calendar.1}"}},
-              {"type":"spacer","grow":true},
-              {"type":"text","text":"Then {calendar.2} · {calendar.2.when}","size":11,"color":"#8C15181B","maxLines":1,"show":{"minHeight":250,"ifSet":"{calendar.2}"}}]}}""",
-        ),
-        Triple(
-            "System levels", "Studio style: battery, storage and memory as level meters that fill up, with the numbers under them.",
-            """{"name":"System levels","background":"#FFF2F4F5","cornerRadius":28,"padding":14,"root":
-            {"type":"row","verticalAlign":"bottom","children":[
-              {"type":"column","align":"center","grow":true,"children":[{"type":"icon","name":"bolt","size":16,"color":"#8C15181B"},{"type":"spacer","size":6},{"type":"progress","value":"{battery}","segments":8,"vertical":true,"height":84,"color":"#FF1E97A8","trackColor":"#1F15181B"},{"type":"spacer","size":6},{"type":"text","text":"{battery}","size":15,"color":"#FF15181B","weight":"bold","align":"center","maxLines":1},{"type":"text","text":"Battery","size":10,"color":"#8C15181B","align":"center","maxLines":1}]},
-              {"type":"spacer","size":10},
-              {"type":"column","align":"center","grow":true,"children":[{"type":"icon","name":"phone","size":16,"color":"#8C15181B"},{"type":"spacer","size":6},{"type":"progress","value":"{phone.storagePct}","segments":8,"vertical":true,"height":84,"color":"#FF1E97A8","trackColor":"#1F15181B"},{"type":"spacer","size":6},{"type":"text","text":"{phone.storagePct}","size":15,"color":"#FF15181B","weight":"bold","align":"center","maxLines":1},{"type":"text","text":"Storage","size":10,"color":"#8C15181B","align":"center","maxLines":1}]},
-              {"type":"spacer","size":10},
-              {"type":"column","align":"center","grow":true,"children":[{"type":"icon","name":"star","size":16,"color":"#8C15181B"},{"type":"spacer","size":6},{"type":"progress","value":"{phone.ramPct}","segments":8,"vertical":true,"height":84,"color":"#FF1E97A8","trackColor":"#1F15181B"},{"type":"spacer","size":6},{"type":"text","text":"{phone.ramPct}","size":15,"color":"#FF15181B","weight":"bold","align":"center","maxLines":1},{"type":"text","text":"Memory","size":10,"color":"#8C15181B","align":"center","maxLines":1},{"type":"text","text":"{phone.ram}","size":10,"color":"#8C15181B","align":"center","maxLines":1,"show":{"minHeight":250}}]}]}}""",
+             {"type":"text","text":"{battery.left}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minHeight":100,"maxHeight":219}},{"type":"column","show":{"minHeight":220},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"bolt","size":14,"color":"#FF7CF29C"},{"type":"text","text":" {battery.left}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true}]},{"type":"row","show":{"minHeight":250},"children":[{"type":"text","text":"Drain {battery.drain}","size":12,"color":"#99FFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{battery.temp}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8},{"type":"column","children":[{"type":"row","children":[{"type":"text","text":"Memory","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{phone.ram}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"progress","value":"{phone.ramPct}","segments":10,"color":"#FF7CF29C","trackColor":"#26FFFFFF","height":6,"levelOf":"{phone.ramPct}","levels":[{"from":0,"color":"#FF7CF29C"},{"from":70,"color":"#FFFFB74D"},{"from":90,"color":"#FFFF5C5C"}]},{"type":"spacer","size":6}]},{"type":"column","show":{"minHeight":290},"children":[{"type":"column","children":[{"type":"row","children":[{"type":"text","text":"Storage","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{phone.storage}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"progress","value":"{phone.storagePct}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":5,"levelOf":"{phone.storagePct}","levels":[{"from":0,"color":"#FF7CF29C"},{"from":70,"color":"#FFFFB74D"},{"from":90,"color":"#FFFF5C5C"}]},{"type":"spacer","size":6}]}]}]}]}}""",
         ),
         Triple(
             "Month", "This month's calendar like One UI's, today marked out and days with events in blue. Two months when wide; week numbers when big.",
@@ -579,7 +500,7 @@ object Starters {
               {"type":"text","text":" /{health.stepGoal}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":200}}]},
              {"type":"text","text":"{health.stepsLeft.text}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":130}},
              {"type":"spacer","size":8,"show":{"minHeight":100}},
-             {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#40FFFFFF","height":10,"levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]},{"type":"column","show":{"minHeight":230},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","children":[{"type":"column","grow":true,"children":[{"type":"icon","name":"flame","size":14,"color":"#FFFF8A50"},{"type":"text","text":"{health.kcal}","size":14,"color":"#FFFFFFFF","maxLines":1,"weight":"bold"},{"type":"text","text":"kcal","size":11,"color":"#99FFFFFF","maxLines":1}]},{"type":"column","grow":true,"children":[{"type":"icon","name":"heart","size":14,"color":"#FFFF5C7A"},{"type":"text","text":"{health.heart}","size":14,"color":"#FFFFFFFF","maxLines":1,"weight":"bold"},{"type":"text","text":"bpm","size":11,"color":"#99FFFFFF","maxLines":1}]},{"type":"column","grow":true,"children":[{"type":"icon","name":"bolt","size":14,"color":"#FF4FA3FF"},{"type":"text","text":"{health.exercise}","size":14,"color":"#FFFFFFFF","maxLines":1,"weight":"bold"},{"type":"text","text":"active","size":11,"color":"#99FFFFFF","maxLines":1}]}]},{"type":"column","show":{"minHeight":300,"ifSet":"{health.workout}"},"children":[{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"steps","size":14,"color":"#FF4CD137"},{"type":"text","text":" {health.workout} · {health.workout.duration}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{health.workout.when}","size":12,"color":"#99FFFFFF","maxLines":1}]}]}]}]}}""",
+             {"type":"progress","value":"{health.stepsPct}","segments":10,"color":"#FF4CD137","trackColor":"#40FFFFFF","height":10,"levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]},{"type":"column","show":{"minHeight":230},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","children":[{"type":"column","grow":true,"children":[{"type":"icon","name":"flame","size":14,"color":"#FFFF8A50"},{"type":"text","text":"{health.kcal}","size":14,"color":"#FFFFFFFF","maxLines":1,"weight":"bold"},{"type":"text","text":"kcal","size":11,"color":"#99FFFFFF","maxLines":1}]},{"type":"column","grow":true,"children":[{"type":"icon","name":"heart","size":14,"color":"#FFFF5C7A"},{"type":"text","text":"{health.heart}","size":14,"color":"#FFFFFFFF","maxLines":1,"weight":"bold"},{"type":"text","text":"bpm","size":11,"color":"#99FFFFFF","maxLines":1}]},{"type":"column","grow":true,"children":[{"type":"icon","name":"bolt","size":14,"color":"#FF4FA3FF"},{"type":"text","text":"{health.exercise}","size":14,"color":"#FFFFFFFF","maxLines":1,"weight":"bold"},{"type":"text","text":"active","size":11,"color":"#99FFFFFF","maxLines":1}]}]},{"type":"column","show":{"minHeight":300,"ifSet":"{health.workout}"},"children":[{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"steps","size":14,"color":"#FF4CD137"},{"type":"text","text":" {health.workout} · {health.workout.duration}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{health.workout.when}","size":12,"color":"#99FFFFFF","maxLines":1}]}]}]}]}}""",
         ),
         Triple(
             "Activity", "Steps, kcal, heart rate and effort today; your last workout when wider, and sleep when taller.",
@@ -722,7 +643,7 @@ object Starters {
               {"type":"text","text":" {battery}%","size":30,"color":"#FFFFFFFF","weight":"bold","grow":true},
               {"type":"spacer","size":8},{"type":"text","text":"{charging}","size":12,"color":"#FF7CF29C","show":{"minWidth":220}}]},
              {"type":"spacer","size":10},
-             {"type":"progress","value":"{battery}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":8,"levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FF7CF29C"}]},
+             {"type":"progress","value":"{battery}","segments":10,"color":"#FF7CF29C","trackColor":"#26FFFFFF","height":10,"levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FF7CF29C"}]},
              {"type":"spacer","size":14,"show":{"minHeight":180}},
              {"type":"row","show":{"minHeight":180},"children":[
               {"type":"clock","format":"h:mm","size":22,"color":"#FFFFFFFF","weight":"light","grow":true},
@@ -891,7 +812,7 @@ object Starters {
              {"type":"row","verticalAlign":"bottom","show":{"minHeight":130},"children":[
               {"type":"text","text":"{countdown.1.days}","size":40,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
               {"type":"text","text":" {countdown.1.unit}","size":14,"color":"#B3FFFFFF","maxLines":1}]},
-             {"type":"text","text":"{countdown.1.date}","size":12,"color":"#99FFFFFF","show":{"minHeight":130}},
+             {"type":"row","show":{"minHeight":130},"children":[{"type":"text","text":"{countdown.1.date}","size":11,"color":"#E6FFFFFF","weight":"medium","chip":true,"maxLines":1}]},
              {"type":"spacer","size":10,"show":{"minHeight":200,"ifSet":"{countdown.2}"}},
              {"type":"divider","color":"#26FFFFFF","show":{"minHeight":200,"ifSet":"{countdown.2}"}},
              {"type":"spacer","size":8,"show":{"minHeight":200,"ifSet":"{countdown.2}"}},

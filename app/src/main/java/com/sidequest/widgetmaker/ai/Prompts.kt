@@ -96,6 +96,9 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"ring","value":"{health.charge}","text":"{health.charge}","size":72,"thickness":8,"textSize":22,
    "color":color,"trackColor":color,"textColor":color}   a ring filled to a 0-100 value with text in it (NOOP-style)
 - {"type":"sleep","height":14}   last night's sleep as a bar of colored stages (awake, light, deep, REM)
+- {"type":"month","size":12,"color":color,"accent":color,"months":1,"header":true,"weekNumbers":false,"grow":true}
+   this month's calendar (One UI style): today marked out, days with events in "accent"; "months":2 shows
+   next month beside it (wide widgets); give it "grow":true so its weeks fill the height
 A widget can fill up like a battery: add "fill":{"value":"{battery}","color":"#FF9FD8CF",
 "levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"}],"levelsUpTo":30} next to "root".
 The whole panel fills from the left up to the value (0-100) in the style's accent (the wallpaper color
@@ -133,7 +136,10 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
   For lists, show more items the taller the widget is.
 - Your calendar (the user's own events, next 7 days): {calendar.1} to {calendar.5} titles,
   {calendar.1.when} "Now", "Today 3 PM", "Tomorrow" or "Sat 9 AM", {calendar.1.where} the place
-  (often empty), and {calendar.today} like "2 more today".
+  (often empty), and {calendar.today} like "2 more today". For agendas grouped by day: {calendar.1.time}
+  "7:00 AM" or "All day", {calendar.1.date} "NOV 14", and {calendar.1.day} (that date) or
+  {calendar.1.heading} ("Today, Sat, Nov 14"), set only on each day's first event (show them with "ifSet").
+  A "tap":"calendar-new" starts a new event (a "+" button).
 - Exercise & health (Health Connect: Samsung Health, WHOOP, Fit...): {health.steps} "3,508",
   {health.stepGoal}, {health.stepsPct} (0-100, for a progress bar), {health.kcal} active kcal today,
   {health.totalKcal}, {health.heart} latest bpm, {health.restingHeart}, {health.heartMax} today's max,

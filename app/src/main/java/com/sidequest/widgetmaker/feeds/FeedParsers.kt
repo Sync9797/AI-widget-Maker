@@ -461,15 +461,35 @@ object FeedParsers {
 
     /**
      * calendar.N (title), calendar.N.when ("Now", "Today 3 PM", "Tomorrow",
-     * "Sat 9 AM"), calendar.N.where, and calendar.today ("2 more today").
+     * "Sat 9 AM"), calendar.N.where, calendar.N.date ("NOV 14"), calendar.N.time ("7:00 AM", "All day"),
+     * calendar.N.day and calendar.N.heading (the date, or "Today, Sat, Nov 14", on each day's first event only),
+     * calendar.today ("2 more today") and calendar.days (dates with events, from [busyDays]).
      * [events] must be in start order; ones that have ended are skipped.
      */
-    fun calendar(events: List<CalendarEvent>, now: LocalDateTime, count: Int = 5): Map<String, String> {
+    fun calendar(events: List<CalendarEvent>, now: LocalDateTime, count: Int = 5, busyDays: Set<LocalDate> = emptySet()): Map<String, String> {
         val today = now.toLocalDate()
         val upcoming = events.filter { it.end.isAfter(now) }
         val out = mutableMapOf<String, String>()
+        // Days with events (this month and next), for month calendars.
+        out["calendar.days"] = busyDays.sorted().joinToString(",")
+        var lastDay: LocalDate? = null
         upcoming.take(count).forEachIndexed { i, e ->
             out["calendar.${i + 1}"] = e.title.ifBlank { "(No title)" }
+            // For agendas grouped by day: the day's heading on its first event only.
+            val day = if (e.allDay || !e.start.isBefore(now)) e.start.toLocalDate() else today
+            val first = day != lastDay
+            lastDay = day
+            out["calendar.${i + 1}.date"] = day.format(DateTimeFormatter.ofPattern("MMM d", Locale.US)).uppercase(Locale.US)
+            out["calendar.${i + 1}.time"] = if (e.allDay) "All day" else e.start.toLocalTime().format(DateTimeFormatter.ofPattern("h:mm a", Locale.US))
+            out["calendar.${i + 1}.day"] = if (first) out["calendar.${i + 1}.date"]!! else ""
+            out["calendar.${i + 1}.heading"] = if (!first) "" else {
+                val name = day.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.US))
+                when (day) {
+                    today -> "Today, $name"
+                    today.plusDays(1) -> "Tomorrow, $name"
+                    else -> name
+                }
+            }
             out["calendar.${i + 1}.when"] = when {
                 e.allDay -> whenText(e.start.toLocalDate(), null, today).ifBlank { "All day" }
                 !e.start.isAfter(now) -> "Now"

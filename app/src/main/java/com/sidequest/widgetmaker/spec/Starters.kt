@@ -28,7 +28,7 @@ object Starters {
         if (s.title in EVERYDAY) return Category.everyday
         return when (Taps.mainKind(s.design)) {
             TapKind.weather -> Category.weather
-            TapKind.calendar -> if (s.design.root.let { DesignParser.encode(s.design).contains("calendar.") }) Category.calendar else Category.clock
+            TapKind.calendar -> DesignParser.encode(s.design).let { if (it.contains("calendar.") || it.contains("\"type\":\"month\"")) Category.calendar else Category.clock }
             TapKind.clock -> Category.clock
             TapKind.health -> Category.health
             TapKind.music -> Category.music
@@ -151,6 +151,26 @@ object Starters {
          {"type":"spacer","size":8},{"type":"text","text":"{crypto.$symbol.price}","size":14,"color":"#FFFFFFFF","weight":"medium"},
          {"type":"text","text":"  {crypto.$symbol.change}","size":13,"color":"#FFFFFFFF",
           "trendOf":"{crypto.$symbol.change}","show":{"minWidth":250}}]}"""
+
+    /** A colored bar: the event marks in calendars (a fixed color in every theme). */
+    private const val BAR = """{"type":"text","text":"▍","size":13,"color":"#FFE57373","levelOf":"1","levels":[{"from":0,"color":"#FFE57373"}],"maxLines":1}"""
+
+    /**
+     * Upcoming event [n] in an agenda grouped by day: the day's heading (only on its first event; [long]
+     * for "Today, Sat, Nov 14", else "NOV 14"), then a bar, the time and the title. [minHeight] hides it on small widgets.
+     */
+    private fun agendaItem(n: Int, long: Boolean, minHeight: Int, withDay: Boolean = true) = """
+        {"type":"column","show":{"minHeight":$minHeight,"ifSet":"{calendar.$n}"},"children":[
+         {"type":"column","show":{"ifSet":"${if (withDay) "{calendar.$n.day}" else "{calendar.none}"}"},"children":[
+          ${if (n > 1) """{"type":"spacer","size":4},{"type":"divider","color":"#1FFFFFFF"},{"type":"spacer","size":4},""" else ""}
+          {"type":"text","text":"${if (long) "{calendar.$n.heading}" else "{calendar.$n.day}"}","size":${if (long) 15 else 14},"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+         {"type":"row","verticalAlign":"center","tap":"{calendar.$n.link}","children":[
+          $BAR,
+          {"type":"text","text":"{calendar.$n.time} ","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
+          {"type":"text","text":"{calendar.$n}","size":13,"color":"#E6FFFFFF","maxLines":1,"grow":true}]}]}"""
+
+    /** A small round "+" that starts a new event. */
+    private const val ADD_EVENT = """{"type":"row","background":"#FF5B8DEF","cornerRadius":12,"padding":2,"tap":"calendar-new","children":[{"type":"text","text":" + ","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]}"""
 
     private val SOURCES = listOf(
         Triple(
@@ -352,6 +372,94 @@ object Starters {
               {"type":"text","text":"{battery}%","size":22,"color":"#FFFFFFFF","weight":"bold","maxLines":1},
               {"type":"text","text":"  {charging}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minWidth":250}}]},
              {"type":"text","text":"{battery.left}","size":12,"color":"#CCFFFFFF","maxLines":1,"show":{"minHeight":100,"maxHeight":219}},{"type":"column","show":{"minHeight":220},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"bolt","size":14,"color":"#FF7CF29C"},{"type":"text","text":" {battery.left}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true}]},{"type":"row","show":{"minHeight":250},"children":[{"type":"text","text":"Drain {battery.drain}","size":12,"color":"#99FFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{battery.temp}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8},{"type":"column","children":[{"type":"row","children":[{"type":"text","text":"Memory","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{phone.ram}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"progress","value":"{phone.ramPct}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":5,"levelOf":"{phone.ramPct}","levels":[{"from":0,"color":"#FF7CF29C"},{"from":70,"color":"#FFFFB74D"},{"from":90,"color":"#FFFF5C5C"}]},{"type":"spacer","size":6}]},{"type":"column","show":{"minHeight":290},"children":[{"type":"column","children":[{"type":"row","children":[{"type":"text","text":"Storage","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{phone.storage}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"progress","value":"{phone.storagePct}","color":"#FF7CF29C","trackColor":"#26FFFFFF","height":5,"levelOf":"{phone.storagePct}","levels":[{"from":0,"color":"#FF7CF29C"},{"from":70,"color":"#FFFFB74D"},{"from":90,"color":"#FFFF5C5C"}]},{"type":"spacer","size":6}]}]}]}]}}""",
+        ),
+        Triple(
+            "Month", "This month's calendar like One UI's, today marked out and days with events in blue. Two months when wide; week numbers when big.",
+            """{"name":"Month","background":"#F2000000","cornerRadius":28,"padding":10,"root":
+            {"type":"column","children":[
+             {"type":"month","grow":true,"size":11,"show":{"minHeight":130,"maxWidth":299}},
+             {"type":"month","grow":true,"months":2,"size":13,"show":{"minWidth":300,"minHeight":130,"maxHeight":299}},
+             {"type":"month","grow":true,"weekNumbers":true,"size":17,"show":{"minWidth":300,"minHeight":300}},
+             {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
+              {"type":"clock","format":"MMM","size":20,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"spacer","size":8},
+              {"type":"clock","format":"EEE d","size":16,"color":"#CCFFFFFF","weight":"medium"}]}]}}""",
+        ),
+        Triple(
+            "Today's date", "The date, One UI style: a round day number beside the month when slim, a big number when square, and what's coming up when big.",
+            """{"name":"Today's date","background":"#F2000000","cornerRadius":28,"padding":14,"root":
+            {"type":"column","align":"center","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
+              {"type":"row","background":"#33FFFFFF","cornerRadius":24,"padding":10,"children":[{"type":"clock","format":"dd","size":22,"color":"#FFFFFFFF","weight":"bold"}]},
+              {"type":"spacer","size":10},
+              {"type":"column","children":[
+               {"type":"clock","format":"MMM","size":20,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"clock","format":"EEEE","size":13,"color":"#CCFFFFFF","weight":"medium"}]}]},
+             {"type":"column","align":"center","show":{"minHeight":130},"children":[
+              {"type":"clock","format":"MMM yyyy","size":18,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"clock","format":"EEEE","size":15,"color":"#CCFFFFFF"},
+              {"type":"clock","format":"d","size":76,"color":"#FFFFFFFF","weight":"bold"}]},
+             {"type":"column","show":{"minHeight":300},"children":[
+              {"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},
+              {"type":"text","text":"No events coming up","size":13,"color":"#99FFFFFF","show":{"ifEmpty":"{calendar.1}"}},
+              ${agendaItem(1, long = true, minHeight = 0)},
+              ${agendaItem(2, long = true, minHeight = 0)},
+              ${agendaItem(3, long = true, minHeight = 0)}]}]}}""",
+        ),
+        Triple(
+            "Month and agenda", "Wide: this month beside what's next, with a + to add an event, like One UI's 4×2 calendar. Tall: the month. 2×2: today's date. Slim: the date and your next event.",
+            """{"name":"Month and agenda","background":"#F2000000","cornerRadius":28,"padding":14,"root":
+            {"type":"column","children":[
+             {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
+              {"type":"row","background":"#33FFFFFF","cornerRadius":24,"padding":10,"children":[{"type":"clock","format":"dd","size":20,"color":"#FFFFFFFF","weight":"bold"}]},
+              {"type":"spacer","size":10},
+              {"type":"column","grow":true,"children":[
+               {"type":"clock","format":"EEE, MMM d","size":14,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.1}"},"children":[
+                $BAR,
+                {"type":"text","text":"{calendar.1.time} ","size":12,"color":"#FFFFFFFF","weight":"medium","maxLines":1,"show":{"minWidth":300}},
+                {"type":"text","text":"{calendar.1}","size":12,"color":"#E6FFFFFF","maxLines":1,"grow":true}]},
+               {"type":"text","text":"No events","size":12,"color":"#99FFFFFF","show":{"ifEmpty":"{calendar.1}"}}]}]},
+             {"type":"column","align":"center","verticalAlign":"center","grow":true,"show":{"minHeight":130,"maxWidth":299,"maxHeight":299},"children":[
+              {"type":"clock","format":"MMM yyyy","size":17,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"clock","format":"EEEE","size":14,"color":"#CCFFFFFF"},
+              {"type":"clock","format":"d","size":72,"color":"#FFFFFFFF","weight":"bold"}]},
+             {"type":"month","grow":true,"size":12,"show":{"minHeight":300,"maxWidth":299}},
+             {"type":"row","verticalAlign":"top","grow":true,"show":{"minWidth":300,"minHeight":130},"children":[
+              {"type":"month","grow":true,"header":false,"size":12},
+              {"type":"spacer","size":14},
+              {"type":"column","grow":true,"children":[
+               {"type":"row","verticalAlign":"center","children":[
+                {"type":"text","text":"{calendar.1.day}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"ifSet":"{calendar.1}"}},
+                {"type":"clock","format":"MMM d","size":16,"color":"#FFFFFFFF","weight":"bold","grow":true,"show":{"ifEmpty":"{calendar.1}"}},
+                $ADD_EVENT]},
+               {"type":"spacer","size":4},
+               {"type":"text","text":"No events","size":13,"color":"#99FFFFFF","show":{"ifEmpty":"{calendar.1}"}},
+               ${agendaItem(1, long = false, minHeight = 0, withDay = false)},
+               ${agendaItem(2, long = false, minHeight = 0)},
+               ${agendaItem(3, long = false, minHeight = 0)},
+               ${agendaItem(4, long = false, minHeight = 230)},
+               ${agendaItem(5, long = false, minHeight = 300)}]}]}]}}""",
+        ),
+        Triple(
+            "Upcoming events", "What's next, grouped by day like One UI's: the next event when slim, the next few when bigger, with a + to add one.",
+            """{"name":"Upcoming events","background":"#F2000000","cornerRadius":28,"padding":14,"root":
+            {"type":"column","children":[
+             {"type":"column","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
+              {"type":"row","verticalAlign":"center","children":[$BAR,{"type":"text","text":"{calendar.1.time}","size":15,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+              {"type":"text","text":"   {calendar.1}","size":13,"color":"#E6FFFFFF","maxLines":1},
+              {"type":"text","text":"No events coming up","size":13,"color":"#99FFFFFF","show":{"ifEmpty":"{calendar.1}"}}]},
+             {"type":"column","show":{"minHeight":130},"children":[
+              {"type":"row","verticalAlign":"top","children":[
+               {"type":"column","grow":true,"children":[
+                ${agendaItem(1, long = false, minHeight = 0)}]},
+               {"type":"spacer","size":8},
+               $ADD_EVENT]},
+              {"type":"text","text":"No events coming up","size":13,"color":"#99FFFFFF","show":{"ifEmpty":"{calendar.1}"}},
+              ${agendaItem(2, long = false, minHeight = 0)},
+              ${agendaItem(3, long = false, minHeight = 0)},
+              ${agendaItem(4, long = false, minHeight = 250)},
+              ${agendaItem(5, long = false, minHeight = 320)}]}]}}""",
         ),
         Triple(
             "Agenda card", "Side Quest's date card: what's next at the top, today's date big at the bottom.",

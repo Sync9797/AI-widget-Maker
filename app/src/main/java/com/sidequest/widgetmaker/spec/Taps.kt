@@ -34,6 +34,9 @@ sealed interface TapAction {
 
     /** Play/pause ("toggle"), "next" or "prev" on whatever is playing. */
     data class Media(val command: String) : TapAction
+
+    /** Starts a new event in the calendar app ("calendar-new"). */
+    data object NewEvent : TapAction
 }
 
 /**
@@ -52,6 +55,7 @@ object Taps {
     fun forNode(node: Node): String? {
         node.tap?.let { return it }
         // The time opens the Clock app; a date opens the calendar.
+        if (node is MonthNode) return TapKind.calendar.name
         if (node is ClockNode) return if (node.format.contains('h', ignoreCase = true)) TapKind.clock.name else TapKind.calendar.name
         if (node !is TextNode) return null
         val listed = TOKEN.findAll(node.text).map { it.groupValues[1] }.firstNotNullOfOrNull { LISTED.find(it) }
@@ -94,6 +98,7 @@ object Taps {
                 is ProgressNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
                 is ArtNode, is TimerNode -> add(TapKind.music)
                 is SleepNode -> add(TapKind.health)
+                is MonthNode -> repeat(3) { add(TapKind.calendar) }
                 is ChartNode -> TOKEN.findAll(node.series).forEach { add(kindOf(it.groupValues[1])) }
                 is RingNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
                 is SpacerNode, is DividerNode -> Unit
@@ -133,6 +138,7 @@ object Taps {
         if (value.startsWith("music:")) {
             return value.removePrefix("music:").takeIf { it in setOf("toggle", "next", "prev") }?.let { TapAction.Media(it) }
         }
+        if (value == "calendar-new") return TapAction.NewEvent
         if (value.startsWith("calendar-event:")) {
             val parts = value.removePrefix("calendar-event:").split(':').mapNotNull { it.toLongOrNull() }
             return if (parts.size == 3) TapAction.CalendarEvent(parts[0], parts[1], parts[2]) else null

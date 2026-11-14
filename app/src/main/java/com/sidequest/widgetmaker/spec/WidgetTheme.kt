@@ -173,6 +173,12 @@ class Styler(
         const val GLASS_TINT = 0x66101826
 
         fun alphaOf(argb: Int) = (argb ushr 24) and 0xFF
+
+        /** Near-black on a light [argb], white on a dark one: for text cut out of a block of that color. */
+        fun contrast(argb: Int): Int {
+            val r = (argb shr 16) and 0xFF; val g = (argb shr 8) and 0xFF; val b = argb and 0xFF
+            return if (0.299 * r + 0.587 * g + 0.114 * b > 150) 0xFF111114.toInt() else 0xFFFFFFFF.toInt()
+        }
         fun withAlpha(rgb: Int, alpha: Int) = (alpha shl 24) or (rgb and 0xFFFFFF)
     }
 }

@@ -162,6 +162,33 @@ data class TextNode(
     /** Colors it by a number's level, like "{health.charge}": see [Level]. Wins over [trendOf]. */
     val levelOf: String? = null,
     val levels: List<Level>? = null,
+    /** Marked out, like today in a calendar: a small rounded block in the text's color, the text cut out of it. */
+    val highlight: Boolean = false,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/**
+ * A month's calendar, like One UI's: the month's name, the days of the week, and its days in weeks, today
+ * marked out and days with events from the phone's calendar in the accent color. [months] side by side (1 or 2,
+ * this month first); [weekNumbers] down the left. Its weeks share out the height it gets ("grow" to fill).
+ */
+@Serializable
+@SerialName("month")
+data class MonthNode(
+    val months: Int = 1,
+    /** Shows the month's name above it ("NOV"). */
+    val header: Boolean = true,
+    val weekNumbers: Boolean = false,
+    /** "sunday" or "monday". */
+    val firstDay: String = "sunday",
+    /** The days' text size; the name is a little bigger. */
+    val size: Int = 12,
+    val color: String = "#FFFFFFFF",
+    /** Days with events in the accent color (needs Your calendar in Data sources). */
+    val events: Boolean = true,
+    val accent: String = "#FF8AB4F8",
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

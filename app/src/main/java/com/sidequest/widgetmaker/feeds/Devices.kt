@@ -18,8 +18,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Battery levels for the Device batteries widgets, read when a widget draws: this phone, the WHOOP strap
- * through not-NOOP (Android can't see a strap's battery, since not-NOOP talks to it directly), and the
- * connected Bluetooth devices that report a battery level to Android (most earbuds, headphones and watches).
+ * through not-NOOP (Android can't see a strap's battery, since not-NOOP talks to it directly), and every
+ * connected Bluetooth device, with its battery where it reports one to Android (most earbuds, headphones and
+ * watches do). Each widget can leave devices out (its settings sheet).
  */
 object Devices {
     /** Whether the app may see Bluetooth devices (Android 12+ asks; older versions allow it). */
@@ -34,28 +35,38 @@ object Devices {
         battery?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)?.takeIf { it in 0..100 }?.let {
             out += DevicesMath.Device("Phone", it, DevicesMath.Kind.phone, charging = battery.isCharging)
         }
-        NoopBridge.read(context)?.takeIf { it.battery in 0..100 }?.let {
-            out += DevicesMath.Device("Strap", it.battery, DevicesMath.Kind.strap)
-        }
-        out += bluetooth(context)
+        val strap = NoopBridge.read(context)?.takeIf { it.battery in 0..100 }
+        strap?.let { out += DevicesMath.Device("Strap", it.battery, DevicesMath.Kind.strap) }
+        out += bluetooth(context, strapKnown = strap != null)
         return out
     }
 
-    /** Connected Bluetooth devices with a battery level. Android keeps these calls hidden, so they're looked up by name. */
+    /**
+     * Every connected Bluetooth device, with its battery level where it tells Android (-1 where it doesn't):
+     * paired devices that are connected, and Bluetooth LE devices connected without pairing. Android keeps the
+     * battery and connected calls hidden, so they're looked up by name. The WHOOP strap is left out when
+     * not-NOOP already gives its battery.
+     */
     @Suppress("MissingPermission")
-    private fun bluetooth(context: Context): List<DevicesMath.Device> {
+    private fun bluetooth(context: Context, strapKnown: Boolean): List<DevicesMath.Device> {
         if (!canSee(context)) return emptyList()
-        val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter ?: return emptyList()
+        val manager = context.getSystemService(BluetoothManager::class.java) ?: return emptyList()
+        val adapter = manager.adapter ?: return emptyList()
         if (!adapter.isEnabled) return emptyList()
         val isConnected = runCatching { BluetoothDevice::class.java.getMethod("isConnected") }.getOrNull()
-        val batteryLevel = runCatching { BluetoothDevice::class.java.getMethod("getBatteryLevel") }.getOrNull() ?: return emptyList()
-        return adapter.bondedDevices.orEmpty().mapNotNull { device ->
+        val batteryLevel = runCatching { BluetoothDevice::class.java.getMethod("getBatteryLevel") }.getOrNull()
+        fun level(device: BluetoothDevice) = runCatching { batteryLevel?.invoke(device) as? Int }.getOrNull()?.takeIf { it in 0..100 } ?: -1
+        val paired = adapter.bondedDevices.orEmpty().filter { device ->
+            // Without the hidden "connected" call, a paired device counts as connected only when it reports a battery.
+            runCatching { isConnected?.invoke(device) as? Boolean }.getOrNull() ?: (level(device) >= 0)
+        }
+        val le = runCatching { manager.getConnectedDevices(android.bluetooth.BluetoothProfile.GATT) }.getOrNull().orEmpty()
+        return (paired + le).distinctBy { it.address }.mapNotNull { device ->
             runCatching {
-                if (isConnected != null && isConnected.invoke(device) != true) return@runCatching null
-                val level = batteryLevel.invoke(device) as? Int ?: return@runCatching null
-                if (level !in 0..100) return@runCatching null
-                val name = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) device.alias else null) ?: device.name ?: "Device"
-                DevicesMath.Device(name, level, DevicesMath.kindOf(name, device.bluetoothClass?.majorDeviceClass))
+                val name = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) device.alias else null) ?: device.name ?: return@runCatching null
+                val kind = DevicesMath.kindOf(name, device.bluetoothClass?.majorDeviceClass)
+                if (kind == DevicesMath.Kind.strap && strapKnown) return@runCatching null
+                DevicesMath.Device(name, level(device), kind)
             }.getOrNull()
         }
     }

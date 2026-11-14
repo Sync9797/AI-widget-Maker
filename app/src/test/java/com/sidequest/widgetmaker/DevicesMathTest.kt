@@ -19,14 +19,15 @@ class DevicesMathTest {
                 Device("Mouse", -1, Kind.other),
             ),
         )
-        assertEquals("4", out["devices.count"])
+        assertEquals("5", out["devices.count"])
         assertEquals("Phone", out["devices.1.name"])
         assertEquals("Charging", out["devices.1.charging"])
         assertEquals("band", out["devices.2.icon"])
         assertEquals("Buds", out["devices.3.name"])
         assertEquals("15%", out["devices.3.pct"])
         assertEquals("80", out["devices.4.level"])
-        assertNull(out["devices.5.name"]) // No battery reading: left out.
+        assertEquals("Mouse", out["devices.5.name"]) // No battery reading: listed last.
+        assertNull(out["devices.6.name"])
     }
 
     @Test

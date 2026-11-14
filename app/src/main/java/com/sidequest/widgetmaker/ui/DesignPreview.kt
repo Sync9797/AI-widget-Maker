@@ -108,10 +108,14 @@ fun DesignPreview(
     /** The look to preview; null for the saved one (Settings → Widget look). */
     look: Look? = null,
     shape: WidgetShape? = null,
+    /** Devices this widget leaves out of its device batteries (its settings sheet). */
+    hiddenDevices: Set<String> = emptySet(),
 ) {
     val context = LocalContext.current
     // Shared by every preview and worked out off the main thread (see PreviewTokens).
-    val tokens by PreviewTokens.state(context).collectAsState()
+    val shared by PreviewTokens.state(context).collectAsState()
+    val tokens = if (hiddenDevices.isEmpty()) shared
+    else shared.copy(feeds = com.sidequest.widgetmaker.feeds.DevicesMath.hide(shared.feeds, hiddenDevices))
     // Read each time, so previews follow Settings → Widget look as soon as it changes.
     val usedLook = look ?: DesignStore(context).look
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, usedLook, shape)
@@ -152,7 +156,12 @@ fun DesignPreview(
                     }
                     Box(Modifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp)) {
                         val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens, inner = (panel.height / k).toInt() - panel.padTop - panel.padV)
-                        if (fit.shows(design.root)) PreviewNode(design.root, tokens, paint, fit, Modifier.fillMaxSize())
+                        // Sized to fit, as on the home screen (see Fitter).
+                        val fitted = com.sidequest.widgetmaker.spec.Fitter.fit(
+                            design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens, fit::shows,
+                        )
+                        val fittedPaint = if (fitted.k == k) paint else PreviewPaint(art.styler, paint.dark, fitted.k, usedLook.weatherIcons)
+                        if (fit.shows(fitted.root)) PreviewNode(fitted.root, tokens, fittedPaint, fit, Modifier.fillMaxSize())
                     }
                 }
             }

@@ -64,7 +64,7 @@ class DesignStore(context: Context) {
 
     fun forget(appWidgetId: Int) {
         val edit = prefs.edit().remove(widgetKey(appWidgetId)).remove("widget_theme_$appWidgetId")
-            .remove("widget_shape_$appWidgetId").remove("widget_bounds_$appWidgetId")
+            .remove("widget_shape_$appWidgetId").remove("widget_bounds_$appWidgetId").remove("widget_hidden_devices_$appWidgetId")
         prefs.all.keys.filter { it.startsWith("widget_bounds_${appWidgetId}_") }.forEach { edit.remove(it) }
         edit.apply()
     }
@@ -106,6 +106,14 @@ class DesignStore(context: Context) {
         set(value) = prefs.edit().putString("look", DesignParser.json.encodeToString(Look.serializer(), value)).apply()
 
     /** A widget's own shape (its settings), or null for its design's. */
+    /** Devices (by name) this widget leaves out of its device batteries. */
+    fun hiddenDevices(appWidgetId: Int): Set<String> = prefs.getStringSet("widget_hidden_devices_$appWidgetId", null)?.toSet().orEmpty()
+
+    fun setDeviceHidden(appWidgetId: Int, name: String, hidden: Boolean) {
+        val now = hiddenDevices(appWidgetId).let { if (hidden) it + name else it - name }
+        prefs.edit().putStringSet("widget_hidden_devices_$appWidgetId", now).apply()
+    }
+
     fun shapeFor(appWidgetId: Int): WidgetShape? =
         prefs.getString("widget_shape_$appWidgetId", null)?.let { runCatching { WidgetShape.valueOf(it) }.getOrNull() }
 

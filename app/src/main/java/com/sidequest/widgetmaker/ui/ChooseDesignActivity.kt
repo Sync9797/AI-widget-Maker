@@ -76,6 +76,7 @@ class ChooseDesignActivity : ComponentActivity() {
             var own by remember { mutableStateOf(if (store.hasOwnTheme(appWidgetId)) store.themeFor(appWidgetId) else null) }
             val picked = remember { store.designFor(appWidgetId) }
             var shape by remember { mutableStateOf(store.shapeFor(appWidgetId)) }
+            var hiddenDevices by remember { mutableStateOf(store.hiddenDevices(appWidgetId)) }
             val theme = own ?: store.theme
 
             var refreshing by remember { mutableStateOf(false) }
@@ -137,7 +138,7 @@ class ChooseDesignActivity : ComponentActivity() {
                             // The widget being edited, live: style and shape changes show here at once.
                             if (picked != null) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    DesignPreview(picked.design, previewSize(appWidgetId), theme, Modifier.weight(1f, fill = false), shape = shape)
+                                    DesignPreview(picked.design, previewSize(appWidgetId), theme, Modifier.weight(1f, fill = false), shape = shape, hiddenDevices = hiddenDevices)
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
@@ -163,6 +164,36 @@ class ChooseDesignActivity : ComponentActivity() {
                             } else {
                                 Text("Pick a design for this widget", style = MaterialTheme.typography.titleLarge)
                                 Button(onClick = ::pickAnother, modifier = Modifier.fillMaxWidth()) { Text(if (designs.isEmpty()) "Open AI Widget Maker" else "Choose a design") }
+                            }
+
+                            // Device batteries: which devices this widget shows (every connected one, unless left out here).
+                            if (picked != null && com.sidequest.widgetmaker.spec.DesignParser.encode(picked.design).contains("{devices.")) {
+                                SheetLabel("Devices")
+                                val seen = remember { com.sidequest.widgetmaker.feeds.Devices.read(this@ChooseDesignActivity).map { it.name } }
+                                val names = (seen + hiddenDevices).distinct()
+                                if (names.isEmpty()) {
+                                    Text("No devices connected right now.", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                names.forEach { name ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                                        androidx.compose.material3.Switch(
+                                            checked = name !in hiddenDevices,
+                                            onCheckedChange = { show ->
+                                                store.setDeviceHidden(appWidgetId, name, hidden = !show)
+                                                hiddenDevices = store.hiddenDevices(appWidgetId)
+                                                apply()
+                                            },
+                                        )
+                                    }
+                                }
+                                if (!com.sidequest.widgetmaker.feeds.Devices.canSee(this@ChooseDesignActivity)) {
+                                    Text(
+                                        "To list Bluetooth devices, turn on Device batteries in the app's Data sources.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
 
                             SheetLabel("Style")

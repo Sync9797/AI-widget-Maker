@@ -200,7 +200,7 @@ class ChooseDesignActivity : ComponentActivity() {
                             }
 
                             // One UI and Ambient blur the wallpaper behind the widget: where it sits decides what shows.
-                            if (theme.frosted) {
+                            if (theme.showsWallpaper) {
                                 SheetLabel("Blur")
                                 val known = store.knowsPlace(appWidgetId, com.sidequest.widgetmaker.widget.OneUiBackdrop.screenKey(this@ChooseDesignActivity))
                                 Text(

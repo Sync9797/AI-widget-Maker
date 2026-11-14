@@ -32,6 +32,8 @@ enum class WidgetShape(val label: String) {
     leaf("Leaf"),
     /** Leaf flipped top to bottom, like One UI's countdown card: the big curve bottom right. */
     leafReverse("Reverse leaf"),
+    /** A capsule slanting up to the right, two round ends on a diagonal, like Pixel's Material You weather. */
+    sideCircle("Side circle"),
 }
 
 /** How all widgets look, set in Settings → Widget look. */
@@ -154,7 +156,10 @@ object Shapes {
     val LEAF_REVERSE_CORNERS = floatArrayOf(LEAF_CORNERS[3], LEAF_CORNERS[2], LEAF_CORNERS[1], LEAF_CORNERS[0])
 
     /** Shapes drawn as big as the shorter side allows, centered in their cell. */
-    val ROUND_SHAPES = setOf(WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower)
+    val ROUND_SHAPES = setOf(WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower, WidgetShape.sideCircle)
+
+    /** A [WidgetShape.sideCircle]'s round ends: their radius as a part of its side (their centers sit that far in from the corners). */
+    const val SIDE_CIRCLE_END = 0.36f
 
     /** The notch radius of a [WidgetShape.ticket] [w]×[h] across (the same unit in, same unit out). */
     fun ticketNotch(w: Float, h: Float): Float = min(h * 0.12f, w * 0.07f)
@@ -189,7 +194,7 @@ object Shapes {
             WidgetShape.squircle -> (look.cornerRadius ?: design.cornerRadius) * 3 / 2
             WidgetShape.pill -> min(w, h) / 2
             WidgetShape.arch -> w / 2
-            WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower -> w / 2
+            WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower, WidgetShape.sideCircle -> w / 2
             WidgetShape.pebble, WidgetShape.stadium -> min(w, h) / 2
             WidgetShape.ticket -> look.cornerRadius ?: design.cornerRadius
             WidgetShape.leaf, WidgetShape.leafReverse -> (min(w, h) * LEAF_CORNERS.max()).roundToInt()
@@ -211,6 +216,8 @@ object Shapes {
             // The clover's leaves dip deeper between them, so content keeps further in.
             WidgetShape.clover -> (w * 0.17).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             WidgetShape.flower -> (w * 0.18).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
+            // The slant's middle is widest: content keeps to the square that fits across it.
+            WidgetShape.sideCircle -> (w * 0.22).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             WidgetShape.pebble -> Panel(w, h, shape, radius, max(p / 2, (w * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()))
             WidgetShape.leaf, WidgetShape.leafReverse -> Panel(w, h, shape, radius, p, p, p)
             // Content clears the notches in the sides.

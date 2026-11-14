@@ -116,7 +116,8 @@ fun DesignPreview(
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, usedLook, shape)
     // The same panel the home screen widget gets (in the preview, One UI assumes the middle of the screen).
     val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, usedLook, tokens.feeds, System.currentTimeMillis())
-    val art = remember(theme, panel, usedLook, mood) { PanelArt.build(context, theme, panel, usedLook, null, mood) }
+    val sky = if (theme == WidgetTheme.timeOfDay) com.sidequest.widgetmaker.spec.Sky.of(tokens.feeds, System.currentTimeMillis()) else null
+    val art = remember(theme, panel, usedLook, mood, sky) { PanelArt.build(context, theme, panel, usedLook, null, mood, tokens.feeds) }
     val k = Shapes.scale(panel, usedLook)
     val paint = PreviewPaint(art.styler, isSystemInDarkTheme(), k, usedLook.weatherIcons)
     // Shrinks to fit narrow screens, drawn exactly as at full size.

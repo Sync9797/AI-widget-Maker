@@ -142,12 +142,36 @@ class AiWidget : GlanceAppWidget() {
          * from the same resources the widget hands to the launcher (used for
          * the in-app preview; the widget itself never resolves them).
          */
-        fun styler(context: Context, theme: WidgetTheme, backdropLight: Boolean = false): Styler =
-            if (theme.frosted) {
-                Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
-            } else {
-                Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) })
+        fun styler(context: Context, theme: WidgetTheme, backdropLight: Boolean = false): Styler = when {
+            theme.frosted -> Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
+            // Tonal: [backdropLight] is the phone's light mode.
+            theme == WidgetTheme.tonal -> Styler(theme, { slot, dark -> tonalTone(context, slot, dark) }, backdropLight)
+            theme == WidgetTheme.outline || theme == WidgetTheme.timeOfDay -> Styler(theme, { slot, dark -> Baseline.color(slot, dark) }, backdropLight)
+            else -> Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) })
+        }
+
+        /**
+         * Material You's tonal palette: a rich tone of the phone's main color for the panel, a deeper one for
+         * containers, and text in its darkest (or, in dark mode, lightest) tone. The baseline before Android 12.
+         */
+        private fun tonalTone(context: Context, slot: MaterialSlot, dark: Boolean): Int {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val res = when (slot) {
+                    MaterialSlot.Surface -> if (dark) android.R.color.system_accent1_800 else android.R.color.system_accent1_100
+                    MaterialSlot.Container -> if (dark) android.R.color.system_accent1_700 else android.R.color.system_accent1_200
+                    MaterialSlot.Text, MaterialSlot.Text80, MaterialSlot.Text65 -> if (dark) android.R.color.system_accent1_50 else android.R.color.system_accent1_900
+                    MaterialSlot.Primary, MaterialSlot.Track -> if (dark) android.R.color.system_accent1_200 else android.R.color.system_accent1_600
+                    else -> null
+                }
+                if (res != null) return context.getColor(res)
             }
+            return when (slot) {
+                MaterialSlot.Surface -> if (dark) 0xFF4F378B else 0xFFEADDFF
+                MaterialSlot.Container -> if (dark) 0xFF633B9B else 0xFFD6C6FB
+                MaterialSlot.Text, MaterialSlot.Text80, MaterialSlot.Text65 -> if (dark) 0xFFEADDFF else 0xFF21005D
+                else -> Baseline.color(slot, dark).toLong()
+            }.toInt()
+        }
 
         /**
          * One UI's accents: the phone's palette in a tone that reads over the
@@ -333,13 +357,13 @@ private fun DesignWidget(
     val size = LocalSize.current
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, look, shape)
     val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, look, tokens.feeds, System.currentTimeMillis())
-    val art = PanelArt.build(context, theme, panel, look, onScreen, mood)
+    val art = PanelArt.build(context, theme, panel, look, onScreen, mood, tokens.feeds)
     // On a bigger screen (an open foldable) the content can grow with the widget.
     val k = Shapes.scale(panel, look)
     // Until a blurred widget knows where it sits, its parts don't take taps of their own: any tap then
     // lands on the panel, which is the only tap that says where the widget is. (A pill that is all text
     // otherwise never learns it.) Once it knows, the parts' own taps come back.
-    val paint = Paint(art.styler, albumArt, k, partTaps = !(theme.frosted && onScreen == null), weatherIcons = look.weatherIcons)
+    val paint = Paint(art.styler, albumArt, k, partTaps = !(theme.showsWallpaper && onScreen == null), weatherIcons = look.weatherIcons)
     Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Box(GlanceModifier.size(panel.width.dp, panel.height.dp)) {
             // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.

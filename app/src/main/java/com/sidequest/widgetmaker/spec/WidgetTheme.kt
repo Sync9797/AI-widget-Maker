@@ -23,14 +23,28 @@ enum class WidgetTheme(val label: String) {
      * wallpaper, as One UI, when nothing is playing).
      */
     ambient("Ambient"),
+    /** Clear glass: the wallpaper behind, only lightly blurred, with a bright rim and glints at the corners. */
+    liquid("Liquid glass"),
+    /** Material You's tonal look: solid panels in a rich tone of the phone's colors, light or dark with the phone. */
+    tonal("Tonal"),
+    /** The panel takes the sky's color through the day: deep blue at night, warm at dawn and dusk, blue by day. */
+    timeOfDay("Time of day"),
+    /** No panel: the content on the wallpaper itself, inside a thin outline. */
+    outline("Outline"),
     ;
 
     /** Frosted from a picture (wallpaper or album art), with text that suits it. */
-    val frosted: Boolean get() = this == oneui || this == ambient
+    val frosted: Boolean get() = this == oneui || this == ambient || this == liquid
+
+    /** Seen through to the wallpaper, so it needs to know where the widget is. */
+    val showsWallpaper: Boolean get() = frosted || this == outline
 
     companion object {
         /** The styles for every widget (Ambient is for music widgets only). */
         val everywhere: List<WidgetTheme> get() = entries.filter { it != ambient }
+
+        /** Whether a theme takes on the weather's color for weather widgets (Settings → Weather moods). */
+        fun takesMoods(theme: WidgetTheme) = theme != material && theme != tonal && theme != outline
 
         /** Whether a design shows music, so it can use the Ambient style. */
         fun playsMusic(design: WidgetDesign): Boolean {
@@ -114,7 +128,32 @@ class Styler(
                 Role.Accent, Role.TrendUp, Role.TrendDown, Role.Level -> original
             }
             WidgetTheme.material -> material(materialSlot(role, design), dark)
-            WidgetTheme.oneui, WidgetTheme.ambient -> when (role) {
+            WidgetTheme.tonal -> {
+                // [backdropLight] here is the phone's light mode; the slots come from the tonal palette.
+                val dark = !backdropLight
+                when (role) {
+                    Role.Background -> material(MaterialSlot.Surface, dark)
+                    Role.Container -> material(MaterialSlot.Container, dark)
+                    Role.Text -> withAlpha(material(MaterialSlot.Text, dark), alphaOf(original).coerceAtLeast(0xA6))
+                    Role.Accent -> material(MaterialSlot.Primary, dark)
+                    Role.Track -> withAlpha(material(MaterialSlot.Primary, dark), 0x40)
+                    Role.TrendUp -> material(MaterialSlot.Up, dark)
+                    Role.TrendDown -> material(MaterialSlot.Down, dark)
+                    Role.Level -> original
+                }
+            }
+            // Over the sky, or straight on the wallpaper: light text (dark over a light wallpaper, for Outline).
+            WidgetTheme.timeOfDay, WidgetTheme.outline -> {
+                val ink = if (theme == WidgetTheme.outline && backdropLight) 0x111114 else 0xFFFFFF
+                when (role) {
+                    Role.Background -> if (theme == WidgetTheme.outline) 0 else GLASS_TINT
+                    Role.Container -> withAlpha(ink, 0x24)
+                    Role.Text -> withAlpha(ink, alphaOf(original).coerceAtLeast(0xA6))
+                    Role.Track -> withAlpha(ink, 0x33)
+                    Role.Accent, Role.TrendUp, Role.TrendDown, Role.Level -> original
+                }
+            }
+            WidgetTheme.oneui, WidgetTheme.ambient, WidgetTheme.liquid -> when (role) {
                 Role.Background -> if (backdropLight) 0x8CF4F4F6.toInt() else 0x73202024
                 Role.Container -> if (backdropLight) 0x47FFFFFF else 0x24FFFFFF
                 // Text suits what's behind it, keeping the design's fade.

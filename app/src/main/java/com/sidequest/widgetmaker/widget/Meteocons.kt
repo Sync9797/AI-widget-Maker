@@ -22,6 +22,12 @@ object Meteocons {
 
     private val cache = ConcurrentHashMap<String, IntArray>()
 
+    /**
+     * "{weather.icon}", "{weather.h2.icon}"... Both braces escaped: Android's regex engine (ICU) rejects
+     * a bare "}", though the JVM's, which the unit tests run on, accepts it.
+     */
+    private val WEATHER_ICON = Regex("""\{weather(\.[hd]\d)?\.icon\}""")
+
     /** The frames of the Meteocon [name] (like "clear_day"), first to last; empty if there's none. */
     fun frames(context: Context, name: String): IntArray = cache.getOrPut(name) {
         val res = context.resources
@@ -38,7 +44,7 @@ object Meteocons {
     fun nameFor(node: IconNode, tokens: Tokens): String? {
         val live = node.live
         val key = when {
-            live != null && Regex("""\{weather(\.[hd]\d)?\.icon}""").matches(live.trim()) -> live.trim().removeSurrounding("{", "}").removeSuffix(".icon") + ".mc"
+            live != null && WEATHER_ICON.matches(live.trim()) -> live.trim().removeSurrounding("{", "}").removeSuffix(".icon") + ".mc"
             live == null && node.name == IconName.weather -> "weather.mc"
             else -> return null
         }

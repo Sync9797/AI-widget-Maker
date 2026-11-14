@@ -159,7 +159,8 @@ object Shapes {
     /** Height to width of One UI's own 2×2 widgets (about 380 by 360). */
     const val ONE_UI_RATIO = 1.055f
 
-    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.arch, WidgetShape.ticket, WidgetShape.leaf, WidgetShape.leafReverse)
+    // The arch isn't here: it fills its cell's height, since its round top takes room from the content.
+    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.ticket, WidgetShape.leaf, WidgetShape.leafReverse)
 
     /**
      * A [WidgetShape.leaf]'s corner radii as parts of its shorter side, clockwise from the top left

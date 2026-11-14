@@ -402,9 +402,11 @@ private fun DesignWidget(
             ) {
                 // Size rules see the widget as it is before scaling, so a scaled 2×2 stays a 2×2 layout.
                 val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens, inner = (panel.height / k).toInt() - panel.padTop - panel.padV)
+                val phoneText = PhoneText(context)
                 // Sized to fit the panel: shrunk if it's too tall, long texts in crowded rows cut short with "…".
                 val fitted = com.sidequest.widgetmaker.spec.Fitter.fit(
-                    design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens, fit::shows,
+                    design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens,
+                    measure = phoneText, fontScale = phoneText.fontScale, shows = fit::shows,
                 )
                 val fittedPaint = if (fitted.k == k) paint else Paint(art.styler, albumArt, fitted.k, partTaps = paint.partTaps, weatherIcons = look.weatherIcons)
                 if (fit.shows(fitted.root)) GlanceNode(fitted.root, tokens, fittedPaint, fit, GlanceModifier.fillMaxSize())

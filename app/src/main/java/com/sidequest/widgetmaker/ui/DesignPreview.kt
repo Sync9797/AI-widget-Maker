@@ -157,9 +157,11 @@ fun DesignPreview(
                     }
                     Box(Modifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp)) {
                         val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens, inner = (panel.height / k).toInt() - panel.padTop - panel.padV)
+                        val phoneText = remember { com.sidequest.widgetmaker.widget.PhoneText(context) }
                         // Sized to fit, as on the home screen (see Fitter).
                         val fitted = com.sidequest.widgetmaker.spec.Fitter.fit(
-                            design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens, fit::shows,
+                            design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens,
+                    measure = phoneText, fontScale = phoneText.fontScale, shows = fit::shows,
                         )
                         val fittedPaint = if (fitted.k == k) paint else PreviewPaint(art.styler, paint.dark, fitted.k, usedLook.weatherIcons)
                         if (fit.shows(fitted.root)) PreviewNode(fitted.root, tokens, fittedPaint, fit, Modifier.fillMaxSize())

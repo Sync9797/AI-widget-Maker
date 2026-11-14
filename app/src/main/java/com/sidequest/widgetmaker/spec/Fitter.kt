@@ -23,7 +23,7 @@ object Fitter {
     const val MIN_SHRINK = 0.62f
 
     /** The smallest a single text gets to fit its line, as a part of its size, before it's cut short with "…". */
-    const val MIN_TEXT = 0.6f
+    const val MIN_TEXT = 0.5f
 
     data class Result(val root: Node, val k: Float)
 
@@ -31,8 +31,22 @@ object Fitter {
      * [root] fitted into [width]×[height] dp (the room inside the panel's padding) at scale [k]. [shows] says
      * which elements appear at this size (size rules and "ifSet").
      */
-    fun fit(root: Node, width: Float, height: Float, k: Float, tokens: Tokens, shows: (Node) -> Boolean): Result {
-        val m = Measure(tokens, shows)
+    /**
+     * How wide text is, in dp, at a text size in sp. On the phone it's measured with the font the home screen
+     * draws with, at the phone's font size setting; [Estimate] guesses from typical character widths (tests).
+     */
+    fun interface TextMeasure {
+        fun width(text: String, sizeSp: Float, weight: Weight): Float
+    }
+
+    /** Typical character widths, erring wide. */
+    val Estimate = TextMeasure { text, size, weight -> textWidth(text, size, weight) }
+
+    fun fit(
+        root: Node, width: Float, height: Float, k: Float, tokens: Tokens,
+        measure: TextMeasure = Estimate, fontScale: Float = 1f, shows: (Node) -> Boolean,
+    ): Result {
+        val m = Measure(tokens, shows, measure, fontScale)
         var scale = k
         repeat(3) {
             val natural = m.height(root, width, scale)
@@ -58,7 +72,13 @@ object Fitter {
         return em * size * (if (weight == Weight.bold) 1.06f else 1f)
     }
 
-    private class Measure(val tokens: Tokens, val shows: (Node) -> Boolean) {
+    private class Measure(val tokens: Tokens, val shows: (Node) -> Boolean, val measure: TextMeasure, val fontScale: Float) {
+        /** [text]'s width at [size] sp, in dp, with a little to spare (fonts differ a bit from phone to phone). */
+        fun textWidth(text: String, size: Float, weight: Weight = Weight.normal) = measure.width(text, size, weight) * 1.04f
+
+        /** A line of text [size] sp tall, in dp, at the phone's font size setting. */
+        fun line(size: Float) = size * fontScale * 1.18f
+
         fun kids(node: Node) = when (node) {
             is ColumnNode -> node.children.filter(shows)
             is RowNode -> node.children.filter(shows)
@@ -89,14 +109,14 @@ object Fitter {
             is TextNode -> {
                 val w = textWidth(tokens.fill(node.text), node.size * k, node.weight)
                 val lines = min(node.maxLines, max(1, ceil(w / max(1f, avail)).toInt()))
-                lines * node.size * k * 1.18f + if (node.highlight) 2 * k else 0f
+                lines * line(node.size * k) + if (node.highlight) 2 * k else 0f
             }
-            is ClockNode -> node.size * k * 1.18f
+            is ClockNode -> line(node.size * k)
             is IconNode -> node.size * k
             is RingNode -> node.size * k
             is ArtNode -> node.size * k
             is AppIconNode -> node.size * k
-            is TimerNode -> node.size * k * 1.18f
+            is TimerNode -> line(node.size * k)
             is ProgressNode -> node.height * k
             is DividerNode -> node.thickness * k
             is ChartNode -> node.height * k
@@ -106,7 +126,7 @@ object Fitter {
             is MapNode -> if (node.grow) 40 * k else node.height * k
             is MonthNode -> {
                 val weeks = MonthGrid.weeks(java.time.YearMonth.from(tokens.now), MonthGrid.firstDay(node)).size
-                val header = if (node.header) (node.size + 4) * k * 1.18f + max(2, node.size / 3) * k else 0f
+                val header = if (node.header) line((node.size + 4) * k) + max(2, node.size / 3) * k else 0f
                 header + (weeks + 1) * node.size * k * 1.3f
             }
             is ColumnNode -> {

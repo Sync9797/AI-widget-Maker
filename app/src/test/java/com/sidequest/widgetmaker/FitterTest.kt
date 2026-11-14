@@ -19,34 +19,34 @@ class FitterTest {
     fun tooTallShrinksTooShortStays() {
         val column = ColumnNode(children = List(6) { TextNode("Line $it", size = 20, maxLines = 1) })
         // Six 20 sp lines need about 142 dp: in 100 dp it shrinks, but no further than the floor.
-        val tight = Fitter.fit(column, 200f, 100f, 1f, tokens) { true }
+        val tight = Fitter.fit(column, 200f, 100f, 1f, tokens, shows = { true })
         assertTrue(tight.k < 1f)
         assertTrue(tight.k >= Fitter.MIN_SHRINK)
-        assertEquals(1f, Fitter.fit(column, 200f, 400f, 1f, tokens) { true }.k)
+        assertEquals(1f, Fitter.fit(column, 200f, 400f, 1f, tokens, shows = { true }).k)
     }
 
     @Test
     fun textTooWideShrinksToFitItsLine() {
         val price = TextNode("$0.9123456", size = 44, maxLines = 1)
-        val fitted = Fitter.fit(ColumnNode(children = listOf(price)), 130f, 200f, 1f, tokens) { true }.root as ColumnNode
+        val fitted = Fitter.fit(ColumnNode(children = listOf(price)), 130f, 200f, 1f, tokens, shows = { true }).root as ColumnNode
         val size = (fitted.children[0] as TextNode).size
         assertTrue("shrunk from 44 to $size", size < 44)
         assertTrue(size >= (44 * Fitter.MIN_TEXT).toInt())
         // Text that fits keeps its size.
-        val short = Fitter.fit(ColumnNode(children = listOf(TextNode("$1", size = 44, maxLines = 1))), 130f, 200f, 1f, tokens) { true }.root as ColumnNode
+        val short = Fitter.fit(ColumnNode(children = listOf(TextNode("$1", size = 44, maxLines = 1))), 130f, 200f, 1f, tokens, shows = { true }).root as ColumnNode
         assertEquals(44, (short.children[0] as TextNode).size)
     }
 
     @Test
     fun crowdedRowsCutTheirLongestText() {
         val row = RowNode(children = listOf(TextNode("Galaxy Watch Ultra Classic"), TextNode("100%")))
-        val fitted = Fitter.fit(row, 100f, 40f, 1f, tokens) { true }.root as RowNode
+        val fitted = Fitter.fit(row, 100f, 40f, 1f, tokens, shows = { true }).root as RowNode
         val name = fitted.children[0] as TextNode
         assertTrue("the long name gives way", name.grow)
         assertEquals(1, name.maxLines)
         assertFalse("the percent keeps its size", fitted.children[1].grow)
         // A row with room is left alone.
-        assertEquals(row, Fitter.fit(row, 400f, 40f, 1f, tokens) { true }.root)
+        assertEquals(row, Fitter.fit(row, 400f, 40f, 1f, tokens, shows = { true }).root)
     }
 
     @Test

@@ -140,6 +140,10 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
   "7:00 AM" or "All day", {calendar.1.date} "NOV 14", and {calendar.1.day} (that date) or
   {calendar.1.heading} ("Today, Sat, Nov 14"), set only on each day's first event (show them with "ifSet").
   A "tap":"calendar-new" starts a new event (a "+" button).
+- Device batteries (phone first, then the WHOOP strap via not-NOOP, then connected Bluetooth devices, emptiest
+  first): {devices.1.name}, {devices.1.level} (a number, for rings, bars and levelOf), {devices.1.pct} "95%",
+  {devices.1.icon} (an icon name: use it as an icon's "live"), {devices.1.charging}, up to devices.8, and
+  {devices.count}. Show slots 2 and up with "ifSet".
 - Exercise & health (Health Connect: Samsung Health, WHOOP, Fit...): {health.steps} "3,508",
   {health.stepGoal}, {health.stepsPct} (0-100, for a progress bar), {health.kcal} active kcal today,
   {health.totalKcal}, {health.heart} latest bpm, {health.restingHeart}, {health.heartMax} today's max,

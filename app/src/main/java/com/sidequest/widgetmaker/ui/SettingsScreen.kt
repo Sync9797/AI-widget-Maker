@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.sidequest.widgetmaker.ui
 
 import kotlinx.coroutines.launch
@@ -92,7 +94,7 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
         // The sections in two columns on a big screen, each going under the shorter column so far.
         Masonry(columns, 14.dp) {
             Section("Widget style", "Restyles the colors of all your widgets. Layouts stay as designed.") {
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     WidgetTheme.everywhere.forEach { theme ->
                         FilterChip(state.theme == theme, { viewModel.setTheme(theme) }, { Text(theme.label) })
                     }
@@ -485,7 +487,7 @@ private fun OneUiBlurControls(onChanged: () -> Unit) {
         }
     }
     Text(source.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Button(onClick = { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
             Text(if (source == OneUiBackdrop.Source.Picked) "Pick again" else "Pick my wallpaper picture")
         }
@@ -529,7 +531,8 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
     val samples = remember { Starters.all }
     val wide = samples.first { it.title == "Battery" }.design
     val square = samples.first { it.title == "Clock and weather" }.design
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    // Wrapping (not scrolling), so each preview gets the card's width and shrinks to fit it instead of running off.
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DesignPreview(wide, PreviewSize.Strip, theme, look = look)
         DesignPreview(square, PreviewSize.Square, theme, look = look)
     }
@@ -549,7 +552,7 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
             "Your launcher gives each screen its own size, so this follows the fold by itself.",
         style = MaterialTheme.typography.bodySmall,
     )
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         com.sidequest.widgetmaker.spec.AutoScale.entries.forEach { mode ->
             FilterChip(look.autoScale == mode, { update(look.copy(autoScale = mode)) }, { Text(mode.label) })
         }
@@ -557,7 +560,7 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
     Text(look.autoScale.about, style = MaterialTheme.typography.bodySmall)
 
     Text("Weather icons", style = MaterialTheme.typography.bodyLarge)
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         com.sidequest.widgetmaker.spec.WeatherIcons.entries.forEach { style ->
             FilterChip(look.weatherIcons == style, { update(look.copy(weatherIcons = style)) }, { Text(style.label) })
         }

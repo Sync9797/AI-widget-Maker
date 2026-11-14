@@ -176,7 +176,7 @@ object Starters {
 
     /** Device [n]'s battery as a bar: its icon, name and percent over a bar in its level's color. */
     private fun deviceBar(n: Int, show: String) = """
-        {"type":"column","show":{$show"ifSet":"{devices.$n.level}"},"children":[
+        {"type":"column","show":{$show"ifSet":"{devices.$n.name}"},"children":[
          {"type":"row","verticalAlign":"center","children":[
           {"type":"icon","name":"bluetooth","live":"{devices.$n.icon}","size":16,"color":"#FFFFFFFF"},
           {"type":"text","text":" {devices.$n.name}","size":13,"color":"#E6FFFFFF","maxLines":1,"grow":true},
@@ -187,8 +187,8 @@ object Starters {
 
     /** Device [n]'s battery as a ring with its percent, and its icon under it on taller widgets. */
     private fun deviceRing(n: Int, show: String = "") = """
-        {"type":"column","align":"center","grow":true,"show":{$show"ifSet":"{devices.$n.level}"},"children":[
-         {"type":"ring","value":"{devices.$n.level}","text":"{devices.$n.level}","size":56,"thickness":6,"textSize":16,"color":"#FF4CD964","trackColor":"#26FFFFFF","textColor":"#FFFFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS},
+        {"type":"column","align":"center","grow":true,"show":{$show"ifSet":"{devices.$n.name}"},"children":[
+         {"type":"ring","value":"{devices.$n.level}","text":"{devices.$n.num}","size":56,"thickness":6,"textSize":16,"color":"#FF4CD964","trackColor":"#26FFFFFF","textColor":"#FFFFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS},
          {"type":"icon","name":"bluetooth","live":"{devices.$n.icon}","size":14,"color":"#CCFFFFFF","show":{"minHeight":130}}]}"""
 
     private val SOURCES = listOf(
@@ -481,16 +481,16 @@ object Starters {
               ${agendaItem(5, long = false, minHeight = 320)}]}]}}""",
         ),
         Triple(
-            "Device batteries", "Your phone, your WHOOP strap (with not-NOOP) and connected Bluetooth earbuds, headphones and watches, as bars. Needs Device batteries in Data sources.",
+            "Device batteries", "Your phone, your WHOOP strap (with not-NOOP) and every connected Bluetooth device, as bars. Hide any in the widget's settings. Needs Device batteries in Data sources.",
             """{"name":"Device batteries","background":"#E61A1712","cornerRadius":28,"padding":14,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
               {"type":"icon","name":"phone","live":"{devices.1.icon}","size":18,"color":"#FFFFFFFF"},
               {"type":"text","text":" {devices.1.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true},
-              {"type":"icon","name":"bluetooth","live":"{devices.2.icon}","size":18,"color":"#FFFFFFFF","show":{"ifSet":"{devices.2.level}"}},
-              {"type":"text","text":" {devices.2.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"ifSet":"{devices.2.level}"}},
-              {"type":"icon","name":"bluetooth","live":"{devices.3.icon}","size":18,"color":"#FFFFFFFF","show":{"minWidth":300,"ifSet":"{devices.3.level}"}},
-              {"type":"text","text":" {devices.3.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"minWidth":300,"ifSet":"{devices.3.level}"}}]},
+              {"type":"icon","name":"bluetooth","live":"{devices.2.icon}","size":18,"color":"#FFFFFFFF","show":{"ifSet":"{devices.2.name}"}},
+              {"type":"text","text":" {devices.2.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"ifSet":"{devices.2.name}"}},
+              {"type":"icon","name":"bluetooth","live":"{devices.3.icon}","size":18,"color":"#FFFFFFFF","show":{"minWidth":300,"ifSet":"{devices.3.name}"}},
+              {"type":"text","text":" {devices.3.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"minWidth":300,"ifSet":"{devices.3.name}"}}]},
              {"type":"column","show":{"minHeight":130},"children":[
               ${deviceBar(1, "")},
               ${deviceBar(2, "")},

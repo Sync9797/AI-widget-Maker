@@ -308,7 +308,11 @@ private class Inputs(
             val store = DesignStore(context)
             return Inputs(
                 saved = store.designFor(appWidgetId),
-                tokens = AiWidget.currentTokens(context),
+                // This widget's own choice of devices to leave out of device batteries.
+                tokens = AiWidget.currentTokens(context).let { t ->
+                    val hidden = store.hiddenDevices(appWidgetId)
+                    if (hidden.isEmpty()) t else t.copy(feeds = com.sidequest.widgetmaker.feeds.DevicesMath.hide(t.feeds, hidden))
+                },
                 // Ambient is for music widgets; another design shown there gets One UI's frost instead.
                 theme = store.themeFor(appWidgetId).let { t ->
                     if (t == WidgetTheme.ambient && store.designFor(appWidgetId)?.design?.let(WidgetTheme::playsMusic) != true) WidgetTheme.oneui else t
@@ -398,7 +402,12 @@ private fun DesignWidget(
             ) {
                 // Size rules see the widget as it is before scaling, so a scaled 2×2 stays a 2×2 layout.
                 val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens, inner = (panel.height / k).toInt() - panel.padTop - panel.padV)
-                if (fit.shows(design.root)) GlanceNode(design.root, tokens, paint, fit, GlanceModifier.fillMaxSize())
+                // Sized to fit the panel: shrunk if it's too tall, long texts in crowded rows cut short with "…".
+                val fitted = com.sidequest.widgetmaker.spec.Fitter.fit(
+                    design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens, fit::shows,
+                )
+                val fittedPaint = if (fitted.k == k) paint else Paint(art.styler, albumArt, fitted.k, partTaps = paint.partTaps, weatherIcons = look.weatherIcons)
+                if (fit.shows(fitted.root)) GlanceNode(fitted.root, tokens, fittedPaint, fit, GlanceModifier.fillMaxSize())
             }
         }
     }

@@ -46,6 +46,7 @@ object FeedParsers {
             "weather.wind" to (current["wind_speed_10m"].double()?.roundToInt()?.let { "$it $unit" } ?: "--"),
             "weather.condition" to condition(code),
             "weather.icon" to weatherIcon(code, isDay),
+            "weather.mc" to meteocon(code, isDay),
             "weather.place" to place.name.substringBefore(","),
         )
     }
@@ -72,6 +73,7 @@ object FeedParsers {
             out["weather.h$i.temp"] = degrees(temps?.at(i))
             out["weather.h$i.rain"] = rain?.at(i)?.roundToInt()?.let { "$it%" } ?: "--"
             out["weather.h$i.icon"] = weatherIcon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
+            out["weather.h$i.mc"] = meteocon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
         }
         outlook(times, codes, rain)?.let { out["weather.outlook"] = it }
         val daily = root["daily"].obj()
@@ -82,6 +84,7 @@ object FeedParsers {
             out["weather.d$i.high"] = degrees((daily["temperature_2m_max"] as? JsonArray)?.at(i))
             out["weather.d$i.low"] = degrees((daily["temperature_2m_min"] as? JsonArray)?.at(i))
             out["weather.d$i.icon"] = weatherIcon((daily["weather_code"] as? JsonArray)?.at(i)?.roundToInt() ?: 0, true)
+            out["weather.d$i.mc"] = meteocon((daily["weather_code"] as? JsonArray)?.at(i)?.roundToInt() ?: 0, true)
         }
         return out
     }
@@ -146,6 +149,29 @@ object FeedParsers {
     }
 
     /** Which icon a "weather" icon element shows. */
+    /**
+     * The Meteocon (by Bas Milius, MIT) for a WMO weather code, by day or night: its name in
+     * res/drawable-nodpi, like "partly_cloudy_night_rain" for mc_partly_cloudy_night_rain_00.
+     */
+    fun meteocon(code: Int, isDay: Boolean): String {
+        val dn = if (isDay) "day" else "night"
+        return when (code) {
+            0 -> "clear_$dn"
+            1, 2 -> "partly_cloudy_$dn"
+            3 -> "overcast_$dn"
+            45, 48 -> "fog_$dn"
+            51, 53, 55 -> "drizzle"
+            56, 57, 66, 67 -> "sleet"
+            61, 63, 65 -> "rain"
+            71, 73, 75, 77 -> "snow"
+            80, 81, 82 -> "partly_cloudy_${dn}_rain"
+            85, 86 -> "partly_cloudy_${dn}_snow"
+            95 -> "thunderstorms_${dn}_rain"
+            96, 99 -> "thunderstorms_hail"
+            else -> "overcast_$dn"
+        }
+    }
+
     fun weatherIcon(code: Int, isDay: Boolean) = when (code) {
         0, 1 -> if (isDay) "sun" else "moon"
         2, 3, 45, 48 -> "cloud"

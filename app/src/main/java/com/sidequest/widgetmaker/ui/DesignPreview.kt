@@ -117,7 +117,7 @@ fun DesignPreview(
     // The same panel the home screen widget gets (in the preview, One UI assumes the middle of the screen).
     val art = remember(theme, panel, usedLook) { PanelArt.build(context, theme, panel, usedLook, null) }
     val k = Shapes.scale(panel, usedLook)
-    val paint = PreviewPaint(art.styler, isSystemInDarkTheme(), k)
+    val paint = PreviewPaint(art.styler, isSystemInDarkTheme(), k, usedLook.weatherIcons)
     // Shrinks to fit narrow screens, drawn exactly as at full size.
     BoxWithConstraints(modifier) {
         val scale = minOf(1f, maxWidth / size.width)
@@ -211,12 +211,34 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             fontWeight = weight(node.weight),
             maxLines = 1,
         )
-        is IconNode -> Image(
-            painter = painterResource(iconRes(node, tokens)),
-            contentDescription = null,
-            modifier = modifier.size((node.size * paint.k).dp),
-            colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
-        )
+        is IconNode -> {
+            val context = LocalContext.current
+            val mc = if (paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.classic) null
+            else com.sidequest.widgetmaker.widget.Meteocons.nameFor(node, tokens)
+                ?.let { com.sidequest.widgetmaker.widget.Meteocons.frames(context, it) }?.takeIf { it.isNotEmpty() }
+            if (mc != null) {
+                // Animated as on the home screen: the current weather's frames, 10 a second.
+                val animate = paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.animated &&
+                    com.sidequest.widgetmaker.widget.Meteocons.isNow(node) && mc.size > 1
+                var frame by remember(mc) { mutableStateOf(0) }
+                if (animate) LaunchedEffect(mc) {
+                    while (true) {
+                        delay(com.sidequest.widgetmaker.widget.Meteocons.FRAME_MS.toLong())
+                        frame = (frame + 1) % mc.size
+                    }
+                }
+                Image(
+                    painter = painterResource(mc[if (animate) frame else 0]),
+                    contentDescription = null,
+                    modifier = modifier.size((node.size * paint.k * com.sidequest.widgetmaker.widget.mcScale(node.size)).dp),
+                )
+            } else Image(
+                painter = painterResource(iconRes(node, tokens)),
+                contentDescription = null,
+                modifier = modifier.size((node.size * paint.k).dp),
+                colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
+            )
+        }
         is ProgressNode -> LinearProgressIndicator(
             progress = { tokens.progress(node.value) },
             modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp).clip(RoundedCornerShape((node.height * paint.k).dp)),
@@ -302,7 +324,12 @@ private fun container(modifier: Modifier, paint: PreviewPaint, background: Strin
 }
 
 /** Theme colors for the preview, in the app's current light or dark mode. */
-private class PreviewPaint(val styler: Styler, val dark: Boolean, val k: Float = 1f) {
+private class PreviewPaint(
+    val styler: Styler,
+    val dark: Boolean,
+    val k: Float = 1f,
+    val weatherIcons: com.sidequest.widgetmaker.spec.WeatherIcons = com.sidequest.widgetmaker.spec.WeatherIcons.classic,
+) {
     operator fun invoke(role: Role, design: String?) = Color(styler.argb(role, design, dark))
 }
 

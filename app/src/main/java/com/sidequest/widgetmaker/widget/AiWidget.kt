@@ -333,7 +333,7 @@ private fun DesignWidget(
     // Until a blurred widget knows where it sits, its parts don't take taps of their own: any tap then
     // lands on the panel, which is the only tap that says where the widget is. (A pill that is all text
     // otherwise never learns it.) Once it knows, the parts' own taps come back.
-    val paint = Paint(art.styler, albumArt, k, partTaps = !(theme.frosted && onScreen == null))
+    val paint = Paint(art.styler, albumArt, k, partTaps = !(theme.frosted && onScreen == null), weatherIcons = look.weatherIcons)
     Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Box(GlanceModifier.size(panel.width.dp, panel.height.dp)) {
             // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.
@@ -379,7 +379,13 @@ private fun DesignWidget(
  * match the phone's current palette (wallpaper or a One UI color palette) and
  * light or dark mode, with nothing cached in this app.
  */
-private class Paint(val styler: Styler, val albumArt: android.graphics.Bitmap? = null, val k: Float = 1f, val partTaps: Boolean = true) {
+private class Paint(
+    val styler: Styler,
+    val albumArt: android.graphics.Bitmap? = null,
+    val k: Float = 1f,
+    val partTaps: Boolean = true,
+    val weatherIcons: com.sidequest.widgetmaker.spec.WeatherIcons = com.sidequest.widgetmaker.spec.WeatherIcons.classic,
+) {
     operator fun invoke(role: Role, design: String?): ColorProvider {
         // Colors that mean something (a red Charge) stay as they are in every theme.
         if (role == Role.Level) return ColorProvider(Color(Colors.argb(design)))
@@ -457,12 +463,24 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             )
         }
         is ClockNode -> AndroidRemoteViews(remoteViews = clockViews(node, paint.styler, paint.k), modifier = modifier)
-        is IconNode -> Image(
-            provider = ImageProvider(iconRes(node, tokens)),
-            contentDescription = null,
-            modifier = modifier.size((node.size * paint.k).dp),
-            colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
-        )
+        is IconNode -> {
+            // A weather icon as a Meteocon (in its own colors, a touch bigger: its art has room around it),
+            // the current weather's animated when chosen; else the classic icon, tinted.
+            val mc = if (paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.classic) null
+            else Meteocons.nameFor(node, tokens)?.let { Meteocons.frames(context, it) }?.takeIf { it.isNotEmpty() }
+            val mcSize = (node.size * paint.k * mcScale(node.size)).dp
+            when {
+                mc != null && mc.size > 1 && paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.animated && Meteocons.isNow(node) ->
+                    AndroidRemoteViews(remoteViews = Meteocons.flipper(context, mc), modifier = modifier.size(mcSize))
+                mc != null -> Image(provider = ImageProvider(mc[0]), contentDescription = null, modifier = modifier.size(mcSize))
+                else -> Image(
+                    provider = ImageProvider(iconRes(node, tokens)),
+                    contentDescription = null,
+                    modifier = modifier.size((node.size * paint.k).dp),
+                    colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
+                )
+            }
+        }
         is ProgressNode -> LinearProgressIndicator(
             progress = tokens.progress(node.value),
             modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
@@ -684,3 +702,9 @@ private fun tapLayer(context: Context, intent: android.content.Intent): android.
         setOnClickPendingIntent(R.id.tap_layer, pending)
     }
 }
+
+/**
+ * How much bigger a Meteocon is drawn than a classic icon of [size] dp: their art has room around it.
+ * Small ones (in forecast rows) stay as designed, so the rows keep their room.
+ */
+fun mcScale(size: Int): Float = if (size >= 24) 1.3f else 1f

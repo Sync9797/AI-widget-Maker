@@ -176,6 +176,9 @@ class StarterShots {
         )
 
         val SAMPLE = NOOP_SAMPLE + mapOf(
+            "weather.mc" to "partly_cloudy_day_rain", "weather.h1.mc" to "clear_day", "weather.h2.mc" to "partly_cloudy_day",
+            "weather.h3.mc" to "rain", "weather.h4.mc" to "thunderstorms_day_rain", "weather.h5.mc" to "overcast_day",
+            "weather.d1.mc" to "clear_day", "weather.d2.mc" to "thunderstorms_day_rain", "weather.d3.mc" to "partly_cloudy_day",
             "weather.temp" to "72°", "weather.feelsLike" to "70°", "weather.high" to "78°", "weather.low" to "55°",
             "weather.rain" to "40%", "weather.wind" to "9 mph", "weather.condition" to "Partly cloudy",
             "weather.icon" to "cloud", "weather.place" to "Austin",

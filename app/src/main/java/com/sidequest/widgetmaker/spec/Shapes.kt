@@ -59,7 +59,16 @@ data class Look(
      * at the top and fades toward the bottom, like polished glass, instead of a flat even outline.
      */
     val premium: Boolean = true,
+    /** How weather icons look: the classic flat ones, Meteocons, or Meteocons with the current weather animated. */
+    val weatherIcons: WeatherIcons = WeatherIcons.animated,
 )
+
+/** The weather icons' style (Settings → Widget look). Meteocons are by Bas Milius, MIT licensed. */
+enum class WeatherIcons(val label: String) {
+    classic("Classic"),
+    meteocons("Meteocons"),
+    animated("Animated Meteocons"),
+}
 
 /** How a widget grows when it's bigger than a standard 2×2 (an open foldable, a tablet, a 4×4). */
 enum class AutoScale(val label: String, val about: String) {

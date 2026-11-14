@@ -499,6 +499,14 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             val marked = if (node.highlight) {
                 modifier.background(paint(role, color)).cornerRadius((6 * paint.k).dp).padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
             } else modifier
+            // A line too wide for its room: the home screen shrinks it to fit, measuring it itself.
+            if (node.autoFit && !node.highlight) {
+                AndroidRemoteViews(
+                    remoteViews = fitTextViews(node, tokens.fill(node.text), role, color, paint.styler, paint.k),
+                    modifier = marked.fillMaxWidth().height((node.size * paint.k * PhoneText(context).fontScale * 1.25f).dp),
+                )
+                return
+            }
             Text(
                 text = tokens.fill(node.text),
                 modifier = marked,
@@ -685,6 +693,46 @@ private fun clockViews(node: ClockNode, styler: Styler, k: Float = 1f): RemoteVi
             setTextColor(R.id.clock, styler.argb(Role.Text, node.color, dark = false))
         }
         setTextViewTextSize(R.id.clock, TypedValue.COMPLEX_UNIT_SP, node.size * k)
+    }
+}
+
+/** The text sizes the shrink-to-fit layouts start from (res/layout/fit_text_<weight>_<size>.xml). */
+private val FIT_SIZES = intArrayOf(10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 44, 48, 52, 56, 64, 72, 80, 96)
+
+/**
+ * One line of text that the home screen shrinks to fit its width (Android's autosizing, which measures it
+ * in the real font), starting from the closest size at or under the design's. Never cut short with "…".
+ */
+@Composable
+private fun fitTextViews(node: TextNode, text: String, role: Role, design: String?, styler: Styler, k: Float): RemoteViews {
+    val context = androidx.glance.LocalContext.current
+    val target = node.size * k
+    val start = FIT_SIZES.lastOrNull { it <= target + 0.5f } ?: FIT_SIZES.first()
+    val weight = when (node.weight) {
+        Weight.bold -> "b"
+        Weight.medium -> "m"
+        else -> "n"
+    }
+    val layout = context.resources.getIdentifier("fit_text_${weight}_$start", "layout", context.packageName)
+    return RemoteViews(context.packageName, layout).apply {
+        setTextViewText(R.id.fit_text, text)
+        when {
+            role == Role.Level -> setTextColor(R.id.fit_text, Colors.argb(design))
+            styler.theme == WidgetTheme.material -> {
+                val res = AiWidget.materialRes(styler.materialSlot(role, design))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setColorStateList(R.id.fit_text, "setTextColor", res)
+                else setTextColor(R.id.fit_text, context.getColor(res))
+            }
+            else -> setTextColor(R.id.fit_text, styler.argb(role, design, dark = false))
+        }
+        setInt(
+            R.id.fit_text, "setGravity",
+            android.view.Gravity.CENTER_VERTICAL or when (node.align) {
+                HAlign.start -> android.view.Gravity.START
+                HAlign.center -> android.view.Gravity.CENTER_HORIZONTAL
+                HAlign.end -> android.view.Gravity.END
+            },
+        )
     }
 }
 

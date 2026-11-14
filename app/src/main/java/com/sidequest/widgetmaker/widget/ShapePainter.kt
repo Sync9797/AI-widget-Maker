@@ -55,6 +55,7 @@ object ShapePainter {
                     addRoundRect(r, floatArrayOf(tl, tl, tr, tr, br, br, bl, bl), Path.Direction.CW)
                 }
                 WidgetShape.circle -> addOval(r, Path.Direction.CW)
+                WidgetShape.sideCircle -> sideCircle(this, r)
                 WidgetShape.arch -> {
                     val bottom = min(rad * 0.35f, r.width() / 6)
                     addRoundRect(r, floatArrayOf(r.width() / 2, r.width() / 2, r.width() / 2, r.width() / 2, bottom, bottom, bottom, bottom), Path.Direction.CW)
@@ -115,6 +116,26 @@ object ShapePainter {
             if (i == 0) path.moveTo(x.toFloat(), y.toFloat()) else path.lineTo(x.toFloat(), y.toFloat())
         }
         path.close()
+    }
+
+    /** Two circles, bottom left and top right, joined into one capsule slanting across the square. */
+    private fun sideCircle(path: Path, r: RectF) {
+        val side = min(r.width(), r.height())
+        val left = r.centerX() - side / 2; val top = r.centerY() - side / 2
+        val end = side * com.sidequest.widgetmaker.spec.Shapes.SIDE_CIRCLE_END
+        val ax = left + end; val ay = top + side - end // bottom left
+        val bx = left + side - end; val by = top + end // top right
+        // The band between them: the two centers pushed out sideways by the radius.
+        val len = kotlin.math.hypot((bx - ax).toDouble(), (by - ay).toDouble()).toFloat()
+        val nx = -(by - ay) / len * end; val ny = (bx - ax) / len * end
+        val shape = Path().apply {
+            addCircle(ax, ay, end, Path.Direction.CW)
+            op(Path().apply { addCircle(bx, by, end, Path.Direction.CW) }, Path.Op.UNION)
+            op(Path().apply {
+                moveTo(ax + nx, ay + ny); lineTo(bx + nx, by + ny); lineTo(bx - nx, by - ny); lineTo(ax - nx, ay - ny); close()
+            }, Path.Op.UNION)
+        }
+        path.addPath(shape)
     }
 
     /** A rounded card with a half-circle notch cut into the middle of each side. */
@@ -183,6 +204,36 @@ object ShapePainter {
                 },
             )
         }
+        return out
+    }
+
+    /**
+     * Liquid glass's rim: light bending at the edge of clear glass. A bright rim that glints at the top left
+     * and bottom right and fades between, over a faint dark line just inside it for depth.
+     */
+    fun liquidRim(shape: WidgetShape, w: Int, h: Int, radius: Float, thickness: Float): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        // Depth: a soft dark line just inside the rim.
+        canvas.drawPath(path(shape, w.toFloat(), h.toFloat(), radius, inset = thickness * 1.6f), Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = thickness
+            color = 0x1A000000
+        })
+        // The rim: bright at two opposite corners, where light catches it.
+        canvas.drawPath(path(shape, w.toFloat(), h.toFloat(), radius, inset = thickness / 2), Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = thickness
+            shader = LinearGradient(
+                0f, 0f, w.toFloat(), h.toFloat(),
+                intArrayOf(0xE6FFFFFF.toInt(), 0x33FFFFFF, 0x1AFFFFFF, 0x33FFFFFF, 0xB3FFFFFF.toInt()),
+                floatArrayOf(0f, 0.3f, 0.5f, 0.7f, 1f), Shader.TileMode.CLAMP,
+            )
+        })
+        // A faint sheen across the top, as on curved glass.
+        canvas.drawPath(path(shape, w.toFloat(), h.toFloat(), radius), Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = LinearGradient(0f, 0f, 0f, h * 0.35f, 0x1FFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP)
+        })
         return out
     }
 

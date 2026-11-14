@@ -121,7 +121,7 @@ object OneUiBackdrop {
      * [onScreen] (its place on the home screen, once known; otherwise the
      * middle is assumed), [outW]×[outH] pixels, not yet cut to shape.
      */
-    fun render(context: Context, widthPx: Int, heightPx: Int, onScreen: Backdrop.Box?, outW: Int, outH: Int, light: Boolean? = null): Result {
+    fun render(context: Context, widthPx: Int, heightPx: Int, onScreen: Backdrop.Box?, outW: Int, outH: Int, light: Boolean? = null, clear: Boolean = false): Result {
         val (sw, sh) = screenSize(context)
         val w = max(8, widthPx)
         val h = max(8, heightPx)
@@ -136,7 +136,7 @@ object OneUiBackdrop {
             Bitmap.createScaledBitmap(crop, smallW, smallH, true)
         } ?: colorsBitmap(context, smallW, smallH, place, sw, sh)
 
-        return frost(small, outW, outH, light = light)
+        return frost(small, outW, outH, light = light, clear = clear)
     }
 
     /**
@@ -159,18 +159,23 @@ object OneUiBackdrop {
      * Blurs [small], frosts it like One UI, and scales it up with the faintest highlight. [light]: light glass
      * or dark (like the phone's light or dark mode); null to go by how bright the wallpaper is.
      */
-    private fun frost(small: Bitmap, outW: Int, outH: Int, saturation: Double = 1.35, light: Boolean? = null): Result {
+    private fun frost(small: Bitmap, outW: Int, outH: Int, saturation: Double = 1.35, light: Boolean? = null, clear: Boolean = false): Result {
         val smallW = small.width
         val smallH = small.height
         // 2. Blur it, see how bright it is, and frost it like One UI does.
         val pixels = IntArray(smallW * smallH)
         small.getPixels(pixels, 0, smallW, 0, 0, smallW, smallH)
-        Backdrop.blur(pixels, smallW, smallH, radius = max(2, min(smallW, smallH) / 8))
+        // Liquid glass ([clear]) is barely blurred, so the wallpaper still reads through it.
+        Backdrop.blur(pixels, smallW, smallH, radius = if (clear) max(1, min(smallW, smallH) / 24) else max(2, min(smallW, smallH) / 8))
         val isLight = light ?: (Backdrop.luminance(pixels) > Backdrop.LIGHT_ABOVE)
         // Matched by eye to One UI 8's own widgets over the same wallpaper: its glass keeps the wallpaper's
         // colors rich (more so in the dark), under a veil about half way to white, or half way to black.
         Backdrop.saturate(pixels, if (isLight) saturation else saturation + 0.25)
-        if (isLight) Backdrop.tint(pixels, 0xF7F5F3, 120) else Backdrop.tint(pixels, 0x121212, 132)
+        when {
+            clear -> if (isLight) Backdrop.tint(pixels, 0xFFFFFF, 56) else Backdrop.tint(pixels, 0x101010, 70)
+            isLight -> Backdrop.tint(pixels, 0xF7F5F3, 120)
+            else -> Backdrop.tint(pixels, 0x121212, 132)
+        }
         val frosted = Bitmap.createBitmap(pixels, smallW, smallH, Bitmap.Config.ARGB_8888)
 
         // 3. Scale up smoothly, with the faintest top highlight (One UI's glass has next to none).

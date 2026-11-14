@@ -107,10 +107,18 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                         WidgetTheme.oneui -> "Like Samsung One UI: your wallpaper behind each widget, blurred and frosted, with " +
                             "text that turns dark or light to suit it and accents in your color palette."
                         WidgetTheme.ambient -> "Music widgets only: frosted from the album art of what's playing."
+                        WidgetTheme.liquid -> "Clear glass: your wallpaper shows through, only lightly blurred, with a bright rim " +
+                            "that glints at the corners."
+                        WidgetTheme.tonal -> "Solid panels in a rich tone of your phone's colors, like Pixel's Material You widgets. " +
+                            "Light or dark with your phone."
+                        WidgetTheme.timeOfDay -> "Each panel takes the sky's color through the day: deep blue at night, warm at " +
+                            "sunrise and sunset, blue by day (by your weather's sunrise and sunset when it's on)."
+                        WidgetTheme.outline -> "No panel: just a thin outline, with your widget's content right on the wallpaper. " +
+                            "Text turns dark or light to suit it. Best on calm wallpapers."
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
-                if (state.theme == WidgetTheme.oneui) OneUiBlurControls(onChanged = viewModel::refreshWidgets)
+                if (state.theme == WidgetTheme.oneui || state.theme == WidgetTheme.liquid) OneUiBlurControls(onChanged = viewModel::refreshWidgets)
                 if (state.theme == WidgetTheme.material) MaterialSwatches()
             }
 

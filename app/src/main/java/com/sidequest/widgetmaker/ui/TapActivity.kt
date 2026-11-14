@@ -109,7 +109,7 @@ private fun TapActivity.learnPlace() {
     store.noteTap(id, bounds?.let { Backdrop.Box(it.left, it.top, it.right, it.bottom) }, OneUiBackdrop.screenKey(this))
     if (bounds == null || bounds.width() < 8 || bounds.height() < 8) return
     val moved = store.setBoundsFor(id, Backdrop.Box(bounds.left, bounds.top, bounds.right, bounds.bottom), OneUiBackdrop.screenKey(this))
-    if (moved && store.themeFor(id).frosted) {
+    if (moved && store.themeFor(id).showsWallpaper) {
         val app = applicationContext
         CoroutineScope(Dispatchers.Default).launch { runCatching { updateWidget(app, id) } }
     }

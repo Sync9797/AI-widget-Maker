@@ -175,6 +175,12 @@ object DesignParser {
             levels = sanitize(node.levels),
         )
         is SleepNode -> node.copy(show = sanitize(node.show), tap = node.tap?.take(80), height = node.height.coerceIn(4, 48))
+        is MapNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            height = node.height.coerceIn(40, 400),
+            cornerRadius = node.cornerRadius.coerceIn(0, 60),
+        )
         is MonthNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),

@@ -99,6 +99,8 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"month","size":12,"color":color,"accent":color,"months":1,"header":true,"weekNumbers":false,"grow":true}
    this month's calendar (One UI style): today marked out, days with events in "accent"; "months":2 shows
    next month beside it (wide widgets); give it "grow":true so its weeks fill the height
+- {"type":"map","height":120,"cornerRadius":16,"grow":false}   the Nearby traffic map: TomTom's map with live
+   traffic around home (needs traffic set up); "grow":true fills the room left
 A widget can fill up like a battery: add "fill":{"value":"{battery}","color":"#FF9FD8CF",
 "levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"}],"levelsUpTo":30} next to "root".
 The whole panel fills from the left up to the value (0-100) in the style's accent (the wallpaper color

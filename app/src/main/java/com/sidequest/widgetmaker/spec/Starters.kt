@@ -518,6 +518,20 @@ object Starters {
               ${deviceRing(8)}]}]}}""",
         ),
         Triple(
+            "Nearby traffic", "A map of live traffic around home (TomTom), with your commute under it when there's room. Needs a TomTom key and your home in Data sources.",
+            """{"name":"Nearby traffic","background":"#E61A1C1E","cornerRadius":28,"padding":6,"root":
+            {"type":"column","children":[
+             {"type":"map","grow":true,"cornerRadius":22},
+             {"type":"row","verticalAlign":"center","show":{"minHeight":130,"ifSet":"{traffic.commute}"},"children":[
+              {"type":"spacer","size":8},
+              {"type":"icon","name":"car","size":16,"color":"#FF8AB4F8"},
+              {"type":"text","text":" {traffic.commute} to {traffic.to}","size":13,"color":"#FFFFFFFF","weight":"medium","maxLines":1,"grow":true},
+              {"type":"text","text":"{traffic.delay}","size":12,"color":"#B3FFFFFF","maxLines":1},
+              {"type":"spacer","size":8}]},
+             {"type":"spacer","size":4,"show":{"minHeight":130}},
+             {"type":"text","text":"{traffic.distance}","size":11,"color":"#99FFFFFF","align":"center","maxLines":1,"show":{"minHeight":300}}]}}""",
+        ),
+        Triple(
             "Agenda card", "Side Quest's date card: what's next at the top, today's date big at the bottom.",
             """{"name":"Agenda card","background":"#E61C2433","cornerRadius":28,"padding":16,"root":
             {"type":"column","children":[

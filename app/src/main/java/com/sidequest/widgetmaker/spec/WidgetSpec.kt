@@ -352,6 +352,20 @@ data class RingNode(
     }
 }
 
+/**
+ * The Nearby traffic map (TomTom's map with live traffic, centered on home, needs a TomTom key): [height] dp
+ * tall, or all the room there is with "grow". Its picture is cropped to fit, keeping the middle.
+ */
+@Serializable
+@SerialName("map")
+data class MapNode(
+    val height: Int = 120,
+    val cornerRadius: Int = 16,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
 /** Last night's sleep as a bar of stages (awake, light, deep, REM), [height] dp tall. */
 @Serializable
 @SerialName("sleep")

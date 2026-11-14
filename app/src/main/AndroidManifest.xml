@@ -41,6 +41,11 @@
         <package android:name="com.noop.whoop.staging" />
         <package android:name="com.noop.whoop.debug" />
         <package android:name="com.noop.whoop.demo" />
+        <!-- Home screens, which are given read access to the Nearby traffic map picture. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
         <!-- To list your apps when you pick which one a widget tap opens. -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -98,6 +103,17 @@
                 <action android:name="com.sidequest.widgetmaker.NOOP_CHANGED" />
             </intent-filter>
         </receiver>
+
+        <!-- Shares the Nearby traffic map picture with the home screen (read-only, granted to home screens). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- Bluetooth devices coming and going (and their battery levels), so device battery widgets redraw. -->
         <receiver

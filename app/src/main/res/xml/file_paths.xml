@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files the home screen may read: only the maps folder (the Nearby traffic map). -->
+<paths>
+    <files-path name="maps" path="maps/" />
+</paths>

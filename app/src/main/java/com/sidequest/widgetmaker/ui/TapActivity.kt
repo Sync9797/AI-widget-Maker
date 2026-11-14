@@ -137,6 +137,7 @@ object TapIntents {
             is TapAction.GameAction -> intent.putExtra("gameAction", action.action).putExtra("gameId", action.id)
             is TapAction.Media -> intent.putExtra("media", action.command)
             TapAction.NewEvent -> intent.putExtra("newEvent", true)
+            is TapAction.App -> intent.putExtra("app", action.packageName)
         }
         // A distinct data URI per target, so each element gets its own PendingIntent.
         return intent.setData(Uri.parse("aiwidget://tap/" + action.hashCode().toUInt()))
@@ -148,6 +149,7 @@ object TapIntents {
         intent.getStringExtra("gameScreen")?.let { return TapAction.GameScreen(it) }
         intent.getStringExtra("media")?.let { return TapAction.Media(it) }
         if (intent.getBooleanExtra("newEvent", false)) return TapAction.NewEvent
+        intent.getStringExtra("app")?.let { return TapAction.App(it) }
         intent.getStringExtra("gameAction")?.let { a -> intent.getStringExtra("gameId")?.let { return TapAction.GameAction(a, it) } }
         intent.getLongArrayExtra("event")?.takeIf { it.size == 3 }?.let { return TapAction.CalendarEvent(it[0], it[1], it[2]) }
         return intent.getStringExtra("kind")?.let { runCatching { TapAction.Open(TapKind.valueOf(it)) }.getOrNull() }
@@ -175,6 +177,11 @@ object AppOpener {
             is TapAction.GameAction -> gameAction(context, action)
             is TapAction.Media -> com.sidequest.widgetmaker.music.Music.control(context, action.command)
             TapAction.NewEvent -> start(context, Intent(Intent.ACTION_INSERT, CalendarContract.Events.CONTENT_URI))
+            is TapAction.App -> start(
+                context,
+                context.packageManager.getLaunchIntentForPackage(action.packageName)
+                    ?: Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${action.packageName}")),
+            )
         }
     }
 

@@ -61,7 +61,7 @@ enum class Weight { light, normal, medium, bold }
  * Icons the widget can draw (each is a drawable in the app). "weather" is
  * live: it shows sun, moon, cloud, rain, snow or storm for the current weather.
  */
-enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, umbrella, pin, flame, egg, paw, steps, check, play, pause, next, previous, weather, phone, watch, headphones, band, bluetooth }
+enum class IconName { star, heart, bolt, moon, sun, battery, calendar, music, cloud, rain, snow, storm, car, news, ticket, coin, umbrella, pin, flame, egg, paw, steps, check, play, pause, next, previous, weather, phone, watch, headphones, band, bluetooth, sparkle }
 
 @Serializable
 sealed interface Node {
@@ -237,10 +237,23 @@ data class ProgressNode(
     /** Colors it by a number's level, like "{battery}": see [Level]. */
     val levelOf: String? = null,
     val levels: List<Level>? = null,
+    /**
+     * A pill like One UI's battery bars: with [icon] (or [iconLive], an icon name value like
+     * "{devices.1.icon}") at its start and [text] (like "{battery}%") at its end, inside the bar. Give it
+     * a height of about 32; it's fully rounded.
+     */
+    val icon: IconName? = null,
+    val iconLive: String? = null,
+    val text: String? = null,
+    val textSize: Int = 15,
+    val textColor: String = "#FFFFFFFF",
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
-) : Node
+) : Node {
+    /** Drawn as a labeled pill rather than a thin bar. */
+    val pill get() = icon != null || iconLive != null || text != null
+}
 
 /** A thin line between rows, [thickness] dp. */
 @Serializable
@@ -361,6 +374,20 @@ data class RingNode(
 data class MapNode(
     val height: Int = 120,
     val cornerRadius: Int = 16,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/**
+ * An installed app's own icon (from the phone, by its [packageName]), [size] dp; a sparkle when it isn't
+ * installed. Pair it with "tap":"app:<package>" for a shortcut that opens the app.
+ */
+@Serializable
+@SerialName("appicon")
+data class AppIconNode(
+    val packageName: String,
+    val size: Int = 48,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

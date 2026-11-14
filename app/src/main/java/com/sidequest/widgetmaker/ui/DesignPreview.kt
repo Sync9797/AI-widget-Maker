@@ -268,7 +268,33 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
             )
         }
-        is ProgressNode -> LinearProgressIndicator(
+        is ProgressNode -> if (node.pill) {
+            val h = (node.height * paint.k).dp
+            Box(modifier.fillMaxWidth().height(h).clip(RoundedCornerShape(h / 2)), contentAlignment = Alignment.CenterStart) {
+                LinearProgressIndicator(
+                    progress = { tokens.progress(node.value) },
+                    modifier = Modifier.fillMaxSize(),
+                    color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
+                    trackColor = paint(Role.Track, node.trackColor),
+                    gapSize = 0.dp,
+                    drawStopIndicator = {},
+                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Butt,
+                )
+                Row(Modifier.fillMaxSize().padding(horizontal = h * 0.4f), verticalAlignment = Alignment.CenterVertically) {
+                    val iconNode = IconNode(node.icon ?: com.sidequest.widgetmaker.spec.IconName.battery, live = node.iconLive, size = (node.height * 0.55f).toInt())
+                    if (node.icon != null || node.iconLive != null) Image(
+                        painter = painterResource(iconRes(iconNode, tokens)),
+                        contentDescription = null,
+                        modifier = Modifier.size((iconNode.size * paint.k).dp),
+                        colorFilter = ColorFilter.tint(paint(Role.Text, node.textColor)),
+                    )
+                    Spacer(Modifier.weight(1f))
+                    node.text?.let {
+                        Text(tokens.fill(it), maxLines = 1, color = paint(Role.Text, node.textColor), fontSize = (node.textSize * paint.k).sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        } else LinearProgressIndicator(
             progress = { tokens.progress(node.value) },
             modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp).clip(RoundedCornerShape((node.height * paint.k).dp)),
             color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
@@ -333,6 +359,17 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.AppIconNode -> {
+            val context = LocalContext.current
+            val px = (node.size * paint.k * context.resources.displayMetrics.density).toInt()
+            val icon = remember(node.packageName, px) { com.sidequest.widgetmaker.widget.AppIcons.bitmap(context, node.packageName, px) }
+            val size = (node.size * paint.k).dp
+            if (icon != null) Image(icon.asImageBitmap(), contentDescription = null, modifier = modifier.size(size))
+            else Image(
+                painter = painterResource(R.drawable.icon_sparkle), contentDescription = null, modifier = modifier.size(size),
+                colorFilter = ColorFilter.tint(paint(Role.Accent, "#FFFFFFFF")),
+            )
+        }
         is com.sidequest.widgetmaker.spec.MapNode -> {
             val context = LocalContext.current
             val stamp = tokens.feeds["map.traffic"]

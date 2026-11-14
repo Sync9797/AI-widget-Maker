@@ -138,7 +138,11 @@ object DesignParser {
             tap = node.tap?.take(80),
             color = Colors.orDefault(node.color, "#FF7CF29C"),
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
-            height = node.height.coerceIn(2, 24),
+            height = node.height.coerceIn(2, if (node.pill) 64 else 24),
+            iconLive = node.iconLive?.take(60),
+            text = node.text?.take(60),
+            textSize = node.textSize.coerceIn(8, 32),
+            textColor = Colors.orDefault(node.textColor, "#FFFFFFFF"),
         )
         is DividerNode -> node.copy(
             show = sanitize(node.show),
@@ -175,6 +179,12 @@ object DesignParser {
             levels = sanitize(node.levels),
         )
         is SleepNode -> node.copy(show = sanitize(node.show), tap = node.tap?.take(80), height = node.height.coerceIn(4, 48))
+        is AppIconNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(120),
+            packageName = node.packageName.take(100),
+            size = node.size.coerceIn(16, 160),
+        )
         is MapNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),

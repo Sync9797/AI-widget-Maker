@@ -35,6 +35,9 @@ sealed interface TapAction {
     /** Play/pause ("toggle"), "next" or "prev" on whatever is playing. */
     data class Media(val command: String) : TapAction
 
+    /** Opens an app by its package name ("app:com.anthropic.claude"), or its store page if it isn't installed. */
+    data class App(val packageName: String) : TapAction
+
     /** Starts a new event in the calendar app ("calendar-new"). */
     data object NewEvent : TapAction
 }
@@ -100,6 +103,7 @@ object Taps {
                 is SleepNode -> add(TapKind.health)
                 is MonthNode -> repeat(3) { add(TapKind.calendar) }
                 is MapNode -> repeat(3) { add(TapKind.commute) }
+                is AppIconNode -> Unit
                 is ChartNode -> TOKEN.findAll(node.series).forEach { add(kindOf(it.groupValues[1])) }
                 is RingNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
                 is SpacerNode, is DividerNode -> Unit
@@ -140,6 +144,9 @@ object Taps {
             return value.removePrefix("music:").takeIf { it in setOf("toggle", "next", "prev") }?.let { TapAction.Media(it) }
         }
         if (value == "calendar-new") return TapAction.NewEvent
+        if (value.startsWith("app:")) {
+            return value.removePrefix("app:").trim().takeIf { Regex("[A-Za-z0-9_.]+").matches(it) }?.let { TapAction.App(it) }
+        }
         if (value.startsWith("calendar-event:")) {
             val parts = value.removePrefix("calendar-event:").split(':').mapNotNull { it.toLongOrNull() }
             return if (parts.size == 3) TapAction.CalendarEvent(parts[0], parts[1], parts[2]) else null

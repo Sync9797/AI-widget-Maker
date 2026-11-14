@@ -66,6 +66,8 @@ class TapsTest {
             "Battery fill" to TapKind.battery,
             "Device batteries" to TapKind.battery,
             "Nearby traffic" to TapKind.commute,
+            "Claude" to null,
+            "Gemini" to null,
             "Device batteries (circles)" to TapKind.battery,
             "Agenda card" to TapKind.calendar,
             "Month" to TapKind.calendar,

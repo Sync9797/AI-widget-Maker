@@ -538,7 +538,31 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 )
             }
         }
-        is ProgressNode -> LinearProgressIndicator(
+        is ProgressNode -> if (node.pill) {
+            // One UI's battery pill: the bar fills a fully rounded pill, with an icon and the value inside it.
+            val h = (node.height * paint.k).dp
+            Box(modifier.fillMaxWidth().height(h).cornerRadius(h / 2), contentAlignment = Alignment.CenterStart) {
+                LinearProgressIndicator(
+                    progress = tokens.progress(node.value),
+                    modifier = GlanceModifier.fillMaxSize(),
+                    color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
+                    backgroundColor = paint(Role.Track, node.trackColor),
+                )
+                Row(GlanceModifier.fillMaxSize().padding(horizontal = h * 0.4f), verticalAlignment = Alignment.CenterVertically) {
+                    val iconNode = IconNode(node.icon ?: IconName.battery, live = node.iconLive, size = (node.height * 0.55f).toInt())
+                    if (node.icon != null || node.iconLive != null) Image(
+                        provider = ImageProvider(iconRes(iconNode, tokens)),
+                        contentDescription = null,
+                        modifier = GlanceModifier.size((iconNode.size * paint.k).dp),
+                        colorFilter = ColorFilter.tint(paint(Role.Text, node.textColor)),
+                    )
+                    Spacer(GlanceModifier.defaultWeight())
+                    node.text?.let {
+                        Text(tokens.fill(it), maxLines = 1, style = TextStyle(color = paint(Role.Text, node.textColor), fontSize = (node.textSize * paint.k).sp, fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        } else LinearProgressIndicator(
             progress = tokens.progress(node.value),
             modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
             color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
@@ -603,6 +627,15 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.AppIconNode -> {
+            val icon = AppIcons.bitmap(context, node.packageName, (node.size * paint.k * context.resources.displayMetrics.density).toInt())
+            val size = (node.size * paint.k).dp
+            if (icon != null) Image(provider = ImageProvider(icon), contentDescription = null, modifier = modifier.size(size))
+            else Image(
+                provider = ImageProvider(R.drawable.icon_sparkle), contentDescription = null, modifier = modifier.size(size),
+                colorFilter = ColorFilter.tint(paint(Role.Accent, "#FFFFFFFF")),
+            )
+        }
         is com.sidequest.widgetmaker.spec.MapNode -> {
             val sized = (if (node.grow) modifier.fillMaxWidth() else modifier.fillMaxWidth().height((node.height * paint.k).dp))
                 .cornerRadius((node.cornerRadius * paint.k).dp)
@@ -764,6 +797,7 @@ fun iconRes(name: IconName): Int = when (name) {
     IconName.headphones -> R.drawable.icon_headphones
     IconName.band -> R.drawable.icon_band
     IconName.bluetooth -> R.drawable.icon_bluetooth
+    IconName.sparkle -> R.drawable.icon_sparkle
 }
 
 /**

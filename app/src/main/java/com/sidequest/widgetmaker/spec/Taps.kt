@@ -116,7 +116,7 @@ object Taps {
         "events" -> TapKind.events
         "calendar" -> TapKind.calendar
         "traffic" -> TapKind.commute
-        "battery", "charging" -> TapKind.battery
+        "battery", "charging", "devices" -> TapKind.battery
         "health", "noop" -> TapKind.health
         "mq" -> TapKind.game
         "music" -> TapKind.music

@@ -214,6 +214,7 @@ class AiWidget : GlanceAppWidget() {
                     com.sidequest.widgetmaker.feeds.NoopMath.merge(values, com.sidequest.widgetmaker.feeds.NoopBridge.values(context)) +
                         com.sidequest.widgetmaker.music.Music.values(context) +
                         com.sidequest.widgetmaker.feeds.Phone.values(context) +
+                        com.sidequest.widgetmaker.feeds.Devices.values(context) +
                         com.sidequest.widgetmaker.spec.Smart.timeOfDay(LocalDateTime.now()) +
                         com.sidequest.widgetmaker.spec.Smart.calendarSoon(values, System.currentTimeMillis()) +
                         com.sidequest.widgetmaker.spec.Smart.countdowns(countdowns, java.time.LocalDate.now())
@@ -732,6 +733,11 @@ fun iconRes(name: IconName): Int = when (name) {
     IconName.next -> R.drawable.icon_next
     IconName.previous -> R.drawable.icon_previous
     IconName.weather -> R.drawable.icon_sun
+    IconName.phone -> R.drawable.icon_phone
+    IconName.watch -> R.drawable.icon_watch
+    IconName.headphones -> R.drawable.icon_headphones
+    IconName.band -> R.drawable.icon_band
+    IconName.bluetooth -> R.drawable.icon_bluetooth
 }
 
 /**

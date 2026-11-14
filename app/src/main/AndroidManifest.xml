@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Optional: your upcoming calendar events, for "up next" widgets. Asked for only when you turn it on. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Optional: battery levels of connected Bluetooth devices (earbuds, watches), asked when you turn it on. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <!-- Optional: exercise and health from Health Connect (Samsung Health, WHOOP, Google Fit...), asked when you turn it on. -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
@@ -93,6 +96,17 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.sidequest.widgetmaker.NOOP_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Bluetooth devices coming and going (and their battery levels), so device battery widgets redraw. -->
+        <receiver
+            android:name=".feeds.DevicesChangedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+                <action android:name="android.bluetooth.device.action.ACL_DISCONNECTED" />
+                <action android:name="android.bluetooth.device.action.BATTERY_LEVEL_CHANGED" />
             </intent-filter>
         </receiver>
 

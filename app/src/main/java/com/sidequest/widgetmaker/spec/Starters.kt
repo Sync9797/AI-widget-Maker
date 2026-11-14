@@ -172,6 +172,25 @@ object Starters {
     /** A small round "+" that starts a new event. */
     private const val ADD_EVENT = """{"type":"row","background":"#FF5B8DEF","cornerRadius":12,"padding":2,"tap":"calendar-new","children":[{"type":"text","text":" + ","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]}"""
 
+    private const val DEVICE_LEVELS = """"levels":[{"from":0,"color":"#FFFF5C5C"},{"from":20,"color":"#FFFFB74D"},{"from":40,"color":"#FF4CD964"}]"""
+
+    /** Device [n]'s battery as a bar: its icon, name and percent over a bar in its level's color. */
+    private fun deviceBar(n: Int, show: String) = """
+        {"type":"column","show":{$show"ifSet":"{devices.$n.level}"},"children":[
+         {"type":"row","verticalAlign":"center","children":[
+          {"type":"icon","name":"bluetooth","live":"{devices.$n.icon}","size":16,"color":"#FFFFFFFF"},
+          {"type":"text","text":" {devices.$n.name}","size":13,"color":"#E6FFFFFF","maxLines":1,"grow":true},
+          {"type":"text","text":"{devices.$n.pct}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+         {"type":"spacer","size":4},
+         {"type":"progress","value":"{devices.$n.level}","height":7,"color":"#FF4CD964","trackColor":"#26FFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS},
+         {"type":"spacer","size":8}]}"""
+
+    /** Device [n]'s battery as a ring with its percent, and its icon under it on taller widgets. */
+    private fun deviceRing(n: Int, show: String = "") = """
+        {"type":"column","align":"center","grow":true,"show":{$show"ifSet":"{devices.$n.level}"},"children":[
+         {"type":"ring","value":"{devices.$n.level}","text":"{devices.$n.level}","size":56,"thickness":6,"textSize":16,"color":"#FF4CD964","trackColor":"#26FFFFFF","textColor":"#FFFFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS},
+         {"type":"icon","name":"bluetooth","live":"{devices.$n.icon}","size":14,"color":"#CCFFFFFF","show":{"minHeight":130}}]}"""
+
     private val SOURCES = listOf(
         Triple(
             "Big clock", "The time, large. Adds the date, then a greeting and battery as it grows.",
@@ -460,6 +479,43 @@ object Starters {
               ${agendaItem(3, long = false, minHeight = 0)},
               ${agendaItem(4, long = false, minHeight = 250)},
               ${agendaItem(5, long = false, minHeight = 320)}]}]}}""",
+        ),
+        Triple(
+            "Device batteries", "Your phone, your WHOOP strap (with not-NOOP) and connected Bluetooth earbuds, headphones and watches, as bars. Needs Device batteries in Data sources.",
+            """{"name":"Device batteries","background":"#E61A1712","cornerRadius":28,"padding":14,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
+              {"type":"icon","name":"phone","live":"{devices.1.icon}","size":18,"color":"#FFFFFFFF"},
+              {"type":"text","text":" {devices.1.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true},
+              {"type":"icon","name":"bluetooth","live":"{devices.2.icon}","size":18,"color":"#FFFFFFFF","show":{"ifSet":"{devices.2.level}"}},
+              {"type":"text","text":" {devices.2.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"ifSet":"{devices.2.level}"}},
+              {"type":"icon","name":"bluetooth","live":"{devices.3.icon}","size":18,"color":"#FFFFFFFF","show":{"minWidth":300,"ifSet":"{devices.3.level}"}},
+              {"type":"text","text":" {devices.3.pct}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"minWidth":300,"ifSet":"{devices.3.level}"}}]},
+             {"type":"column","show":{"minHeight":130},"children":[
+              ${deviceBar(1, "")},
+              ${deviceBar(2, "")},
+              ${deviceBar(3, "")},
+              ${deviceBar(4, "\"minHeight\":200,")},
+              ${deviceBar(5, "\"minHeight\":250,")},
+              ${deviceBar(6, "\"minHeight\":300,")}]}]}}""",
+        ),
+        Triple(
+            "Device batteries (circles)", "Your devices' batteries as rings, like One UI's: phone, WHOOP strap (with not-NOOP), earbuds, watches. Needs Device batteries in Data sources.",
+            """{"name":"Device batteries (circles)","background":"#E61A1C1E","cornerRadius":28,"padding":12,"root":
+            {"type":"column","verticalAlign":"center","children":[
+             {"type":"row","verticalAlign":"top","grow":true,"children":[
+              ${deviceRing(1)},
+              ${deviceRing(2)},
+              ${deviceRing(3, "\"minWidth\":300,")},
+              ${deviceRing(4, "\"minWidth\":300,")}]},
+             {"type":"row","verticalAlign":"top","grow":true,"show":{"maxWidth":299,"minHeight":130},"children":[
+              ${deviceRing(3)},
+              ${deviceRing(4)}]},
+             {"type":"row","verticalAlign":"top","grow":true,"show":{"minWidth":300,"minHeight":250},"children":[
+              ${deviceRing(5)},
+              ${deviceRing(6)},
+              ${deviceRing(7)},
+              ${deviceRing(8)}]}]}}""",
         ),
         Triple(
             "Agenda card", "Side Quest's date card: what's next at the top, today's date big at the bottom.",

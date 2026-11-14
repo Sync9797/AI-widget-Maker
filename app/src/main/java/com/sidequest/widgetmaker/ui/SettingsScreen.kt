@@ -239,6 +239,34 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
             }
 
             Section(
+                "Device batteries",
+                "Battery levels of your connected Bluetooth devices (earbuds, headphones, watches) for the Device batteries " +
+                    "widgets, beside your phone and, with not-NOOP, your WHOOP strap. Read on the phone only.",
+            ) {
+                var allowed by remember { mutableStateOf(com.sidequest.widgetmaker.feeds.Devices.canSee(context)) }
+                val askBluetooth = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                    allowed = granted
+                    if (granted) viewModel.refreshWidgets()
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("See Bluetooth devices", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = allowed,
+                        enabled = !allowed,
+                        onCheckedChange = { on ->
+                            if (on && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                askBluetooth.launch(Manifest.permission.BLUETOOTH_CONNECT)
+                            }
+                        },
+                    )
+                }
+                Text(
+                    "Not every device tells Android its battery; those that don't are left out. To turn this off, use Android's app settings.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            Section(
                 "Exercise & health",
                 "Steps, heart rate, kcal burned, workouts and sleep from Health Connect, where Samsung Health, WHOOP, " +
                     "Google Fit, Fitbit and others share their data (in Samsung Health: Settings → Health Connect). " +

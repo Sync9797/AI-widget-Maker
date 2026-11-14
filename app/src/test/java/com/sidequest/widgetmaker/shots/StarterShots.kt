@@ -53,6 +53,8 @@ class StarterShots {
         File(context.filesDir, "feeds.json").writeText(
             DesignParser.json.encodeToString(FeedSnapshot.serializer(), FeedSnapshot(SAMPLE, System.currentTimeMillis())),
         )
+        // Previews share live values across the run: start from this sample, not an earlier test's.
+        com.sidequest.widgetmaker.ui.PreviewTokens.forget()
         // A battery level, so battery widgets (and the battery fill) have something to show.
         org.robolectric.Shadows.shadowOf(context.getSystemService(android.os.BatteryManager::class.java))
             .setIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY, 64)
@@ -109,6 +111,8 @@ class StarterShots {
         File(context.filesDir, "feeds.json").writeText(
             DesignParser.json.encodeToString(FeedSnapshot.serializer(), FeedSnapshot(SAMPLE, System.currentTimeMillis())),
         )
+        // Previews share live values across the run: start from this sample, not an earlier test's.
+        com.sidequest.widgetmaker.ui.PreviewTokens.forget()
         compose.mainClock.autoAdvance = false
         val clock = Starters.all.first { it.title == "Clock and weather" }.design
         val pill = Starters.all.first { it.title == "Battery" }.design
@@ -176,6 +180,7 @@ class StarterShots {
         )
 
         val SAMPLE = NOOP_SAMPLE + mapOf(
+            "weather.event" to "Rain possible tonight", "weather.code" to "61", "weather.isDay" to "1",
             "weather.mc" to "partly_cloudy_day_rain", "weather.h1.mc" to "clear_day", "weather.h2.mc" to "partly_cloudy_day",
             "weather.h3.mc" to "rain", "weather.h4.mc" to "thunderstorms_day_rain", "weather.h5.mc" to "overcast_day",
             "weather.d1.mc" to "clear_day", "weather.d2.mc" to "thunderstorms_day_rain", "weather.d3.mc" to "partly_cloudy_day",

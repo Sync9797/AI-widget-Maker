@@ -23,10 +23,32 @@ class PanelArt(
     val styler: Styler,
 ) {
     companion object {
+        /** The mood's gradient, top to bottom, over [under] (the frosted wallpaper) when there is one. */
+        private fun moodFill(mood: com.sidequest.widgetmaker.spec.WeatherMood, w: Int, h: Int, under: Bitmap?): Bitmap {
+            val out = under?.copy(Bitmap.Config.ARGB_8888, true) ?: Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val alpha = if (under != null) 0xE0 else 0xFF
+            fun a(c: Int) = (alpha shl 24) or (c and 0xFFFFFF)
+            android.graphics.Canvas(out).drawRect(0f, 0f, out.width.toFloat(), out.height.toFloat(), android.graphics.Paint().apply {
+                shader = android.graphics.LinearGradient(0f, 0f, 0f, out.height.toFloat(), a(mood.top), a(mood.bottom), android.graphics.Shader.TileMode.CLAMP)
+            })
+            return out
+        }
+
         /** A lit edge reads brighter at the top than a plain one, so its color starts stronger. */
         private fun brighter(color: Int): Int = (minOf(255, (color ushr 24) * 2) shl 24) or (color and 0xFFFFFF)
 
-        fun build(context: Context, theme: WidgetTheme, panel: Panel, look: Look, onScreen: Backdrop.Box?): PanelArt {
+        /**
+         * [mood]: a weather widget's color for the weather now (see WeatherMood), laid over the blur or
+         * in place of the plain fill, with light text on it; null keeps the theme's own look.
+         */
+        fun build(
+            context: Context,
+            theme: WidgetTheme,
+            panel: Panel,
+            look: Look,
+            onScreen: Backdrop.Box?,
+            mood: com.sidequest.widgetmaker.spec.WeatherMood? = null,
+        ): PanelArt {
             val density = context.resources.displayMetrics.density
             val pxW = (panel.width * density).roundToInt()
             val pxH = (panel.height * density).roundToInt()
@@ -38,6 +60,15 @@ class PanelArt(
             fun edge(color: Int, sheen: Int): Bitmap? =
                 if (look.premium) ShapePainter.finish(panel.shape, outW, outH, radius, maxOf(edgePx, density * scale), brighter(color), sheen)
                 else ShapePainter.edge(panel.shape, outW, outH, radius, edgePx, color)
+            if (mood != null && theme != WidgetTheme.material) {
+                // Over the frosted wallpaper it's nearly solid, so a hint of the blur still shows through.
+                val under = if (theme.frosted) OneUiBackdrop.render(context, pxW, pxH, onScreen, outW, outH).bitmap else null
+                return PanelArt(
+                    ShapePainter.clip(moodFill(mood, outW, outH, under), panel.shape, radius), false,
+                    edge(0x40FFFFFF, sheen = 0x14),
+                    AiWidget.styler(context, if (theme == WidgetTheme.original) WidgetTheme.glass else theme, backdropLight = false),
+                )
+            }
             return when (theme) {
                 WidgetTheme.glass -> PanelArt(
                     ShapePainter.glass(panel.shape, outW, outH, radius), false,

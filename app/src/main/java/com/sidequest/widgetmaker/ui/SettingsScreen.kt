@@ -590,6 +590,18 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
+            Text("Weather moods", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "Weather widgets take the weather's color: sky blue by day, warm at sunrise and sunset, slate in rain, " +
+                    "indigo in snow, lavender when cloudy. At night they keep their usual look.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Switch(checked = look.weatherMoods, onCheckedChange = { update(look.copy(weatherMoods = it)) })
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
             Text("Glassier glass", style = MaterialTheme.typography.bodyLarge)
             Text("A soft sheen across the top of each widget and an edge that catches the light, like polished glass.", style = MaterialTheme.typography.bodySmall)
         }

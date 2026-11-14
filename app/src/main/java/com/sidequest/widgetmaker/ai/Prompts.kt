@@ -114,6 +114,8 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
   {weather.condition} "Partly cloudy", {weather.rain} "40%" (chance today), {weather.wind} "9 mph",
   {weather.place} the town name. The icon "weather" shows the current conditions.
   {weather.outlook} "Rain possible tonight" (the next 12 hours, in words).
+  {weather.event}: the same, but only when rain, snow or storms are coming (empty on a dry day): show it with
+  "ifSet" and something else (like the high, low and {weather.feelsLike}) with "ifEmpty".
   Next hours, N = 1 to 5: {weather.hN.time} "3 PM" ({weather.hN.time24} "15:00"), {weather.hN.temp}, {weather.hN.icon}, {weather.hN.rain} "10%".
   Next days, N = 1 to 3: {weather.dN.day} "Thu", {weather.dN.high}, {weather.dN.low}, {weather.dN.icon}.
   Show forecasts as a row of small columns (time, live icon, temp), only at bigger sizes.

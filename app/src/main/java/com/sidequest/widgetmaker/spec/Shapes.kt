@@ -61,6 +61,8 @@ data class Look(
     val premium: Boolean = true,
     /** How weather icons look: the classic flat ones, Meteocons, or Meteocons with the current weather animated. */
     val weatherIcons: WeatherIcons = WeatherIcons.animated,
+    /** Weather widgets take the weather's color (sky blue, golden hour, rain, snow, clouds); at night they keep their look. */
+    val weatherMoods: Boolean = true,
 )
 
 /** The weather icons' style (Settings → Widget look). Meteocons are by Bas Milius, MIT licensed. */

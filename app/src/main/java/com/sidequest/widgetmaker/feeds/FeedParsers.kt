@@ -47,9 +47,23 @@ object FeedParsers {
             "weather.condition" to condition(code),
             "weather.icon" to weatherIcon(code, isDay),
             "weather.mc" to meteocon(code, isDay),
+            // For the weather moods (WeatherMood): the code, and today's sunrise and sunset as instants.
+            "weather.code" to code.toString(),
+            "weather.isDay" to if (isDay) "1" else "0",
+            "weather.sunrise" to instant(daily["sunrise"].firstText(), root["utc_offset_seconds"].int()),
+            "weather.sunset" to instant(daily["sunset"].firstText(), root["utc_offset_seconds"].int()),
             "weather.place" to place.name.substringBefore(","),
         )
     }
+
+    /** A local time like "2026-11-14T06:58" at [offsetSeconds] from UTC, as epoch milliseconds ("" if unknown). */
+    private fun instant(local: String?, offsetSeconds: Int?): String {
+        val time = local?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() } ?: return ""
+        return time.toEpochSecond(java.time.ZoneOffset.ofTotalSeconds(offsetSeconds ?: 0)).times(1000).toString()
+    }
+
+    private fun kotlinx.serialization.json.JsonElement?.firstText(): String? =
+        (this as? JsonArray)?.firstOrNull()?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
 
     private fun degrees(value: Double?) = value?.let { "${it.roundToInt()}°" } ?: "--"
 
@@ -75,7 +89,11 @@ object FeedParsers {
             out["weather.h$i.icon"] = weatherIcon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
             out["weather.h$i.mc"] = meteocon(codes?.at(i)?.roundToInt() ?: 0, (days?.at(i) ?: 1.0) >= 1.0)
         }
-        outlook(times, codes, rain)?.let { out["weather.outlook"] = it }
+        outlook(times, codes, rain)?.let {
+            out["weather.outlook"] = it
+            // Only something worth saying: rain, snow or storms coming. Empty on a dry day.
+            out["weather.event"] = if (it.startsWith("Dry")) "" else it
+        }
         val daily = root["daily"].obj()
         val dates = (daily["time"] as? JsonArray)?.mapNotNull { it.str() }.orEmpty()
         for (i in 1..3) {

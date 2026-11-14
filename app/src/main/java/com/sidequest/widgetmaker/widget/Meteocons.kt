@@ -11,7 +11,10 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Meteocons (by Bas Milius, MIT licensed; see res/raw/meteocons_license.txt), pre-rendered from their
  * animated SVGs as loops of frames at 10 a second (res/drawable-nodpi/mc_<name>_<nn>.webp). Widgets
- * can't play SVG or Lottie, so an animated one is a ViewFlipper stepping through the frames.
+ * can't play SVG or Lottie, so an animated one is a ViewFlipper stepping through the frames: a layout
+ * of its own per icon (res/layout/mc_anim_<name>.xml), so the widget sends the launcher one layout id
+ * rather than a view per frame. (Sending the frames as views made the update too big for Android to
+ * deliver once a widget had a few sizes, and the app crashed.)
  */
 object Meteocons {
     /** Milliseconds per frame (the frames were rendered at 10 a second). */
@@ -45,12 +48,9 @@ object Meteocons {
     /** Whether this element shows the current weather (the one that animates, to spare the battery). */
     fun isNow(node: IconNode) = node.live?.trim()?.let { it == "{weather.icon}" } ?: (node.name == IconName.weather)
 
-    /** A ViewFlipper stepping through [frames] by itself, as a widget can animate. */
-    fun flipper(context: Context, frames: IntArray): RemoteViews =
-        RemoteViews(context.packageName, R.layout.mc_flipper).apply {
-            removeAllViews(R.id.mc_flipper)
-            frames.forEach { frame ->
-                addView(R.id.mc_flipper, RemoteViews(context.packageName, R.layout.mc_frame).apply { setImageViewResource(R.id.mc_frame, frame) })
-            }
-        }
+    /** The Meteocon [name] stepping through its frames by itself, as a widget can animate; null if it has no animation. */
+    fun flipper(context: Context, name: String): RemoteViews? {
+        val layout = context.resources.getIdentifier("mc_anim_$name", "layout", context.packageName)
+        return if (layout == 0) null else RemoteViews(context.packageName, layout)
+    }
 }

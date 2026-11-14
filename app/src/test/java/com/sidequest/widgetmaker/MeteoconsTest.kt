@@ -26,6 +26,14 @@ class MeteoconsTest {
             val count = frames.listFiles()!!.count { Regex("mc_${name}_\\d\\d\\.webp").matches(it.name) }
             assertTrue("$name has $count frames", count == 30 || count == 60)
         }
+        // Each has its animation as one layout listing every frame (one layout id is all a widget sends).
+        for (code in codes) for (day in listOf(true, false)) {
+            val name = FeedParsers.meteocon(code, day)
+            val layout = File("src/main/res/layout/mc_anim_$name.xml")
+            assertTrue("layout for $name", layout.exists())
+            val count = frames.listFiles()!!.count { Regex("mc_${name}_\\d\\d\\.webp").matches(it.name) }
+            assertEquals("frames in mc_anim_$name", count, Regex("@drawable/mc_${name}_\\d\\d").findAll(layout.readText()).count())
+        }
         assertEquals("clear_night", FeedParsers.meteocon(0, false))
         assertEquals("partly_cloudy_day_rain", FeedParsers.meteocon(80, true))
         assertEquals("thunderstorms_hail", FeedParsers.meteocon(99, false))

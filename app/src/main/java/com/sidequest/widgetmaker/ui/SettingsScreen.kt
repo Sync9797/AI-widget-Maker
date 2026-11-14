@@ -304,9 +304,23 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
 private fun Credits() {
     val context = LocalContext.current
     var showLicense by remember { mutableStateOf(false) }
+    var showFontLicense by remember { mutableStateOf(false) }
+    if (showFontLicense) {
+        val text = remember {
+            runCatching { context.resources.openRawResource(com.sidequest.widgetmaker.R.raw.inter_license).bufferedReader().readText() }.getOrDefault("")
+        }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showFontLicense = false },
+            title = { Text("Inter license") },
+            text = { Text(text, style = MaterialTheme.typography.bodySmall, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            confirmButton = { TextButton(onClick = { showFontLicense = false }) { Text("Close") } },
+        )
+    }
     Section("Credits", "Open-source work in this app.") {
         Text("Weather icons: Meteocons by Bas Milius (github.com/basmilius/meteocons), MIT License.", style = MaterialTheme.typography.bodyMedium)
         TextButton(onClick = { showLicense = true }) { Text("Read the license") }
+        Text("Font: Inter by The Inter Project Authors (github.com/rsms/inter), SIL Open Font License 1.1.", style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = { showFontLicense = true }) { Text("Read the font license") }
     }
     if (showLicense) {
         val text = remember {
@@ -336,7 +350,7 @@ private fun LatestValues(snapshot: FeedSnapshot) {
 
 @Composable
 private fun Section(title: String, about: String, content: @Composable () -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth(), border = cardEdge()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(about, style = MaterialTheme.typography.bodySmall)

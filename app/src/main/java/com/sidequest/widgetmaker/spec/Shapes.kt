@@ -69,7 +69,15 @@ data class Look(
     val weatherMoods: Boolean = true,
     /** Whether the frosted glass (One UI, Ambient) is light or dark: like the phone's dark mode, by default. */
     val glassTone: GlassTone = GlassTone.phone,
+    /** How clear Liquid glass is: soft (fine while swiping between pages) or clear (sharper, but it slides awkwardly). */
+    val liquidClarity: LiquidClarity = LiquidClarity.soft,
 )
+
+/** Liquid glass's clarity (Settings → Widget style, with Liquid glass picked). */
+enum class LiquidClarity(val label: String, val about: String) {
+    soft("Soft", "Blurred about as much as One UI, so it looks right still and while you swipe between pages."),
+    clear("Clear", "Sharper and more see-through when still. Widgets can't tell when pages move, so while you swipe its picture slides over the wallpaper."),
+}
 
 /** The frosted glass's tone (Settings → Widget look). */
 enum class GlassTone(val label: String, val about: String) {

@@ -121,7 +121,7 @@ object OneUiBackdrop {
      * [onScreen] (its place on the home screen, once known; otherwise the
      * middle is assumed), [outW]×[outH] pixels, not yet cut to shape.
      */
-    fun render(context: Context, widthPx: Int, heightPx: Int, onScreen: Backdrop.Box?, outW: Int, outH: Int, light: Boolean? = null, clear: Boolean = false): Result {
+    fun render(context: Context, widthPx: Int, heightPx: Int, onScreen: Backdrop.Box?, outW: Int, outH: Int, light: Boolean? = null, clear: Boolean = false, sharp: Boolean = false): Result {
         val (sw, sh) = screenSize(context)
         val w = max(8, widthPx)
         val h = max(8, heightPx)
@@ -136,7 +136,7 @@ object OneUiBackdrop {
             Bitmap.createScaledBitmap(crop, smallW, smallH, true)
         } ?: colorsBitmap(context, smallW, smallH, place, sw, sh)
 
-        return frost(small, outW, outH, light = light, clear = clear)
+        return frost(small, outW, outH, light = light, clear = clear, sharp = sharp)
     }
 
     /**
@@ -159,7 +159,7 @@ object OneUiBackdrop {
      * Blurs [small], frosts it like One UI, and scales it up with the faintest highlight. [light]: light glass
      * or dark (like the phone's light or dark mode); null to go by how bright the wallpaper is.
      */
-    private fun frost(small: Bitmap, outW: Int, outH: Int, saturation: Double = 1.35, light: Boolean? = null, clear: Boolean = false): Result {
+    private fun frost(small: Bitmap, outW: Int, outH: Int, saturation: Double = 1.35, light: Boolean? = null, clear: Boolean = false, sharp: Boolean = false): Result {
         val smallW = small.width
         val smallH = small.height
         // 2. Blur it, see how bright it is, and frost it like One UI does.
@@ -168,8 +168,14 @@ object OneUiBackdrop {
         // Liquid glass ([clear]) is blurred nearly as much as One UI's: a widget can't tell when you swipe between
         // home screen pages, and a sharp copy of the wallpaper visibly slides over the still wallpaper behind it,
         // where a soft one hardly shows (why One UI's own widgets fall back to a plain blur while pages move).
-        // Its clearness comes from the lighter veil and the bright rim instead.
-        Backdrop.blur(pixels, smallW, smallH, radius = if (clear) max(2, min(smallW, smallH) / 10) else max(2, min(smallW, smallH) / 8))
+        // Its clearness comes from the lighter veil and the bright rim instead. [sharp] (Liquid glass set to
+        // Clear) is barely blurred, for those who'd rather have that when still.
+        val radius = when {
+            clear && sharp -> max(1, min(smallW, smallH) / 24)
+            clear -> max(2, min(smallW, smallH) / 10)
+            else -> max(2, min(smallW, smallH) / 8)
+        }
+        Backdrop.blur(pixels, smallW, smallH, radius = radius)
         val isLight = light ?: (Backdrop.luminance(pixels) > Backdrop.LIGHT_ABOVE)
         // Matched by eye to One UI 8's own widgets over the same wallpaper: its glass keeps the wallpaper's
         // colors rich (more so in the dark), under a veil about half way to white, or half way to black.

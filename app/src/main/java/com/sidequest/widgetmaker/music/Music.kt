@@ -103,23 +103,75 @@ object Music {
                 durationMs = meta?.getLong(MediaMetadata.METADATA_KEY_DURATION)?.coerceAtLeast(0) ?: 0,
             )
         }
-        if (now == current(context)) return
-        val trackChanged = now?.title != current(context)?.title || now?.packageName != current(context)?.packageName
+        // Album art can arrive after the track's name (Spotify sends it a moment later), so it's checked on
+        // every update, not only when the track changes.
+        val artChanged = updateArt(context, now, meta)
+        if (now == current(context)) {
+            if (artChanged) redrawSoon(context)
+            return
+        }
         if (now == null) p.edit().clear().apply() else p.edit()
             .putString("title", now.title).putString("artist", now.artist).putString("album", now.album)
             .putString("package", now.packageName).putString("app", now.appName).putBoolean("playing", now.playing)
             .putLong("position", now.positionMs).putLong("updatedAt", now.updatedAt).putLong("duration", now.durationMs)
             .apply()
         tick(context, now?.playing == true)
-        if (trackChanged) saveArt(context, meta)
         redrawSoon(context)
     }
 
-    private fun saveArt(context: Context, meta: MediaMetadata?) {
+    /**
+     * Saves the album art when what's known about it changes: a new track, or art arriving later for the same one.
+     * Apps give it as a picture or as a link (Spotify often does: a content:// link, or a web address); links are
+     * read in the background. True when the saved art changed now (a link's art redraws the widgets itself).
+     */
+    private fun updateArt(context: Context, now: NowPlaying?, meta: MediaMetadata?): Boolean {
+        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val file = File(context.filesDir, ART)
-        val art = meta?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: meta?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+        val bitmap = meta?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: meta?.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: meta?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
-        if (art == null) { file.delete(); return }
+        val link = listOf(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, MediaMetadata.METADATA_KEY_ART_URI, MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI)
+            .firstNotNullOfOrNull { k -> meta?.getString(k)?.takeIf { it.isNotBlank() } }
+        val source = when {
+            now == null -> "none"
+            bitmap != null -> "bitmap:${bitmap.width}x${bitmap.height}:${bitmap.generationId}"
+            link != null -> "link:$link"
+            else -> "none"
+        }
+        val key = "${now?.packageName}|${now?.title}|${now?.album}|$source"
+        if (p.getString("artKey", null) == key) return false
+        p.edit().putString("artKey", key).apply()
+        when {
+            bitmap != null -> writeArt(file, bitmap)
+            link != null -> {
+                // Keep the last art until the new one is read, unless the track changed.
+                if (p.getString("artTrack", null) != "${now?.packageName}|${now?.title}") file.delete()
+                val app = context.applicationContext
+                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    readLink(app, link)?.let { writeArt(file, it) }
+                    redrawSoon(app)
+                }
+            }
+            else -> file.delete()
+        }
+        p.edit().putString("artTrack", "${now?.packageName}|${now?.title}").apply()
+        return bitmap != null || link == null
+    }
+
+    /** The picture at a content:// or file:// link, or a web address (https only). */
+    private fun readLink(context: Context, link: String): Bitmap? = runCatching {
+        val uri = android.net.Uri.parse(link)
+        when (uri.scheme) {
+            "content", "file", "android.resource" -> context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+            "https" -> (java.net.URL(link).openConnection() as java.net.HttpURLConnection).run {
+                connectTimeout = 8000
+                readTimeout = 8000
+                try { inputStream.use { BitmapFactory.decodeStream(it) } } finally { disconnect() }
+            }
+            else -> null
+        }
+    }.getOrNull()
+
+    private fun writeArt(file: File, art: Bitmap) {
         // Small enough for a widget update (they're limited in size), sharp enough for a big tile.
         val side = 300
         val scaled = Bitmap.createScaledBitmap(art, side, side * art.height / maxOf(1, art.width), true)

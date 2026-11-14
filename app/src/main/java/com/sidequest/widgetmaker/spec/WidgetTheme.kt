@@ -31,6 +31,11 @@ enum class WidgetTheme(val label: String) {
     timeOfDay("Time of day"),
     /** No panel: the content on the wallpaper itself, inside a thin outline. */
     outline("Outline"),
+    /**
+     * Soft studio cards: off-white (graphite in dark mode) with gentle depth, near-black text and a single accent
+     * from the phone's color palette for what matters, like a well-made watch face.
+     */
+    studio("Studio"),
     ;
 
     /** Frosted from a picture (wallpaper or album art), with text that suits it. */
@@ -47,7 +52,7 @@ enum class WidgetTheme(val label: String) {
          * Whether a theme takes on the weather's color for weather widgets (Settings → Weather moods). Not the
          * ones whose point is their own look: Material 3 and Tonal's colors, Outline's no panel, Liquid glass's clear glass.
          */
-        fun takesMoods(theme: WidgetTheme) = theme != material && theme != tonal && theme != outline && theme != liquid
+        fun takesMoods(theme: WidgetTheme) = theme != material && theme != tonal && theme != outline && theme != liquid && theme != studio
 
         /** Whether a design shows music, so it can use the Ambient style. */
         fun playsMusic(design: WidgetDesign): Boolean {
@@ -142,6 +147,23 @@ class Styler(
                     Role.Track -> withAlpha(material(MaterialSlot.Primary, dark), 0x40)
                     Role.TrendUp -> material(MaterialSlot.Up, dark)
                     Role.TrendDown -> material(MaterialSlot.Down, dark)
+                    Role.Level -> original
+                }
+            }
+            // Studio: [backdropLight] is the phone's light mode. One accent, from the phone's own palette;
+            // everything else ink or paper.
+            WidgetTheme.studio -> {
+                val light = backdropLight
+                val ink = if (light) 0x15181B else 0xF2F4F5
+                val accent = material(MaterialSlot.Primary, !light)
+                when (role) {
+                    Role.Background -> if (light) 0xFFF2F4F5.toInt() else 0xFF1D2023.toInt()
+                    Role.Container -> withAlpha(accent, if (light) 0x26 else 0x33)
+                    Role.Text -> withAlpha(ink, alphaOf(original).coerceAtLeast(0x8C))
+                    Role.Accent -> accent
+                    Role.Track -> withAlpha(ink, if (light) 0x1F else 0x29)
+                    Role.TrendUp -> if (light) 0xFF1B873F.toInt() else 0xFF6EE7A0.toInt()
+                    Role.TrendDown -> if (light) 0xFFD32F2F.toInt() else 0xFFFF8A80.toInt()
                     Role.Level -> original
                 }
             }

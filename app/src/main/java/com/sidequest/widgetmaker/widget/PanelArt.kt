@@ -34,6 +34,12 @@ class PanelArt(
             return out
         }
 
+        /** [color] [amount] of the way to white. */
+        private fun lighten(color: Int, amount: Float): Int {
+            fun ch(shift: Int) = ((color shr shift) and 0xFF).let { (it + (255 - it) * amount).toInt() }
+            return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+        }
+
         private fun solid(color: Int, w: Int, h: Int): Bitmap =
             Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
 
@@ -99,6 +105,17 @@ class PanelArt(
                     edge(0x14FFFFFF, sheen = 0x0A),
                     AiWidget.styler(context, theme, backdropLight = !phoneDark),
                 )
+                WidgetTheme.studio -> {
+                    // A soft card: a touch lighter at the top, with a fine rim, like matte plastic under soft light.
+                    val styler = AiWidget.styler(context, theme, backdropLight = !phoneDark)
+                    val base = styler.argb(com.sidequest.widgetmaker.spec.Role.Background, null, false)
+                    val top = if (phoneDark) lighten(base, 0.05f) else lighten(base, 0.6f)
+                    PanelArt(
+                        ShapePainter.clip(gradientFill(top, base, outW, outH, null), panel.shape, radius), false,
+                        edge(if (phoneDark) 0x1AFFFFFF else 0x14000000, sheen = if (phoneDark) 0x0A else 0x00),
+                        styler,
+                    )
+                }
                 WidgetTheme.timeOfDay -> {
                     val sky = com.sidequest.widgetmaker.spec.Sky.of(feeds, System.currentTimeMillis())
                     PanelArt(

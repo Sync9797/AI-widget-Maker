@@ -113,6 +113,8 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                             "Light or dark with your phone."
                         WidgetTheme.timeOfDay -> "Each panel takes the sky's color through the day: deep blue at night, warm at " +
                             "sunrise and sunset, blue by day (by your weather's sunrise and sunset when it's on)."
+                        WidgetTheme.studio -> "Soft off-white cards (graphite in dark mode) with near-black text and one accent from your phone's colors " +
+                            "for what matters: tick marks, level meters and date chips. Light or dark with your phone."
                         WidgetTheme.outline -> "No panel: just a thin outline, with your widget's content right on the wallpaper. " +
                             "Text turns dark or light to suit it. Best on calm wallpapers."
                     },

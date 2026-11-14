@@ -51,6 +51,61 @@ object ChartArt {
         return out
     }
 
+    /**
+     * Fine bars, one per value (spread out to about [bars] when there are fewer, by stepping between them),
+     * rising from a baseline: a sound-meter style chart, white, to tint.
+     */
+    fun ticks(values: List<Int>, w: Int, h: Int, barPx: Float, bars: Int = 32, min: Int? = null, max: Int? = null): Bitmap {
+        val out = Bitmap.createBitmap(w.coerceAtLeast(8), h.coerceAtLeast(8), Bitmap.Config.ARGB_8888)
+        if (values.isEmpty()) return out
+        val canvas = Canvas(out)
+        val lo = (min ?: values.min()).toFloat()
+        val hi = maxOf((max ?: values.max()).toFloat(), lo + 1)
+        val n = maxOf(values.size, bars)
+        // Each bar takes the value nearest its place in the series, rising from a third of the height at least.
+        fun valueAt(i: Int): Float {
+            val p = i * (values.size - 1).toFloat() / maxOf(1, n - 1)
+            val a = values[p.toInt()]; val b = values[minOf(values.lastIndex, p.toInt() + 1)]
+            return a + (b - a) * (p - p.toInt())
+        }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt(); strokeWidth = barPx; strokeCap = Paint.Cap.ROUND }
+        val step = (out.width - barPx) / maxOf(1, n - 1)
+        for (i in 0 until n) {
+            val x = barPx / 2 + step * i
+            val f = 0.3f + 0.7f * (valueAt(i) - lo) / (hi - lo)
+            canvas.drawLine(x, out.height - barPx / 2, x, out.height - barPx / 2 - (out.height - barPx) * f, paint)
+        }
+        return out
+    }
+
+    /**
+     * A ruler [w]×[h]: tick marks (every fifth longer) along its length, bottom to top when [vertical], white to
+     * tint. [marker]: only the tick at [fraction] (0 to 1), longer and bolder, to lay over the ruler in a color.
+     */
+    fun scale(w: Int, h: Int, ticks: Int, vertical: Boolean, density: Float, marker: Boolean, fraction: Float?): Bitmap {
+        val out = Bitmap.createBitmap(w.coerceAtLeast(8), h.coerceAtLeast(8), Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        val n = ticks.coerceIn(3, 60)
+        val length = (if (vertical) out.height else out.width).toFloat()
+        val across = (if (vertical) out.width else out.height).toFloat()
+        val pad = 2 * density
+        fun at(f: Float) = if (vertical) length - pad - (length - 2 * pad) * f else pad + (length - 2 * pad) * f
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt(); strokeCap = Paint.Cap.ROUND }
+        fun tick(f: Float, size: Float, width: Float) {
+            paint.strokeWidth = width
+            val p = at(f)
+            // Ticks hang from the far edge (the right of a vertical ruler, the bottom of a flat one).
+            if (vertical) canvas.drawLine(across - size, p, across - pad, p, paint)
+            else canvas.drawLine(p, across - size, p, across - pad, paint)
+        }
+        if (marker) {
+            fraction?.let { tick(it, across - pad, 3 * density) }
+        } else {
+            for (i in 0 until n) tick(i / (n - 1f), if (i % 5 == 0) across * 0.55f else across * 0.3f, 1.2f * density)
+        }
+        return out
+    }
+
     /** A ring [sizePx] across: the whole track when [fraction] is null, else an arc from the top, clockwise. */
     fun ring(sizePx: Int, thicknessPx: Float, fraction: Float?): Bitmap {
         val out = Bitmap.createBitmap(sizePx.coerceAtLeast(8), sizePx.coerceAtLeast(8), Bitmap.Config.ARGB_8888)

@@ -223,6 +223,8 @@ class StarterShots {
             "devices.2.name" to "Strap", "devices.2.level" to "53", "devices.2.pct" to "53%", "devices.2.icon" to "band",
             "devices.3.name" to "Galaxy Buds3", "devices.3.level" to "15", "devices.3.pct" to "15%", "devices.3.icon" to "headphones",
             "devices.4.name" to "Galaxy Watch", "devices.4.level" to "100", "devices.4.pct" to "100%", "devices.4.icon" to "watch",
+            "weather.hours.temps" to "72,73,74,74,73,71,69,67,65,63,62,61,60",
+            "calendar.1.dayNum" to "14", "calendar.1.clock" to "3:00",
             "calendar.days" to "2026-11-14,2026-11-15,2026-11-21,2026-12-02",
             "health.steps" to "3,508", "health.stepsPct" to "44", "health.stepGoal" to "8,000", "health.kcal" to "412",
             "health.heart" to "72", "health.effort" to "8.4", "health.workout" to "Run", "health.workout.duration" to "32 min",

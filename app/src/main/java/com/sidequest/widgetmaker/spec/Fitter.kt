@@ -11,8 +11,9 @@ import kotlin.math.min
  *
  * - When the content is taller than the room inside the panel, everything shrinks together (down to
  *   [MIN_SHRINK] of its size), rather than the bottom being cut off.
- * - When a row's parts are wider than the row, its widest text takes the room that's left and ends in "…",
- *   rather than pushing the rest off the side.
+ * - Text too wide for its line gets smaller (down to [MIN_TEXT] of its size); in a row too wide for its room,
+ *   the widest texts shrink first, then take the room that's left and end in "…", rather than pushing the
+ *   rest off the side.
  *
  * Sizes are estimated (a widget can't measure its text before the launcher lays it out), from each
  * character's typical width, erring on the wide side. Pure, so the widget and the preview fit the same way.
@@ -20,6 +21,9 @@ import kotlin.math.min
 object Fitter {
     /** The smallest a design shrinks to, as a part of its size. */
     const val MIN_SHRINK = 0.62f
+
+    /** The smallest a single text gets to fit its line, as a part of its size, before it's cut short with "…". */
+    const val MIN_TEXT = 0.6f
 
     data class Result(val root: Node, val k: Float)
 
@@ -129,22 +133,55 @@ object Fitter {
          * [node] with each row that's too wide for its room fixed: its widest texts take the leftover room (and
          * end in "…") until the rest fits.
          */
+        /**
+         * [text] at a smaller size when its one line is wider than [avail] dp: just small enough to fit, but no
+         * smaller than [MIN_TEXT] of its size. Text that may wrap onto more lines is left as it is.
+         */
+        fun shrunk(text: TextNode, avail: Float, k: Float): TextNode {
+            if (text.maxLines > 1 && tokens.fill(text.text).trim().contains(' ')) return text
+            val w = width(text, k)
+            if (w <= avail + 0.5f || w <= 0f) return text
+            val size = max(ceil(text.size * MIN_TEXT).toInt(), (text.size * avail / w).toInt())
+            return if (size < text.size) text.copy(size = size) else text
+        }
+
         fun rows(node: Node, avail: Float, k: Float): Node = when (node) {
-            is ColumnNode -> node.copy(children = node.children.map { if (shows(it)) rows(it, avail - 2 * node.padding * k, k) else it })
+            is ColumnNode -> {
+                val inner = avail - 2 * node.padding * k
+                node.copy(children = node.children.map { c ->
+                    when {
+                        !shows(c) -> c
+                        c is TextNode -> shrunk(c, inner, k)
+                        else -> rows(c, inner, k)
+                    }
+                })
+            }
             is RowNode -> {
                 val inner = avail - 2 * node.padding * k
                 var children = node.children
                 fun fixedWidth() = children.filter { shows(it) && !it.grow }.sumOf { width(it, k).toDouble() }.toFloat()
-                // Squeeze the widest texts first, one at a time.
-                val texts = children.withIndex().filter { (_, c) -> shows(c) && !c.grow && c is TextNode }.sortedByDescending { (_, c) -> width(c, k) }
-                for ((i, _) in texts) {
+                fun texts() = children.withIndex().filter { (_, c) -> shows(c) && !c.grow && c is TextNode }.sortedByDescending { (_, c) -> width(c, k) }
+                // First the widest texts get smaller (to MIN_TEXT of their size), then, if it still doesn't fit,
+                // they take the room that's left and end in "...".
+                for ((i, c) in texts()) {
+                    val over = fixedWidth() - inner
+                    if (over <= 0.5f) break
+                    children = children.toMutableList().also { it[i] = shrunk(c as TextNode, width(c, k) - over, k) }
+                }
+                for ((i, _) in texts()) {
                     if (fixedWidth() <= inner + 0.5f) break
                     children = children.toMutableList().also { it[i] = (it[i] as TextNode).copy(grow = true, maxLines = 1) }
                 }
                 val fitted = node.copy(children = children)
                 val widths = shares(fitted, inner, k)
                 var w = 0
-                fitted.copy(children = fitted.children.map { c -> if (shows(c)) rows(c, widths[w++], k) else c })
+                // Texts that share the leftover room shrink to fit their share too.
+                fitted.copy(children = fitted.children.map { c ->
+                    if (!shows(c)) c else {
+                        val share = widths[w++]
+                        if (c is TextNode) shrunk(c, share, k) else rows(c, share, k)
+                    }
+                })
             }
             else -> node
         }

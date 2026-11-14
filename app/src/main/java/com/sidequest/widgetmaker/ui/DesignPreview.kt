@@ -286,7 +286,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                         painter = painterResource(iconRes(iconNode, tokens)),
                         contentDescription = null,
                         modifier = Modifier.size((iconNode.size * paint.k).dp),
-                        colorFilter = ColorFilter.tint(paint(Role.Text, node.textColor)),
+                        colorFilter = ColorFilter.tint(Color(com.sidequest.widgetmaker.spec.Styler.contrast(paint(Role.Text, node.textColor).toArgb()))),
                     )
                     Spacer(Modifier.weight(1f))
                     node.text?.let {

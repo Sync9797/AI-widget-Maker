@@ -200,7 +200,7 @@ class StarterShots {
             "crypto.BTC.price" to "$97,412", "crypto.BTC.change" to "+2.4%",
             "crypto.ETH.price" to "$3,411", "crypto.ETH.change" to "-1.1%",
             "crypto.SOL.price" to "$212.40", "crypto.SOL.change" to "+5.8%",
-            "crypto.XRP.price" to "$2.31", "crypto.XRP.change" to "-0.4%",
+            "crypto.XRP.price" to "$0.912345", "crypto.XRP.change" to "-0.4%",
             "traffic.commute" to "24 min", "traffic.delay" to "+6 min", "traffic.distance" to "12.3 mi", "traffic.to" to "Work",
             "news.1" to "City council approves new downtown park after years of debate", "news.1.source" to "KXAN",
             "news.2" to "Food truck festival returns to Zilker this weekend", "news.2.source" to "Austin Chronicle",

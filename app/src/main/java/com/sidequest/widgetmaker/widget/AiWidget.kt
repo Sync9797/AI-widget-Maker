@@ -554,7 +554,8 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                         provider = ImageProvider(iconRes(iconNode, tokens)),
                         contentDescription = null,
                         modifier = GlanceModifier.size((iconNode.size * paint.k).dp),
-                        colorFilter = ColorFilter.tint(paint(Role.Text, node.textColor)),
+                        // Like One UI's: the opposite of the text, white by day and black at night.
+                        colorFilter = ColorFilter.tint(paint.onText(Role.Text, node.textColor)),
                     )
                     Spacer(GlanceModifier.defaultWeight())
                     node.text?.let {

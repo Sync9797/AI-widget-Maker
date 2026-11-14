@@ -638,7 +638,8 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
             Text("Weather moods", style = MaterialTheme.typography.bodyLarge)
             Text(
                 "Weather widgets take the weather's color: sky blue by day, warm at sunrise and sunset, slate in rain, " +
-                    "indigo in snow, lavender when cloudy. At night they keep their usual look.",
+                    "indigo in snow, lavender when cloudy. At night they keep their usual look, and Material 3, Tonal, " +
+                    "Outline and Liquid glass always keep theirs.",
                 style = MaterialTheme.typography.bodySmall,
             )
         }

@@ -137,8 +137,13 @@ class ChooseDesignActivity : ComponentActivity() {
                             )
                             // The widget being edited, live: style and shape changes show here at once.
                             if (picked != null) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    DesignPreview(picked.design, previewSize(appWidgetId), theme, Modifier.weight(1f, fill = false), shape = shape, hiddenDevices = hiddenDevices)
+                                // A tall widget's preview is shrunk to fit, so the whole of it shows above the settings.
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                    DesignPreview(
+                                        picked.design, previewSize(appWidgetId), theme,
+                                        Modifier.weight(1f, fill = false).heightIn(max = 200.dp),
+                                        shape = shape, hiddenDevices = hiddenDevices,
+                                    )
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {

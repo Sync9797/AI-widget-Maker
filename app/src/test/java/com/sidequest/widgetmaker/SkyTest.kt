@@ -38,6 +38,7 @@ class SkyTest {
         assertTrue(WidgetTheme.takesMoods(WidgetTheme.timeOfDay))
         assertFalse(WidgetTheme.takesMoods(WidgetTheme.tonal))
         assertFalse(WidgetTheme.takesMoods(WidgetTheme.outline))
+        assertFalse(WidgetTheme.takesMoods(WidgetTheme.liquid))
         assertTrue(WidgetTheme.liquid.frosted && WidgetTheme.outline.showsWallpaper)
     }
 }

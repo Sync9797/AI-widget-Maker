@@ -594,6 +594,23 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.MapNode -> {
+            val sized = (if (node.grow) modifier.fillMaxWidth() else modifier.fillMaxWidth().height((node.height * paint.k).dp))
+                .cornerRadius((node.cornerRadius * paint.k).dp)
+            val uri = tokens.feeds["map.traffic"]?.let { com.sidequest.widgetmaker.feeds.TrafficMap.uri(context, it) }
+            if (uri != null) {
+                Image(
+                    provider = ImageProvider(android.graphics.drawable.Icon.createWithContentUri(uri)),
+                    contentDescription = "Traffic map",
+                    modifier = sized,
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(sized.background(paint(Role.Container, "#26FFFFFF")), contentAlignment = Alignment.Center) {
+                    Text("Add a TomTom key and your home in Data sources", style = TextStyle(color = paint(Role.Text, "#B3FFFFFF"), fontSize = (12 * paint.k).sp, textAlign = TextAlign.Center))
+                }
+            }
+        }
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color))) {}
     }
@@ -648,7 +665,7 @@ private fun timerViews(node: TimerNode, styler: Styler, k: Float = 1f): RemoteVi
 
 /** Whether a row or column needs the full width: it (or one inside it) shares out space with "grow". */
 private fun spansWidth(node: Node): Boolean = when (node) {
-    is com.sidequest.widgetmaker.spec.MonthNode -> true
+    is com.sidequest.widgetmaker.spec.MonthNode, is com.sidequest.widgetmaker.spec.MapNode -> true
     is RowNode -> node.children.any { it.grow } || node.children.any(::spansWidth)
     is ColumnNode -> node.children.any(::spansWidth)
     else -> false

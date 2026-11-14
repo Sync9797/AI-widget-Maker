@@ -66,6 +66,7 @@ class Feeds(private val context: Context) {
                 if (s.weatherReady) "weather" to async { runCatching { weather(s) } } else null,
                 if (s.cryptoReady) "crypto" to async { runCatching { crypto(s) } } else null,
                 if (s.trafficReady) "traffic" to async { runCatching { traffic(s) } } else null,
+                if (TrafficMap.ready(s)) "map" to async { runCatching { TrafficMap.refresh(context, s, http) } } else null,
                 if (s.newsReady) "news" to async { runCatching { news(s) } } else null,
                 if (s.eventsReady) "events" to async { runCatching { events(s) } } else null,
                 if (s.calendarReady) "calendar" to async { runCatching { calendar() } } else null,

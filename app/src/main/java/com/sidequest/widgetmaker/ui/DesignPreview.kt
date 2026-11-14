@@ -323,6 +323,29 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.MapNode -> {
+            val context = LocalContext.current
+            val stamp = tokens.feeds["map.traffic"]
+            val picture = remember(stamp) {
+                com.sidequest.widgetmaker.feeds.TrafficMap.file(context).takeIf { stamp != null && it.exists() }
+                    ?.let { android.graphics.BitmapFactory.decodeFile(it.path) }
+            }
+            val sized = (if (node.grow) modifier.fillMaxWidth() else modifier.fillMaxWidth().height((node.height * paint.k).dp))
+                .clip(RoundedCornerShape((node.cornerRadius * paint.k).dp))
+            if (picture != null) {
+                Image(picture.asImageBitmap(), contentDescription = "Traffic map", modifier = sized, contentScale = ContentScale.Crop)
+            } else {
+                Box(sized.background(paint(Role.Container, "#26FFFFFF")), contentAlignment = Alignment.Center) {
+                    Text(
+                        "Add a TomTom key and your home in Data sources",
+                        color = paint(Role.Text, "#B3FFFFFF"),
+                        fontSize = (12 * paint.k).sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(8.dp),
+                    )
+                }
+            }
+        }
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color)))
     }

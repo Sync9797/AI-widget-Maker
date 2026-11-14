@@ -14,6 +14,8 @@ import org.junit.Test
 class StartersAndChatTest {
     private fun count(node: Node, w: Int, h: Int): Int {
         if (!visible(node, w, h)) return 0
+        // A month is a whole grid of days.
+        if (node is com.sidequest.widgetmaker.spec.MonthNode) return 40 * node.months
         val kids = when (node) {
             is ColumnNode -> node.children
             is RowNode -> node.children
@@ -24,7 +26,7 @@ class StartersAndChatTest {
 
     @Test
     fun everyStarterParses() {
-        assertEquals(33, Starters.all.size)
+        assertEquals(37, Starters.all.size)
         Starters.all.forEach { assertTrue(it.title, it.design.name.isNotBlank()) }
     }
 

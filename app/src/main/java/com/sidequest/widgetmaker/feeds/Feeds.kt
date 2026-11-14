@@ -268,7 +268,40 @@ class Feeds(private val context: Context) {
                 )
             }
         }
-        return FeedParsers.calendar(events.sortedBy { it.start }, LocalDateTime.now())
+        return FeedParsers.calendar(events.sortedBy { it.start }, LocalDateTime.now(), busyDays = busyDays())
+    }
+
+    /** The days with events from the start of this month to the end of next month, for month calendars. */
+    private fun busyDays(): Set<LocalDate> {
+        val local = ZoneId.systemDefault()
+        val month = java.time.YearMonth.now()
+        val from = month.atDay(1).atStartOfDay(local).toInstant().toEpochMilli()
+        val to = month.plusMonths(1).atEndOfMonth().plusDays(1).atStartOfDay(local).toInstant().toEpochMilli()
+        val uri = CalendarContract.Instances.CONTENT_URI.buildUpon().also {
+            ContentUris.appendId(it, from)
+            ContentUris.appendId(it, to)
+        }.build()
+        val out = mutableSetOf<LocalDate>()
+        runCatching {
+            context.contentResolver.query(
+                uri, arrayOf(CalendarContract.Instances.BEGIN, CalendarContract.Instances.END, CalendarContract.Instances.ALL_DAY),
+                "${CalendarContract.Instances.VISIBLE} = 1", null, null,
+            )?.use { c ->
+                var rows = 0
+                while (c.moveToNext() && rows++ < 1000) {
+                    // All-day events are stored at midnight UTC, and end at the next midnight.
+                    val allDay = c.getInt(2) == 1
+                    val zone = if (allDay) ZoneOffset.UTC else local
+                    val start = Instant.ofEpochMilli(c.getLong(0)).atZone(zone).toLocalDate()
+                    val endMs = maxOf(c.getLong(1), c.getLong(0))
+                    val end = Instant.ofEpochMilli(if (allDay) endMs - 1 else endMs).atZone(zone).toLocalDate()
+                    var day = start
+                    var n = 0
+                    while (!day.isAfter(end) && n++ < 62) { out += day; day = day.plusDays(1) }
+                }
+            }
+        }
+        return out
     }
 
     private fun get(url: HttpUrl): String {

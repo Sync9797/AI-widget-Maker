@@ -175,6 +175,15 @@ object DesignParser {
             levels = sanitize(node.levels),
         )
         is SleepNode -> node.copy(show = sanitize(node.show), tap = node.tap?.take(80), height = node.height.coerceIn(4, 48))
+        is MonthNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            months = node.months.coerceIn(1, 2),
+            size = node.size.coerceIn(8, 28),
+            color = Colors.orDefault(node.color, "#FFFFFFFF"),
+            accent = Colors.orDefault(node.accent, "#FF8AB4F8"),
+            firstDay = if (node.firstDay.equals("monday", ignoreCase = true)) "monday" else "sunday",
+        )
         is ArtNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),

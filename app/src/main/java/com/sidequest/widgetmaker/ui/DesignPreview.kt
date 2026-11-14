@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -161,6 +162,11 @@ fun DesignPreview(
 
 @Composable
 private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit, modifier: Modifier) {
+    // A month: the rows and columns of text it lays out to, as on the home screen.
+    if (node is com.sidequest.widgetmaker.spec.MonthNode) {
+        PreviewNode(com.sidequest.widgetmaker.spec.MonthGrid.expand(node, tokens.now.toLocalDate(), tokens.feeds, tokens.locale), tokens, paint, fit, modifier)
+        return
+    }
     when (node) {
         is ColumnNode -> Column(
             modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding)
@@ -191,8 +197,11 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
         ) { node.children.filter(fit::shows).forEach { RowChild(it, tokens, paint, fit) } }
         is TextNode -> Text(
             text = tokens.fill(node.text),
-            modifier = modifier,
-            color = textColor(node, tokens).let { (role, c) -> paint(role, c) },
+            modifier = if (node.highlight) {
+                modifier.background(textColor(node, tokens).let { (role, c) -> paint(role, c) }, RoundedCornerShape((6 * paint.k).dp))
+                    .padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
+            } else modifier,
+            color = textColor(node, tokens).let { (role, c) -> if (node.highlight) Color(com.sidequest.widgetmaker.spec.Styler.contrast(paint(role, c).toArgb())) else paint(role, c) },
             fontSize = (node.size * paint.k).sp,
             lineHeight = (node.size * paint.k * 1.2f).sp,
             fontWeight = weight(node.weight),
@@ -313,6 +322,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 }
             }
         }
+        is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color)))
     }

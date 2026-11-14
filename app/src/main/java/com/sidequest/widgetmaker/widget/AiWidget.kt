@@ -422,10 +422,21 @@ private class Paint(
         if (styler.theme == WidgetTheme.material) return ColorProvider(AiWidget.materialRes(styler.materialSlot(role, design)))
         return ColorProvider(Color(styler.argb(role, design, dark = false)))
     }
+
+    /** Text cut out of a block of [role]'s color: the panel's own color for Material 3, else black or white. */
+    fun onText(role: Role, design: String?): ColorProvider {
+        if (styler.theme == WidgetTheme.material && role != Role.Level) return ColorProvider(AiWidget.materialRes(MaterialSlot.Surface))
+        return ColorProvider(Color(com.sidequest.widgetmaker.spec.Styler.contrast(styler.argb(role, design, dark = false))))
+    }
 }
 
 @Composable
 private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base: GlanceModifier = GlanceModifier) {
+    // A month is drawn as the rows and columns of text it lays out to (the preview draws the same).
+    if (node is com.sidequest.widgetmaker.spec.MonthNode) {
+        GlanceNode(com.sidequest.widgetmaker.spec.MonthGrid.expand(node, tokens.now.toLocalDate(), tokens.feeds, tokens.locale), tokens, paint, fit, base)
+        return
+    }
     // Its own tap, if it has one: a headline's article, a calendar entry, the clock app...
     val context = androidx.glance.LocalContext.current
     val tap = if (paint.partTaps) Taps.forNode(node)?.let { Taps.resolve(it, tokens) } else null
@@ -472,12 +483,16 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
         }
         is TextNode -> {
             val (role, color) = textColor(node, tokens)
+            // Highlighted (today in a calendar): a small block in the text's color, the text cut out of it.
+            val marked = if (node.highlight) {
+                modifier.background(paint(role, color)).cornerRadius((6 * paint.k).dp).padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
+            } else modifier
             Text(
                 text = tokens.fill(node.text),
-                modifier = modifier,
+                modifier = marked,
                 maxLines = node.maxLines,
                 style = TextStyle(
-                    color = paint(role, color),
+                    color = if (node.highlight) paint.onText(role, color) else paint(role, color),
                     fontSize = (node.size * paint.k).sp,
                     fontWeight = when (node.weight) {
                         Weight.bold -> FontWeight.Bold
@@ -577,6 +592,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 }
             }
         }
+        is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
         is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color))) {}
     }
@@ -631,6 +647,7 @@ private fun timerViews(node: TimerNode, styler: Styler, k: Float = 1f): RemoteVi
 
 /** Whether a row or column needs the full width: it (or one inside it) shares out space with "grow". */
 private fun spansWidth(node: Node): Boolean = when (node) {
+    is com.sidequest.widgetmaker.spec.MonthNode -> true
     is RowNode -> node.children.any { it.grow } || node.children.any(::spansWidth)
     is ColumnNode -> node.children.any(::spansWidth)
     else -> false

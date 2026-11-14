@@ -230,7 +230,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 Image(
                     painter = painterResource(mc[if (animate) frame else 0]),
                     contentDescription = null,
-                    modifier = modifier.size((node.size * paint.k * com.sidequest.widgetmaker.widget.MC_SCALE).dp),
+                    modifier = modifier.size((node.size * paint.k * com.sidequest.widgetmaker.widget.mcScale(node.size)).dp),
                 )
             } else Image(
                 painter = painterResource(iconRes(node, tokens)),

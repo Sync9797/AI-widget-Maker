@@ -468,7 +468,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             // the current weather's animated when chosen; else the classic icon, tinted.
             val mc = if (paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.classic) null
             else Meteocons.nameFor(node, tokens)?.let { Meteocons.frames(context, it) }?.takeIf { it.isNotEmpty() }
-            val mcSize = (node.size * paint.k * MC_SCALE).dp
+            val mcSize = (node.size * paint.k * mcScale(node.size)).dp
             when {
                 mc != null && mc.size > 1 && paint.weatherIcons == com.sidequest.widgetmaker.spec.WeatherIcons.animated && Meteocons.isNow(node) ->
                     AndroidRemoteViews(remoteViews = Meteocons.flipper(context, mc), modifier = modifier.size(mcSize))
@@ -703,5 +703,8 @@ private fun tapLayer(context: Context, intent: android.content.Intent): android.
     }
 }
 
-/** Meteocons are drawn this much bigger than a classic icon of the same size: their art has room around it. */
-const val MC_SCALE = 1.3f
+/**
+ * How much bigger a Meteocon is drawn than a classic icon of [size] dp: their art has room around it.
+ * Small ones (in forecast rows) stay as designed, so the rows keep their room.
+ */
+fun mcScale(size: Int): Float = if (size >= 24) 1.3f else 1f

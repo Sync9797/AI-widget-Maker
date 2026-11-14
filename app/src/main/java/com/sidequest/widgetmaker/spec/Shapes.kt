@@ -30,6 +30,8 @@ enum class WidgetShape(val label: String) {
     stadium("Stadium"),
     /** Every corner its own size, like One UI's weather card: a big curve top right, nearly square bottom right. */
     leaf("Leaf"),
+    /** Leaf flipped top to bottom, like One UI's countdown card: the big curve bottom right. */
+    leafReverse("Reverse leaf"),
 }
 
 /** How all widgets look, set in Settings → Widget look. */
@@ -61,6 +63,8 @@ data class Look(
     val premium: Boolean = true,
     /** How weather icons look: the classic flat ones, Meteocons, or Meteocons with the current weather animated. */
     val weatherIcons: WeatherIcons = WeatherIcons.animated,
+    /** Weather widgets take the weather's color (sky blue, golden hour, rain, snow, clouds); at night they keep their look. */
+    val weatherMoods: Boolean = true,
 )
 
 /** The weather icons' style (Settings → Widget look). Meteocons are by Bas Milius, MIT licensed. */
@@ -112,13 +116,17 @@ object Shapes {
     /** Height to width of One UI's own 2×2 widgets (about 380 by 360). */
     const val ONE_UI_RATIO = 1.055f
 
-    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.arch, WidgetShape.ticket, WidgetShape.leaf)
+    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.arch, WidgetShape.ticket, WidgetShape.leaf, WidgetShape.leafReverse)
 
     /**
      * A [WidgetShape.leaf]'s corner radii as parts of its shorter side, clockwise from the top left
-     * (top left, top right, bottom right, bottom left), measured off One UI's weather card.
+     * (top left, top right, bottom right, bottom left), measured off One UI's weather card (the small ones a touch rounder, so the home screen's
+     * own corner rounding doesn't cut into them).
      */
-    val LEAF_CORNERS = floatArrayOf(0.08f, 0.25f, 0.045f, 0.13f)
+    val LEAF_CORNERS = floatArrayOf(0.11f, 0.25f, 0.065f, 0.14f)
+
+    /** [LEAF_CORNERS] flipped top to bottom: top left, top right, bottom right, bottom left. */
+    val LEAF_REVERSE_CORNERS = floatArrayOf(LEAF_CORNERS[3], LEAF_CORNERS[2], LEAF_CORNERS[1], LEAF_CORNERS[0])
 
     /** Shapes drawn as big as the shorter side allows, centered in their cell. */
     val ROUND_SHAPES = setOf(WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower)
@@ -159,7 +167,7 @@ object Shapes {
             WidgetShape.circle, WidgetShape.cookie, WidgetShape.clover, WidgetShape.flower -> w / 2
             WidgetShape.pebble, WidgetShape.stadium -> min(w, h) / 2
             WidgetShape.ticket -> look.cornerRadius ?: design.cornerRadius
-            WidgetShape.leaf -> (min(w, h) * LEAF_CORNERS.max()).roundToInt()
+            WidgetShape.leaf, WidgetShape.leafReverse -> (min(w, h) * LEAF_CORNERS.max()).roundToInt()
         }.coerceIn(0, min(w, h) / 2)
         val p = design.padding
         return when (shape) {
@@ -179,7 +187,7 @@ object Shapes {
             WidgetShape.clover -> (w * 0.17).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             WidgetShape.flower -> (w * 0.18).roundToInt().let { Panel(w, h, shape, radius, max(p / 2, it), max(p / 2, it), max(p / 2, it)) }
             WidgetShape.pebble -> Panel(w, h, shape, radius, max(p / 2, (w * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()), max(p / 2, (h * 0.13).roundToInt()))
-            WidgetShape.leaf -> Panel(w, h, shape, radius, p, p, p)
+            WidgetShape.leaf, WidgetShape.leafReverse -> Panel(w, h, shape, radius, p, p, p)
             // Content clears the notches in the sides.
             WidgetShape.ticket -> Panel(w, h, shape, radius, max(p, ticketNotch(w.toFloat(), h.toFloat()).roundToInt() + 6), p, p)
             // A tall capsule keeps content off its round ends; a wide one is a pill.

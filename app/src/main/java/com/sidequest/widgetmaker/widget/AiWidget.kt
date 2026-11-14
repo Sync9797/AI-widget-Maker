@@ -327,7 +327,8 @@ private fun DesignWidget(
     // The widget's size right now: its panel, and the elements with size rules, follow it.
     val size = LocalSize.current
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, look, shape)
-    val art = PanelArt.build(context, theme, panel, look, onScreen)
+    val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, look, tokens.feeds, System.currentTimeMillis())
+    val art = PanelArt.build(context, theme, panel, look, onScreen, mood)
     // On a bigger screen (an open foldable) the content can grow with the widget.
     val k = Shapes.scale(panel, look)
     // Until a blurred widget knows where it sits, its parts don't take taps of their own: any tap then

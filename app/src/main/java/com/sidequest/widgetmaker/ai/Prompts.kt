@@ -41,7 +41,8 @@ The widget is drawn from a tree of elements. The top level is:
 bold value like a day number), "clover" (four leaves; one bold value or icon), "flower" (five round petals),
 "pebble" (a smooth river stone), "ticket" (notched sides; countdowns, events) or "stadium" (a capsule, tall
 in a 1x2 or 1x3; one column) or "leaf" (One UI's weather card: every corner its own size, the big curve top
-right, so an icon sits well there). Circles, cookies, clovers and flowers keep content near the middle.
+right, so an icon sits well there) or "leafReverse" (the leaf flipped top to bottom: the big curve bottom right,
+like One UI's countdown card). Circles, cookies, clovers and flowers keep content near the middle.
 
 Colors are "#RRGGBB" or "#AARRGGBB" (the AA part is opacity; "#CC000000" is 80% black).
 Sizes are in dp (text sizes in sp). Every element may set "grow": true to take the leftover
@@ -114,6 +115,8 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
   {weather.condition} "Partly cloudy", {weather.rain} "40%" (chance today), {weather.wind} "9 mph",
   {weather.place} the town name. The icon "weather" shows the current conditions.
   {weather.outlook} "Rain possible tonight" (the next 12 hours, in words).
+  {weather.event}: the same, but only when rain, snow or storms are coming (empty on a dry day): show it with
+  "ifSet" and something else (like the high, low and {weather.feelsLike}) with "ifEmpty".
   Next hours, N = 1 to 5: {weather.hN.time} "3 PM" ({weather.hN.time24} "15:00"), {weather.hN.temp}, {weather.hN.icon}, {weather.hN.rain} "10%".
   Next days, N = 1 to 3: {weather.dN.day} "Thu", {weather.dN.high}, {weather.dN.low}, {weather.dN.icon}.
   Show forecasts as a row of small columns (time, live icon, temp), only at bigger sizes.

@@ -27,6 +27,11 @@ object PreviewTokens {
 
     @Volatile private var shared: StateFlow<Tokens>? = null
 
+    /** Starts over with the next preview (tests, which load their own sample data, need fresh values). */
+    internal fun forget() {
+        shared = null
+    }
+
     /** Shown until the first values are ready: the time, with nothing from the data sources yet. */
     private fun placeholder() = Tokens(now = LocalDateTime.now(), battery = null, charging = false)
 

@@ -49,6 +49,7 @@ class AppShots {
         com.sidequest.widgetmaker.spec.Starters.all.forEachIndexed { i, st ->
             store.save(com.sidequest.widgetmaker.spec.SavedDesign("s$i", st.title, st.design, createdAt = i.toLong()))
         }
+        com.sidequest.widgetmaker.ui.PreviewTokens.forget()
         val vm = MakerViewModel(context as android.app.Application)
         compose.mainClock.autoAdvance = false
         var page by mutableStateOf(Page.Create)

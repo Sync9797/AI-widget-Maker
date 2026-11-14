@@ -188,7 +188,7 @@ object Starters {
              {"type":"row","show":{"minHeight":200},"children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]},{"type":"column","show":{"minHeight":270},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
         ),
         Triple(
-            "Weather forecast", "Like One UI's weather: now, the outlook and your town at 2x2; the next hours when wider; the next 3 days when taller.",
+            "Weather forecast", "Like One UI's weather: now, rain or snow on the way (else today's high, low and feels-like) and your town at 2x2; the next hours when wider; the next 3 days when taller.",
             """{"name":"Weather forecast","background":"#F2163170","cornerRadius":30,"padding":16,"root":
             {"type":"column","children":[
              {"type":"row","grow":true,"children":[
@@ -199,10 +199,11 @@ object Starters {
                 {"type":"spacer","size":20,"show":{"minWidth":250}}]},
                {"type":"spacer","grow":true},
                {"type":"text","text":"{weather.temp}","size":30,"color":"#FFFFFFFF","weight":"medium","maxLines":1},
-               {"type":"text","text":"{weather.outlook}","size":13,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100}},
+               {"type":"text","text":"{weather.event}","size":12,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100,"ifSet":"{weather.event}"}},
+               {"type":"text","text":"↑{weather.high} / ↓{weather.low} · Feels {weather.feelsLike}","size":12,"color":"#E6FFFFFF","maxLines":1,"show":{"minHeight":100,"ifEmpty":"{weather.event}"}},
                {"type":"row","show":{"minHeight":120},"children":[
-                {"type":"icon","name":"pin","size":13,"color":"#B3FFFFFF"},
-                {"type":"text","text":" {weather.place}","size":13,"color":"#B3FFFFFF","maxLines":1}]}]},
+                {"type":"icon","name":"pin","size":12,"color":"#B3FFFFFF"},
+                {"type":"text","text":" {weather.place}","size":12,"color":"#B3FFFFFF","maxLines":1}]}]},
               {"type":"spacer","size":20,"show":{"minWidth":250}},
               {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
                ${hourRow(1, 0)},${hourRow(2, 0)},${hourRow(3, 140)},${hourRow(4, 140, divider = false)}]}]},

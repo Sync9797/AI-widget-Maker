@@ -15,8 +15,8 @@ android {
         applicationId = "com.sidequest.widgetmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 41
-        versionName = "0.12.0"
+        versionCode = 43
+        versionName = "0.12.2"
         // Which commit this is (set by the GitHub build), so the app can tell when a newer build is out.
         buildConfigField("String", "GIT_SHA", "\"${System.getenv("GITHUB_SHA") ?: "dev"}\"")
     }

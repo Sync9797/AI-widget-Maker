@@ -142,6 +142,8 @@ class WeatherOutlookTest {
     fun saysLikelyAndDry() {
         assertEquals("Rain likely tonight", FeedParsers.weather(body(listOf(0, 80, 10)), place, true)["weather.outlook"])
         assertEquals("Dry for the next 12 hours", FeedParsers.weather(body(listOf(0, 5, 10)), place, true)["weather.outlook"])
+        // Nothing coming: the event line stays empty (the widget shows the high, low and feels-like instead).
+        assertEquals("", FeedParsers.weather(body(listOf(0, 5, 10)), place, true)["weather.event"])
     }
 
     @Test

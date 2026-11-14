@@ -41,7 +41,8 @@ The widget is drawn from a tree of elements. The top level is:
 bold value like a day number), "clover" (four leaves; one bold value or icon), "flower" (five round petals),
 "pebble" (a smooth river stone), "ticket" (notched sides; countdowns, events) or "stadium" (a capsule, tall
 in a 1x2 or 1x3; one column) or "leaf" (One UI's weather card: every corner its own size, the big curve top
-right, so an icon sits well there). Circles, cookies, clovers and flowers keep content near the middle.
+right, so an icon sits well there) or "leafReverse" (the leaf flipped top to bottom: the big curve bottom right,
+like One UI's countdown card). Circles, cookies, clovers and flowers keep content near the middle.
 
 Colors are "#RRGGBB" or "#AARRGGBB" (the AA part is opacity; "#CC000000" is 80% black).
 Sizes are in dp (text sizes in sp). Every element may set "grow": true to take the leftover

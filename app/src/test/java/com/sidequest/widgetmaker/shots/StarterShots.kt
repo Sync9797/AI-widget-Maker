@@ -135,6 +135,7 @@ class StarterShots {
                     val weather = Starters.all.first { it.title == "Weather forecast" }.design
                     DesignPreview(weather, PreviewSize.Square, theme, shape = WidgetShape.leaf)
                     DesignPreview(weather, PreviewSize.Wide, theme, shape = WidgetShape.leaf)
+                    DesignPreview(Starters.all.first { it.title == "Countdown" }.design, PreviewSize.Square, theme, shape = WidgetShape.leafReverse)
                     DesignPreview(pill, PreviewSize.Tall, theme, shape = WidgetShape.stadium)
                     DesignPreview(pill, PreviewSize.Strip, theme, shape = WidgetShape.stadium)
                     DesignPreview(clock, PreviewSize.Wide, theme, shape = WidgetShape.ticket)

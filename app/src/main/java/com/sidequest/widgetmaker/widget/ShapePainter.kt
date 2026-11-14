@@ -48,9 +48,10 @@ object ShapePainter {
                 WidgetShape.flower -> polar(this, r, square = true) { t -> 0.87 + 0.13 * cos(5 * (t + PI / 2)) }
                 WidgetShape.pebble -> polar(this, r, square = false) { t -> 1 + 0.06 * cos(2 * t + 0.6) + 0.04 * cos(3 * t + 1.9) }
                 WidgetShape.ticket -> ticket(this, r, rad)
-                WidgetShape.leaf -> {
+                WidgetShape.leaf, WidgetShape.leafReverse -> {
                     val side = min(r.width(), r.height())
-                    val (tl, tr, br, bl) = com.sidequest.widgetmaker.spec.Shapes.LEAF_CORNERS.map { max(0f, it * side - inset) }
+                    val corners = if (shape == WidgetShape.leaf) com.sidequest.widgetmaker.spec.Shapes.LEAF_CORNERS else com.sidequest.widgetmaker.spec.Shapes.LEAF_REVERSE_CORNERS
+                    val (tl, tr, br, bl) = corners.map { max(0f, it * side - inset) }
                     addRoundRect(r, floatArrayOf(tl, tl, tr, tr, br, br, bl, bl), Path.Direction.CW)
                 }
                 WidgetShape.circle -> addOval(r, Path.Direction.CW)

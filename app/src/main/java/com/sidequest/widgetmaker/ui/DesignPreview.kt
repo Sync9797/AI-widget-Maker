@@ -127,7 +127,8 @@ fun DesignPreview(
     val paint = PreviewPaint(art.styler, isSystemInDarkTheme(), k, usedLook.weatherIcons)
     // Shrinks to fit narrow screens, drawn exactly as at full size.
     BoxWithConstraints(modifier) {
-        val scale = minOf(1f, maxWidth / size.width)
+        // Shrinks to the room it's given, across and (when limited, like in a widget's settings sheet) down.
+        val scale = minOf(1f, maxWidth / size.width, if (constraints.hasBoundedHeight) maxHeight / size.height else 1f)
         Box(Modifier.size(size.width * scale, size.height * scale), contentAlignment = Alignment.Center) {
             Box(
                 Modifier.requiredSize(size.width, size.height).graphicsLayer(scaleX = scale, scaleY = scale),

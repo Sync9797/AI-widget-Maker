@@ -83,8 +83,12 @@ class StarterShots {
         }
         shots.forEach { shot ->
             compose.runOnUiThread { current = shot }
-            compose.mainClock.advanceTimeBy(500)
-            compose.waitForIdle()
+            // Backgrounds are built off the main thread: give them real time to arrive.
+            repeat(4) {
+                compose.mainClock.advanceTimeBy(250)
+                compose.waitForIdle()
+                Thread.sleep(150)
+            }
             val (theme, i, starter) = shot
             compose.waitForIdle()
             val view = compose.activity.window.decorView

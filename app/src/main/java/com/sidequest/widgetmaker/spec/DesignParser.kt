@@ -143,7 +143,7 @@ object DesignParser {
             textSize = node.textSize.coerceIn(8, 32),
             textColor = Colors.orDefault(node.textColor, "#FFFFFFFF"),
             segments = if (node.segments <= 0) 0 else node.segments.coerceIn(2, 10),
-            height = if (node.segments > 0 && node.vertical) node.height.coerceIn(20, 240) else node.height.coerceIn(2, if (node.pill) 64 else 24),
+            height = if (node.vertical) node.height.coerceIn(20, 240) else node.height.coerceIn(2, if (node.pill) 64 else 24),
         )
         is DividerNode -> node.copy(
             show = sanitize(node.show),
@@ -173,6 +173,9 @@ object DesignParser {
             size = node.size.coerceIn(24, 200),
             thickness = node.thickness.coerceIn(2, 30),
             textSize = node.textSize.coerceIn(8, 60),
+            sweep = node.sweep.coerceIn(90, 360),
+            min = node.min?.take(60),
+            max = node.max?.take(60),
             color = Colors.orDefault(node.color, "#FFD9A33B"),
             trackColor = Colors.orDefault(node.trackColor, "#33FFFFFF"),
             textColor = Colors.orDefault(node.textColor, "#FFFFFFFF"),

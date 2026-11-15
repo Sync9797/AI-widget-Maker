@@ -102,6 +102,8 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                 Text(
                     when (state.theme) {
                         WidgetTheme.glass -> "Smoky see-through glass with white text. Icons and bars keep their colors."
+                        WidgetTheme.expressive -> "Solid panels pooled from your phone's colors, with a second color for what matters. " +
+                            "Shaped widgets (cookie, flower, circle) are bold; cards are soft. Light or dark with your phone."
                         WidgetTheme.material -> "Your phone's colors (wallpaper or One UI color palette, Android 12+), light or dark with your phone."
                         WidgetTheme.original -> "The colors Claude chose for each design."
                         WidgetTheme.oneui -> "Like Samsung One UI: your wallpaper behind each widget, blurred and frosted, with " +

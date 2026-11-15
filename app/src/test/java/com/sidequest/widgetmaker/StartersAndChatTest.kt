@@ -26,7 +26,7 @@ class StartersAndChatTest {
 
     @Test
     fun everyStarterParses() {
-        assertEquals(37, Starters.all.size)
+        assertEquals(40, Starters.all.size)
         Starters.all.forEach { assertTrue(it.title, it.design.name.isNotBlank()) }
     }
 
@@ -42,11 +42,12 @@ class StartersAndChatTest {
 
     @Test
     fun clocksFitTheWidthTheyShowAt() {
-        // A 4-digit time like "12:59" is about 2.6 em wide in the clock font; widgets are 160 dp at their narrowest.
+        // A 4-digit time like "12:59" is about 2.6 em wide in the clock font, the hour alone ("12") about 1.3;
+        // widgets are 160 dp at their narrowest.
         fun check(node: Node, minWidth: Int, padding: Int, title: String) {
             val shownFrom = maxOf(minWidth, node.show?.minWidth ?: 0)
             if (node is com.sidequest.widgetmaker.spec.ClockNode && node.format.startsWith("h")) {
-                val needed = node.size * 2.6 + padding
+                val needed = node.size * (if (node.format.contains(':')) 2.6 else 1.3) + padding
                 assertTrue("$title: a ${node.size} sp clock needs $needed dp, has $shownFrom", needed <= shownFrom)
             }
             val kids = when (node) {

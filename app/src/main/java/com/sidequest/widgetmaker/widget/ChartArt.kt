@@ -107,7 +107,7 @@ object ChartArt {
     }
 
     /** A ring [sizePx] across: the whole track when [fraction] is null, else an arc from the top, clockwise. */
-    fun ring(sizePx: Int, thicknessPx: Float, fraction: Float?): Bitmap {
+    fun ring(sizePx: Int, thicknessPx: Float, fraction: Float?, sweep: Int = 360): Bitmap {
         val out = Bitmap.createBitmap(sizePx.coerceAtLeast(8), sizePx.coerceAtLeast(8), Bitmap.Config.ARGB_8888)
         val inset = thicknessPx / 2
         val box = RectF(inset, inset, out.width - inset, out.height - inset)
@@ -118,8 +118,14 @@ object ChartArt {
             strokeCap = Paint.Cap.ROUND
         }
         val canvas = Canvas(out)
-        if (fraction == null) canvas.drawOval(box, paint.apply { strokeCap = Paint.Cap.BUTT })
-        else if (fraction > 0f) canvas.drawArc(box, -90f, 360f * fraction.coerceIn(0f, 1f), false, paint)
+        val arc = sweep.coerceIn(30, 360).toFloat()
+        // A gauge is open at the bottom: it starts at the lower left and runs clockwise over the top.
+        val start = if (arc >= 360f) -90f else 90f + (360f - arc) / 2
+        when {
+            fraction == null && arc >= 360f -> canvas.drawOval(box, paint.apply { strokeCap = Paint.Cap.BUTT })
+            fraction == null -> canvas.drawArc(box, start, arc, false, paint)
+            fraction > 0f -> canvas.drawArc(box, start, arc * fraction.coerceIn(0f, 1f), false, paint)
+        }
         return out
     }
 }

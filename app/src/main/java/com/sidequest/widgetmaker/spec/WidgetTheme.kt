@@ -5,6 +5,12 @@ package com.sidequest.widgetmaker.spec
  * from the design; a theme only restyles its colors.
  */
 enum class WidgetTheme(val label: String) {
+    /**
+     * Material 3 Expressive with One UI's order: solid panels pooled from one of the phone's colors, with a second
+     * (pop) color for what matters. Hero shapes (cookie, flower, circle...) are bold; cards are soft. Light or dark
+     * with the phone.
+     */
+    expressive("Expressive"),
     /** Smoky translucent glass with a bright edge and white text. Accent colors stay as designed. */
     glass("Glass"),
     /** Material You colors from the wallpaper, light or dark with the phone. */
@@ -52,7 +58,7 @@ enum class WidgetTheme(val label: String) {
          * Whether a theme takes on the weather's color for weather widgets (Settings → Weather moods). Not the
          * ones whose point is their own look: Material 3 and Tonal's colors, Outline's no panel, Liquid glass's clear glass.
          */
-        fun takesMoods(theme: WidgetTheme) = theme != material && theme != tonal && theme != outline && theme != liquid && theme != studio
+        fun takesMoods(theme: WidgetTheme) = theme != material && theme != tonal && theme != outline && theme != liquid && theme != studio && theme != expressive
 
         /** Whether a design shows music, so it can use the Ambient style. */
         fun playsMusic(design: WidgetDesign): Boolean {
@@ -75,6 +81,35 @@ enum class Role {
  * current palette (including Samsung One UI's) and light or dark mode.
  */
 enum class MaterialSlot { Surface, Container, Text, Text80, Text65, Primary, Track, Up, Down }
+
+/**
+ * The Expressive style's palette: which tone of the phone's main (1) or pop (3) color each slot takes, as Material
+ * You's tone numbers (Android's system_accentN_<tone> colors: 50 is near white, 900 near black). Bold hero shapes
+ * sit on a strong tone with light text (dark text in dark mode, where the strong tone is light); soft cards on a
+ * pale one (deep in dark mode). The pop color is always in a tone that stands off the panel.
+ */
+object ExpressivePalette {
+    data class Tone(val accent: Int, val tone: Int)
+
+    fun tone(slot: MaterialSlot, dark: Boolean, bold: Boolean): Tone? = when (slot) {
+        MaterialSlot.Surface -> Tone(1, when { bold && !dark -> 600; bold -> 300; !dark -> 50; else -> 900 })
+        MaterialSlot.Container -> Tone(1, when { bold && !dark -> 700; bold -> 200; !dark -> 100; else -> 800 })
+        MaterialSlot.Text, MaterialSlot.Text80, MaterialSlot.Text65 -> Tone(1, if (bold != dark) 50 else 900)
+        MaterialSlot.Primary -> Tone(3, when { bold && !dark -> 200; bold -> 700; !dark -> 600; else -> 200 })
+        MaterialSlot.Track -> Tone(1, when { bold && !dark -> 400; bold -> 400; !dark -> 200; else -> 700 })
+        MaterialSlot.Up, MaterialSlot.Down -> null
+    }
+
+    /** Material's baseline tones (phones before Android 12, and tests). */
+    fun baseline(t: Tone): Int = (if (t.accent == 3) when (t.tone) {
+        200 -> 0xFFEFB8C8; 600 -> 0xFF7D5260; else -> 0xFF633B48
+    } else when (t.tone) {
+        50 -> 0xFFF6EDFF; 100 -> 0xFFEADDFF; 200 -> 0xFFD0BCFF; 300 -> 0xFFB69DF8; 400 -> 0xFF9A82DB
+        600 -> 0xFF6750A4; 700 -> 0xFF4F378B; 800 -> 0xFF381E72; else -> 0xFF21005D
+    }).toInt()
+
+    fun baseline(slot: MaterialSlot, dark: Boolean, bold: Boolean): Int = tone(slot, dark, bold)?.let(::baseline) ?: Baseline.color(slot, dark)
+}
 
 /** Material 3's baseline palette: phones before Android 12, and tests. Mirrors res/color and res/color-night. */
 object Baseline {
@@ -136,6 +171,21 @@ class Styler(
                 Role.Accent, Role.TrendUp, Role.TrendDown, Role.Level -> original
             }
             WidgetTheme.material -> material(materialSlot(role, design), dark)
+            // Expressive: [backdropLight] is the phone's light mode. The slots come from its pooled palette (bold or
+            // soft for the panel's shape), the accent being the pop color.
+            WidgetTheme.expressive -> {
+                val dark = !backdropLight
+                when (role) {
+                    Role.Background -> material(MaterialSlot.Surface, dark)
+                    Role.Container -> material(MaterialSlot.Container, dark)
+                    Role.Text -> withAlpha(material(MaterialSlot.Text, dark), alphaOf(original).coerceAtLeast(0xA6))
+                    Role.Accent -> material(MaterialSlot.Primary, dark)
+                    Role.Track -> material(MaterialSlot.Track, dark)
+                    Role.TrendUp -> material(MaterialSlot.Up, dark)
+                    Role.TrendDown -> material(MaterialSlot.Down, dark)
+                    Role.Level -> original
+                }
+            }
             WidgetTheme.tonal -> {
                 // [backdropLight] here is the phone's light mode; the slots come from the tonal palette.
                 val dark = !backdropLight

@@ -105,6 +105,15 @@ class PanelArt(
                     edge(0x14FFFFFF, sheen = 0x0A),
                     AiWidget.styler(context, theme, backdropLight = !phoneDark),
                 )
+                WidgetTheme.expressive -> {
+                    // Solid, pooled from the phone's colors: bold for hero shapes, soft for cards.
+                    val styler = AiWidget.styler(context, theme, backdropLight = !phoneDark, bold = panel.shape.bold)
+                    PanelArt(
+                        ShapePainter.clip(solid(styler.argb(com.sidequest.widgetmaker.spec.Role.Background, null, false), outW, outH), panel.shape, radius), false,
+                        edge(0x14FFFFFF, sheen = 0x0A),
+                        styler,
+                    )
+                }
                 WidgetTheme.studio -> {
                     // A soft card: a touch lighter at the top, with a fine rim, like matte plastic under soft light.
                     val styler = AiWidget.styler(context, theme, backdropLight = !phoneDark)

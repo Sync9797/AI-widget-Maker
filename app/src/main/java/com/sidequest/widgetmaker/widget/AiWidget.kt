@@ -144,7 +144,9 @@ class AiWidget : GlanceAppWidget() {
          * from the same resources the widget hands to the launcher (used for
          * the in-app preview; the widget itself never resolves them).
          */
-        fun styler(context: Context, theme: WidgetTheme, backdropLight: Boolean = false): Styler = when {
+        fun styler(context: Context, theme: WidgetTheme, backdropLight: Boolean = false, bold: Boolean = false): Styler = when {
+            // Expressive: [backdropLight] is the phone's light mode; [bold] for hero shapes.
+            theme == WidgetTheme.expressive -> Styler(theme, { slot, dark -> expressiveTone(context, slot, dark, bold) }, backdropLight)
             theme.frosted -> Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
             // Tonal: [backdropLight] is the phone's light mode.
             theme == WidgetTheme.tonal -> Styler(theme, { slot, dark -> tonalTone(context, slot, dark) }, backdropLight)
@@ -175,6 +177,29 @@ class AiWidget : GlanceAppWidget() {
                 MaterialSlot.Text, MaterialSlot.Text80, MaterialSlot.Text65 -> if (dark) 0xFFEADDFF else 0xFF21005D
                 else -> Baseline.color(slot, dark).toLong()
             }.toInt()
+        }
+
+        /** The Expressive style's colors: its tones of the phone's palette (Android 12+), else Material's baseline. */
+        private fun expressiveTone(context: Context, slot: MaterialSlot, dark: Boolean, bold: Boolean): Int {
+            val t = com.sidequest.widgetmaker.spec.ExpressivePalette.tone(slot, dark, bold) ?: return Baseline.color(slot, dark)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) systemTone(t.accent, t.tone)?.let { return context.getColor(it) }
+            return com.sidequest.widgetmaker.spec.ExpressivePalette.baseline(t)
+        }
+
+        /** Android's system color for an accent (1 or 3) at a tone, or null for one it doesn't have. */
+        @androidx.annotation.RequiresApi(Build.VERSION_CODES.S)
+        private fun systemTone(accent: Int, tone: Int): Int? = when (accent) {
+            1 -> when (tone) {
+                50 -> android.R.color.system_accent1_50; 100 -> android.R.color.system_accent1_100; 200 -> android.R.color.system_accent1_200
+                300 -> android.R.color.system_accent1_300; 400 -> android.R.color.system_accent1_400; 600 -> android.R.color.system_accent1_600
+                700 -> android.R.color.system_accent1_700; 800 -> android.R.color.system_accent1_800; 900 -> android.R.color.system_accent1_900
+                else -> null
+            }
+            3 -> when (tone) {
+                200 -> android.R.color.system_accent3_200; 600 -> android.R.color.system_accent3_600; 700 -> android.R.color.system_accent3_700
+                else -> null
+            }
+            else -> null
         }
 
         /**
@@ -556,7 +581,29 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 )
             }
         }
-        is ProgressNode -> if (node.segments > 0) {
+        is ProgressNode -> if (node.capsule) {
+            // An upright capsule filling from the bottom, its value in a small pill at the top. The corners are
+            // bigger than half its width, which rounds it into a capsule whatever width it ends up.
+            val h = (node.height * paint.k).dp
+            val f = tokens.progress(node.value)
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            Box(modifier.width(h * CAPSULE_WIDTH).height(h).cornerRadius(h / 2).background(paint(Role.Track, node.trackColor)), contentAlignment = Alignment.TopCenter) {
+                Column(GlanceModifier.fillMaxSize()) {
+                    Spacer(GlanceModifier.height(h * (1f - f)))
+                    if (f > 0f) Box(GlanceModifier.fillMaxWidth().height(h * f).cornerRadius(h / 2).background(on)) {}
+                }
+                node.text?.let {
+                    Box(GlanceModifier.padding(top = (6 * paint.k).dp)) {
+                        Text(
+                            tokens.fill(it), maxLines = 1,
+                            modifier = GlanceModifier.background(paint(Role.Background, null)).cornerRadius((node.textSize * paint.k).dp)
+                                .padding(horizontal = (6 * paint.k).dp, vertical = (2 * paint.k).dp),
+                            style = TextStyle(color = paint(Role.Text, node.textColor), fontSize = (node.textSize * paint.k).sp, fontWeight = FontWeight.Bold),
+                        )
+                    }
+                }
+            }
+        } else if (node.segments > 0) {
             // A level meter: blocks that fill up with the value (bottom to top when vertical).
             val filled = Math.round(tokens.progress(node.value) * node.segments)
             val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
@@ -633,8 +680,8 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             val thick = node.thickness * paint.k * density
             val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens)
             Box(modifier.size((node.size * paint.k).dp), contentAlignment = Alignment.Center) {
-                Image(ImageProvider(ChartArt.ring(px, thick, null)), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(Role.Track, node.trackColor)))
-                Image(ImageProvider(ChartArt.ring(px, thick, tokens.progress(node.value))), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(role, color)))
+                Image(ImageProvider(ChartArt.ring(px, thick, null, node.sweep)), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(Role.Track, node.trackColor)))
+                Image(ImageProvider(ChartArt.ring(px, thick, node.fraction(tokens), node.sweep)), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(role, color)))
                 Text(
                     tokens.fill(node.text),
                     maxLines = 1,
@@ -875,6 +922,9 @@ fun accentColor(levelOf: String?, levels: List<com.sidequest.widgetmaker.spec.Le
     levelColor(levelOf, levels, tokens)?.let { Role.Level to it } ?: (Role.Accent to color)
 
 /** The widget's size for size rules, and [inner]: the height inside its padding, which rings shrink to. */
+/** An upright capsule's width, as a part of its height. */
+const val CAPSULE_WIDTH = 0.42f
+
 data class Fit(val width: Int, val height: Int, val tokens: Tokens? = null, val inner: Int = height) {
     fun shows(node: Node) = visible(node, width, height, tokens)
 }

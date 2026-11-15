@@ -3,6 +3,7 @@ package com.sidequest.widgetmaker.ui
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,6 +34,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Favorite
@@ -95,6 +97,8 @@ fun MakerScreen(viewModel: MakerViewModel, start: Page = Page.Create) {
     }
     // Back from any other section returns to the creator first.
     BackHandler(enabled = section != Page.Create) { go(Page.Create) }
+    // Back from an open category returns to the category menu first.
+    BackHandler(enabled = section == Page.Widgets && openCategory.value != null) { openCategory.value = null }
     // Starting from a ready-made design, editing one or using one again opens it in the creator.
     val making = state.draft != null || state.chat != null
     LaunchedEffect(making) { if (making) section = Page.Create }
@@ -260,23 +264,43 @@ private fun LazyStaggeredGridScope.CreateItems(state: MakerState, viewModel: Mak
     state.message?.let { full("message") { Text(it, color = MaterialTheme.colorScheme.primary) } }
 }
 
-/** The ready-made designs: a search, then one card per category. */
+/**
+ * The ready-made designs: a search, then a menu of categories, each with an example widget beside its name. Tapping
+ * one opens its designs. Only the previews on screen are drawn, so the menu opens at once.
+ */
 private fun LazyStaggeredGridScope.WidgetsItems(state: MakerState, viewModel: MakerViewModel) {
     if (state.assignTo != null) full("assign") { AssignBanner(viewModel::cancelAssign) }
     full("search") { SearchBox() }
     val query = searchQuery.value.trim()
-    val groups = Starters.all
-        .filter { query.isEmpty() || it.title.contains(query, true) || it.about.contains(query, true) || it.category.label.contains(query, true) }
-        .groupBy { it.category }
-        .toSortedMap(compareBy { it.ordinal })
-    if (groups.isEmpty()) full("none") { Text("No designs match “$query”.", style = MaterialTheme.typography.bodyMedium) }
-    groups.forEach { (category, starters) ->
-        item(key = "cat_${category.name}") {
-            CategoryCard(category.label, starters.size) {
-                PreviewGrid(starters, state.theme, title = { it.title }, about = { it.about }, design = { it.design }) { starter ->
-                    if (state.assignTo != null) viewModel.assign(starter = starter) else viewModel.useStarter(starter)
-                }
+    val pick: (Starters.Starter) -> Unit = { starter ->
+        if (state.assignTo != null) viewModel.assign(starter = starter) else viewModel.useStarter(starter)
+    }
+    val open = openCategory.value
+    when {
+        // A search looks through every category at once.
+        query.isNotEmpty() -> {
+            val found = Starters.all.filter { it.title.contains(query, true) || it.about.contains(query, true) || it.category.label.contains(query, true) }
+            if (found.isEmpty()) full("none") { Text("No designs match “$query”.", style = MaterialTheme.typography.bodyMedium) }
+            starterRows("q", found, state.theme, pick)
+        }
+        open != null -> {
+            val starters = Starters.all.filter { it.category == open }
+            full("open_${open.name}") { CategoryHeader(open.label, starters.size) { openCategory.value = null } }
+            starterRows(open.name, starters, state.theme, pick)
+        }
+        else -> Starters.all.groupBy { it.category }.toSortedMap(compareBy { it.ordinal }).forEach { (category, starters) ->
+            item(key = "cat_${category.name}") {
+                CategoryMenuItem(category.label, starters.size, starters.first(), state.theme) { openCategory.value = category }
             }
+        }
+    }
+}
+
+/** [starters] as previews, two to a row, each row its own item so only the rows on screen are drawn. */
+private fun LazyStaggeredGridScope.starterRows(key: String, starters: List<Starters.Starter>, theme: WidgetTheme, onPick: (Starters.Starter) -> Unit) {
+    starters.chunked(2).forEachIndexed { i, row ->
+        item(key = "${key}_$i") {
+            PreviewRow(row, theme, title = { it.title }, about = { it.about }, design = { it.design }, onPick = onPick)
         }
     }
 }
@@ -392,6 +416,9 @@ private fun SavedItem(saved: SavedDesign, count: Int, theme: WidgetTheme, viewMo
 /** What the widget gallery is filtered by; kept across the section's recompositions. */
 private val searchQuery = mutableStateOf("")
 
+/** The category open in the widget gallery, or null for the menu of categories. */
+internal val openCategory = mutableStateOf<Starters.Category?>(null)
+
 @Composable
 private fun SearchBox() {
     var text by searchQuery
@@ -444,20 +471,73 @@ private fun CategoryCard(name: String, count: Int, hint: String? = null, content
 
 /** A title in bold capitals, with fading copies stepping down behind it. */
 @Composable
-private fun EchoTitle(text: String, modifier: Modifier = Modifier, copies: Int = 3, step: Dp = 13.dp) {
+private fun EchoTitle(
+    text: String, modifier: Modifier = Modifier, copies: Int = 3, step: Dp = 13.dp,
+    size: androidx.compose.ui.unit.TextUnit = MaterialTheme.typography.headlineMedium.fontSize, maxLines: Int = 1,
+) {
     val label = text.uppercase()
-    val style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-    Box(modifier.height(40.dp + step * copies)) {
+    val style = MaterialTheme.typography.headlineMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontSize = size, lineHeight = size * 1.15f)
+    // The copies hang below the title, so leave room for them.
+    Box(modifier.padding(bottom = step * copies)) {
         for (i in copies downTo 1) {
             Text(
                 label,
                 style = style,
-                maxLines = 1,
+                maxLines = maxLines,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f / i),
                 modifier = Modifier.offset(y = step * i),
             )
         }
-        Text(label, style = style, maxLines = 1, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, style = style, maxLines = maxLines, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+/**
+ * A category in the gallery's menu: an example widget on the left, the category's name in big echoing letters on the
+ * right, and how many designs it holds. Tapping it opens the category.
+ */
+@Composable
+private fun CategoryMenuItem(name: String, count: Int, example: Starters.Starter, theme: WidgetTheme, onOpen: () -> Unit) {
+    Card(
+        onClick = onOpen,
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        border = cardEdge(),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            GalleryPreview(example.title, example.design, theme)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                EchoTitle(name, copies = 3, step = 9.dp, size = 19.sp, maxLines = 3)
+                Text(
+                    if (count == 1) "1 design" else "$count designs",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/** The top of an open category: back to the menu, and the category's name. */
+@Composable
+private fun CategoryHeader(name: String, count: Int, onBack: () -> Unit) {
+    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        androidx.compose.material3.IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "All categories")
+        }
+        EchoTitle(name, Modifier.weight(1f).padding(top = 4.dp), maxLines = 2)
+        Text(
+            "$count",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(12.dp))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+        )
     }
 }
 
@@ -472,33 +552,44 @@ private fun <T> PreviewGrid(
     onPick: (T) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items.chunked(2).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { item ->
-                    Column(
-                        Modifier
-                            .weight(1f)
-                            .clickable { onPick(item) }
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainer),
-                                ),
-                                RoundedCornerShape(24.dp),
-                            )
-                            .padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            GalleryPreview(title(item), design(item), theme)
-                        }
-                        Spacer(Modifier.size(2.dp))
-                        Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                        Text(about(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-                    }
+        items.chunked(2).forEach { row -> PreviewRow(row, theme, title, about, design, onPick) }
+    }
+}
+
+/** One row of up to two previews, each with its name and what it shows. */
+@Composable
+private fun <T> PreviewRow(
+    row: List<T>,
+    theme: WidgetTheme,
+    title: (T) -> String,
+    about: (T) -> String,
+    design: (T) -> com.sidequest.widgetmaker.spec.WidgetDesign,
+    onPick: (T) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        row.forEach { item ->
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable { onPick(item) }
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainer),
+                        ),
+                        RoundedCornerShape(24.dp),
+                    )
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    GalleryPreview(title(item), design(item), theme)
                 }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
+                Spacer(Modifier.size(2.dp))
+                Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                Text(about(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
             }
         }
+        if (row.size == 1) Spacer(Modifier.weight(1f))
     }
 }
 
@@ -568,16 +659,23 @@ private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec
     }
     val layer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     var ready by remember(key) { mutableStateOf(false) }
+    // A picture can only be taken on a hardware canvas (as on any phone); elsewhere it's drawn as is.
+    var recorded by remember(key) { mutableStateOf(false) }
     Box(
         Modifier.drawWithContent {
-            layer.record { this@drawWithContent.drawContent() }
-            drawLayer(layer)
+            if (drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
+                layer.record { this@drawWithContent.drawContent() }
+                drawLayer(layer)
+                recorded = true
+            } else {
+                drawContent()
+            }
         },
     ) {
         DesignPreview(design, PreviewSize.Square, theme, still = true, onReady = { ready = true })
     }
     LaunchedEffect(ready) {
-        if (ready) {
+        if (ready && recorded) {
             // A couple of frames for the drawn background to show, then keep a picture of it.
             kotlinx.coroutines.delay(150)
             runCatching { layer.toImageBitmap() }.getOrNull()?.let { PreviewSnapshots.put(key, it) }

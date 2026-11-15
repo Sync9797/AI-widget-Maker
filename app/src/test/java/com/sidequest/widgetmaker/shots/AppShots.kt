@@ -66,5 +66,20 @@ class AppShots {
             view.draw(Canvas(bmp))
             File(out, "app-$name-${p.name}.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
+        // An open category of the gallery.
+        compose.runOnUiThread {
+            com.sidequest.widgetmaker.ui.openCategory.value = com.sidequest.widgetmaker.spec.Starters.Category.weather
+            page = Page.Widgets
+        }
+        repeat(3) {
+            compose.mainClock.advanceTimeBy(500)
+            compose.waitForIdle()
+            Thread.sleep(150)
+        }
+        val view = compose.activity.window.decorView
+        val bmp = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        view.draw(Canvas(bmp))
+        File(out, "app-$name-WidgetsOpen.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        compose.runOnUiThread { com.sidequest.widgetmaker.ui.openCategory.value = null }
     }
 }

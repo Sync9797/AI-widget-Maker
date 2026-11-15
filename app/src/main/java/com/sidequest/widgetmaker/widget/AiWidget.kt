@@ -153,7 +153,7 @@ class AiWidget : GlanceAppWidget() {
             // Studio: [backdropLight] is the phone's light mode; its colors are its own.
             theme == WidgetTheme.studio -> Styler(theme, { slot, dark -> oneUiTone(context, slot, dark) }, backdropLight)
             theme == WidgetTheme.outline || theme == WidgetTheme.timeOfDay -> Styler(theme, { slot, dark -> Baseline.color(slot, dark) }, backdropLight)
-            else -> Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) })
+            else -> Styler(theme, { slot, _ -> context.getColor(materialRes(slot)) }, bold = bold && theme == WidgetTheme.material)
         }
 
         /**
@@ -196,6 +196,7 @@ class AiWidget : GlanceAppWidget() {
                 else -> null
             }
             3 -> when (tone) {
+                50 -> android.R.color.system_accent3_50; 900 -> android.R.color.system_accent3_900
                 200 -> android.R.color.system_accent3_200; 600 -> android.R.color.system_accent3_600; 700 -> android.R.color.system_accent3_700
                 else -> null
             }
@@ -225,6 +226,10 @@ class AiWidget : GlanceAppWidget() {
             MaterialSlot.Track -> R.color.m3_track
             MaterialSlot.Up -> R.color.m3_up
             MaterialSlot.Down -> R.color.m3_down
+            MaterialSlot.Strong -> R.color.m3_strong
+            MaterialSlot.OnStrong -> R.color.m3_on_strong
+            MaterialSlot.Pop -> R.color.m3_pop
+            MaterialSlot.OnPop -> R.color.m3_on_pop
         }
 
         fun currentTokens(context: Context): Tokens {
@@ -484,6 +489,10 @@ private class Paint(
     val partTaps: Boolean = true,
     val weatherIcons: com.sidequest.widgetmaker.spec.WeatherIcons = com.sidequest.widgetmaker.spec.WeatherIcons.classic,
 ) {
+    /** Drawing inside a tile of [tone]: text there reads on the tile. */
+    fun inside(tone: com.sidequest.widgetmaker.spec.Tone?) =
+        if (tone == null) this else Paint(styler.inside(tone), albumArt, k, partTaps, weatherIcons)
+
     operator fun invoke(role: Role, design: String?): ColorProvider {
         // Colors that mean something (a red Charge) stay as they are in every theme.
         if (role == Role.Level) return ColorProvider(Color(Colors.argb(design)))
@@ -516,37 +525,37 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
     when (node) {
         // A scrolling list: the launcher scrolls it (a ListView underneath), one row per child.
         is ColumnNode -> if (node.scroll) androidx.glance.appwidget.lazy.LazyColumn(
-            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding, node.tone),
             horizontalAlignment = horizontal(node.align),
         ) {
             node.children.filter(fit::shows).forEach { child ->
                 item {
                     val wide = if (spansWidth(child)) GlanceModifier.fillMaxWidth() else GlanceModifier
-                    GlanceNode(child, tokens, paint, fit, wide)
+                    GlanceNode(child, tokens, paint.inside(node.tone), fit, wide)
                 }
             }
         } else Column(
-            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding, node.tone),
             horizontalAlignment = horizontal(node.align),
             verticalAlignment = vertical(node.verticalAlign),
         ) {
             node.children.filter(fit::shows).forEach { child ->
                 // Rows that spread their parts out (and columns holding them) span the column's width.
                 val wide = if (spansWidth(child)) GlanceModifier.fillMaxWidth() else GlanceModifier
-                GlanceNode(child, tokens, paint, fit, if (child.grow) GlanceModifier.defaultWeight().then(wide) else wide)
+                GlanceNode(child, tokens, paint.inside(node.tone), fit, if (child.grow) GlanceModifier.defaultWeight().then(wide) else wide)
             }
         }
         is RowNode -> Row(
             // A row whose parts share out the space must span the width (launchers don't stretch rows themselves).
             modifier = container(
                 if (!node.grow && node.children.any { it.grow }) modifier.fillMaxWidth() else modifier,
-                paint, node.background, node.cornerRadius, node.padding,
+                paint, node.background, node.cornerRadius, node.padding, node.tone,
             ),
             horizontalAlignment = horizontal(node.align),
             verticalAlignment = vertical(node.verticalAlign),
         ) {
             node.children.filter(fit::shows).forEach { child ->
-                GlanceNode(child, tokens, paint, fit, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
+                GlanceNode(child, tokens, paint.inside(node.tone), fit, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
             }
         }
         is TextNode -> {
@@ -555,7 +564,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             val marked = when {
                 node.highlight -> modifier.background(paint(role, color)).cornerRadius((6 * paint.k).dp).padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
                 // A pill behind the text in the theme's container color.
-                node.chip -> modifier.background(paint(Role.Container, "#262FA7B8")).cornerRadius((node.size * paint.k).dp)
+                node.chip -> modifier.background(paint(chipRole(node), "#262FA7B8")).cornerRadius((node.size * paint.k).dp)
                     .padding(horizontal = (9 * paint.k).dp, vertical = (4 * paint.k).dp)
                 else -> modifier
             }
@@ -604,7 +613,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                     provider = ImageProvider(iconRes(node, tokens)),
                     contentDescription = null,
                     modifier = modifier.size((node.size * paint.k).dp),
-                    colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
+                    colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) }),
                 )
             }
         }
@@ -613,7 +622,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             // bigger than half its width, which rounds it into a capsule whatever width it ends up.
             val h = (node.height * paint.k).dp
             val f = tokens.progress(node.value)
-            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) }
             Box(modifier.width(h * CAPSULE_WIDTH).height(h).cornerRadius(h / 2).background(paint(Role.Track, node.trackColor)), contentAlignment = Alignment.TopCenter) {
                 Column(GlanceModifier.fillMaxSize()) {
                     Spacer(GlanceModifier.height(h * (1f - f)))
@@ -633,7 +642,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
         } else if (node.segments > 0) {
             // A level meter: blocks that fill up with the value (bottom to top when vertical).
             val filled = Math.round(tokens.progress(node.value) * node.segments)
-            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) }
             val off = paint(Role.Track, node.trackColor)
             val gap = (1.5f * paint.k).dp
             if (node.vertical) {
@@ -660,7 +669,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 LinearProgressIndicator(
                     progress = tokens.progress(node.value),
                     modifier = GlanceModifier.fillMaxSize(),
-                    color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
+                    color = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) },
                     backgroundColor = paint(Role.Track, node.trackColor),
                 )
                 Row(GlanceModifier.fillMaxSize().padding(horizontal = h * 0.4f), verticalAlignment = Alignment.CenterVertically) {
@@ -685,7 +694,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                 LinearProgressIndicator(
                     progress = tokens.progress(node.value),
                     modifier = m,
-                    color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
+                    color = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) },
                     backgroundColor = paint(Role.Track, node.trackColor),
                 )
             }
@@ -713,7 +722,7 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             val density = context.resources.displayMetrics.density
             val px = (node.size * paint.k * density).toInt()
             val thick = node.thickness * paint.k * density
-            val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens)
+            val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone)
             Box(modifier.size((node.size * paint.k).dp), contentAlignment = Alignment.Center) {
                 Image(ImageProvider(ChartArt.ring(px, thick, null, node.sweep)), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(Role.Track, node.trackColor)))
                 Image(ImageProvider(ChartArt.ring(px, thick, node.fraction(tokens), node.sweep)), null, GlanceModifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(role, color)))
@@ -826,7 +835,7 @@ private fun clockViews(node: ClockNode, styler: Styler, k: Float = 1f): RemoteVi
         // The same pattern whatever the phone's 12/24-hour setting: the design chose it.
         setCharSequence(R.id.clock, "setFormat12Hour", node.format)
         setCharSequence(R.id.clock, "setFormat24Hour", node.format)
-        val role = if (node.accent) Role.Accent else Role.Text
+        val role = clockRole(node)
         if (styler.theme == WidgetTheme.material) {
             val res = AiWidget.materialRes(styler.materialSlot(role, node.color))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -930,9 +939,12 @@ private fun spansWidth(node: Node): Boolean = when (node) {
     else -> false
 }
 
-private fun container(modifier: GlanceModifier, paint: Paint, background: String?, radius: Int, padding: Int): GlanceModifier {
+private fun container(
+    modifier: GlanceModifier, paint: Paint, background: String?, radius: Int, padding: Int,
+    tone: com.sidequest.widgetmaker.spec.Tone? = null,
+): GlanceModifier {
     var m = modifier
-    if (background != null) m = m.background(paint(Role.Container, background)).cornerRadius((radius * paint.k).dp)
+    if (background != null || tone != null) m = m.background(paint(Role.toned(Role.Container, tone), background ?: "#FF2F5C9E")).cornerRadius((radius * paint.k).dp)
     if (padding > 0) m = m.padding((padding * paint.k).dp)
     return m
 }
@@ -952,6 +964,8 @@ private fun vertical(align: VAlign) = when (align) {
 /** A text's color and what it means, following [TextNode.trendOf] when it's set. */
 fun textColor(node: TextNode, tokens: Tokens): Pair<Role, String> {
     levelColor(node.levelOf, node.levels, tokens)?.let { return Role.Level to it }
+    // A toned chip's text reads on the chip; toned text is in the tone itself.
+    node.tone?.let { return (if (node.chip) Role.on(it) else Role.toned(Role.Text, it)) to node.color }
     return when (node.trendOf?.let { tokens.trend(it) }) {
         true -> Role.TrendUp to node.upColor
         false -> Role.TrendDown to node.downColor
@@ -960,8 +974,16 @@ fun textColor(node: TextNode, tokens: Tokens): Pair<Role, String> {
 }
 
 /** An icon's or a bar's color: its level color when it has one, else its own as an accent. */
-fun accentColor(levelOf: String?, levels: List<com.sidequest.widgetmaker.spec.Level>?, color: String, tokens: Tokens): Pair<Role, String> =
-    levelColor(levelOf, levels, tokens)?.let { Role.Level to it } ?: (Role.Accent to color)
+fun accentColor(
+    levelOf: String?, levels: List<com.sidequest.widgetmaker.spec.Level>?, color: String, tokens: Tokens,
+    tone: com.sidequest.widgetmaker.spec.Tone? = null,
+): Pair<Role, String> = levelColor(levelOf, levels, tokens)?.let { Role.Level to it } ?: (Role.toned(Role.Accent, tone) to color)
+
+/** A chip's fill: the panel's container color, or its tone's. */
+fun chipRole(node: TextNode) = Role.toned(Role.Container, node.tone)
+
+/** A clock's color: its tone's, else the accent or text color. */
+fun clockRole(node: ClockNode) = node.tone?.let { Role.toned(Role.Text, it) } ?: if (node.accent) Role.Accent else Role.Text
 
 /** The widget's size for size rules, and [inner]: the height inside its padding, which rings shrink to. */
 /** An upright capsule's width, as a part of its height. */

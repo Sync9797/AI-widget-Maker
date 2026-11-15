@@ -86,6 +86,7 @@ import com.sidequest.widgetmaker.widget.AiWidget
 import com.sidequest.widgetmaker.widget.Fit
 import com.sidequest.widgetmaker.widget.iconRes
 import com.sidequest.widgetmaker.widget.textColor
+import com.sidequest.widgetmaker.widget.chipRole
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -211,7 +212,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
     }
     when (node) {
         is ColumnNode -> Column(
-            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding)
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding, node.tone)
                 .then(if (node.scroll) Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()) else Modifier),
             horizontalAlignment = when (node.align) {
                 HAlign.start -> Alignment.Start
@@ -223,9 +224,9 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 VAlign.center -> Arrangement.Center
                 VAlign.bottom -> Arrangement.Bottom
             },
-        ) { node.children.filter(fit::shows).forEach { ColumnChild(it, tokens, paint, fit) } }
+        ) { node.children.filter(fit::shows).forEach { ColumnChild(it, tokens, paint.inside(node.tone), fit) } }
         is RowNode -> Row(
-            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding),
+            modifier = container(modifier, paint, node.background, node.cornerRadius, node.padding, node.tone),
             horizontalArrangement = when (node.align) {
                 HAlign.start -> Arrangement.Start
                 HAlign.center -> Arrangement.Center
@@ -236,14 +237,14 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 VAlign.center -> Alignment.CenterVertically
                 VAlign.bottom -> Alignment.Bottom
             },
-        ) { node.children.filter(fit::shows).forEach { RowChild(it, tokens, paint, fit) } }
+        ) { node.children.filter(fit::shows).forEach { RowChild(it, tokens, paint.inside(node.tone), fit) } }
         is TextNode -> Text(
             text = tokens.fill(node.text),
             modifier = if (node.highlight) {
                 modifier.background(textColor(node, tokens).let { (role, c) -> paint(role, c) }, RoundedCornerShape((6 * paint.k).dp))
                     .padding(horizontal = (2 * paint.k).dp, vertical = (1 * paint.k).dp)
             } else if (node.chip) {
-                modifier.background(paint(Role.Container, "#262FA7B8"), RoundedCornerShape(50))
+                modifier.background(paint(chipRole(node), "#262FA7B8"), RoundedCornerShape(50))
                     .padding(horizontal = (9 * paint.k).dp, vertical = (4 * paint.k).dp)
             } else modifier,
             color = textColor(node, tokens).let { (role, c) -> if (node.highlight) Color(com.sidequest.widgetmaker.spec.Styler.contrast(paint(role, c).toArgb())) else paint(role, c) },
@@ -261,7 +262,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
         is ClockNode -> Text(
             text = android.text.format.DateFormat.format(node.format, Calendar.getInstance()).toString(),
             modifier = modifier,
-            color = paint(if (node.accent) Role.Accent else Role.Text, node.color),
+            color = paint(com.sidequest.widgetmaker.widget.clockRole(node), node.color),
             fontSize = (node.size * paint.k).sp,
             lineHeight = (node.size * paint.k).sp,
             fontWeight = weight(node.weight),
@@ -300,13 +301,13 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 painter = painterResource(iconRes(node, tokens)),
                 contentDescription = null,
                 modifier = modifier.size((node.size * paint.k).dp),
-                colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
+                colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) }),
             )
         }
         is ProgressNode -> if (node.capsule) {
             val h = (node.height * paint.k).dp
             val f = tokens.progress(node.value)
-            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) }
             Box(modifier.width(h * com.sidequest.widgetmaker.widget.CAPSULE_WIDTH).height(h).clip(RoundedCornerShape(50)).background(paint(Role.Track, node.trackColor)), contentAlignment = Alignment.TopCenter) {
                 if (f > 0f) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(h * f).clip(RoundedCornerShape(50)).background(on))
                 node.text?.let {
@@ -320,7 +321,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             }
         } else if (node.segments > 0) {
             val filled = Math.round(tokens.progress(node.value) * node.segments)
-            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) }
             val off = paint(Role.Track, node.trackColor)
             val gap = (1.5f * paint.k).dp
             if (node.vertical) {
@@ -344,7 +345,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 LinearProgressIndicator(
                     progress = { tokens.progress(node.value) },
                     modifier = Modifier.fillMaxSize(),
-                    color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
+                    color = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) },
                     trackColor = paint(Role.Track, node.trackColor),
                     gapSize = 0.dp,
                     drawStopIndicator = {},
@@ -367,7 +368,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
         } else LinearProgressIndicator(
             progress = { tokens.progress(node.value) },
             modifier = modifier.fillMaxWidth().height((paint.styler.theme.barHeight(node.height) * paint.k).dp).clip(RoundedCornerShape(50)),
-            color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
+            color = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone).let { (r, c) -> paint(r, c) },
             trackColor = paint(Role.Track, node.trackColor),
             gapSize = 0.dp,
             drawStopIndicator = {},
@@ -399,7 +400,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             val fraction = node.fraction(tokens)
             val track = remember(px, thick, node.sweep) { ChartArt.ring(px, thick, null, node.sweep).asImageBitmap() }
             val arc = remember(px, thick, fraction, node.sweep) { ChartArt.ring(px, thick, fraction, node.sweep).asImageBitmap() }
-            val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens)
+            val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens, node.tone)
             Box(modifier.size((node.size * paint.k).dp), contentAlignment = Alignment.Center) {
                 Image(track, null, Modifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(Role.Track, node.trackColor)))
                 Image(arc, null, Modifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(role, color)))
@@ -538,9 +539,12 @@ private fun ColumnScope.ColumnChild(node: Node, tokens: Tokens, paint: PreviewPa
 private fun RowScope.RowChild(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit) =
     PreviewNode(node, tokens, paint, fit, if (node.grow) Modifier.weight(1f) else Modifier)
 
-private fun container(modifier: Modifier, paint: PreviewPaint, background: String?, radius: Int, padding: Int): Modifier {
+private fun container(
+    modifier: Modifier, paint: PreviewPaint, background: String?, radius: Int, padding: Int,
+    tone: com.sidequest.widgetmaker.spec.Tone? = null,
+): Modifier {
     var m = modifier
-    if (background != null) m = m.clip(RoundedCornerShape((radius * paint.k).dp)).background(paint(Role.Container, background))
+    if (background != null || tone != null) m = m.clip(RoundedCornerShape((radius * paint.k).dp)).background(paint(Role.toned(Role.Container, tone), background ?: "#FF2F5C9E"))
     if (padding > 0) m = m.padding((padding * paint.k).dp)
     return m
 }
@@ -553,6 +557,9 @@ private class PreviewPaint(
     val weatherIcons: com.sidequest.widgetmaker.spec.WeatherIcons = com.sidequest.widgetmaker.spec.WeatherIcons.classic,
 ) {
     operator fun invoke(role: Role, design: String?) = Color(styler.argb(role, design, dark))
+
+    /** Drawing inside a tile of [tone]: text there reads on the tile. */
+    fun inside(tone: com.sidequest.widgetmaker.spec.Tone?) = if (tone == null) this else PreviewPaint(styler.inside(tone), dark, k, weatherIcons)
 }
 
 private fun weight(weight: Weight) = when (weight) {

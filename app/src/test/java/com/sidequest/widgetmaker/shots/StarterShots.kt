@@ -62,7 +62,10 @@ class StarterShots {
         compose.mainClock.autoAdvance = false
         // -Dshots.only=Title,Title draws just those starters.
         val only = System.getProperty("shots.only")?.split(',')?.map { it.trim() }?.toSet()
-        val shots = WidgetTheme.everywhere.flatMap { theme -> Starters.all.mapIndexed { i, s -> Triple(theme, i, s) } }
+        // -Dshots.themes=expressive,material draws just those themes.
+        val themes = System.getProperty("shots.themes")?.split(',')?.map { it.trim() }?.toSet()
+        val shots = WidgetTheme.everywhere.filter { themes == null || it.name in themes }
+            .flatMap { theme -> Starters.all.mapIndexed { i, s -> Triple(theme, i, s) } }
             .filter { only == null || it.third.title in only }
         if (shots.isEmpty()) return
         var current by mutableStateOf(shots.first())

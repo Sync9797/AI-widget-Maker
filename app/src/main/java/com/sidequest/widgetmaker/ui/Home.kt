@@ -1,12 +1,15 @@
 package com.sidequest.widgetmaker.ui
 
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -77,8 +80,8 @@ import com.sidequest.widgetmaker.spec.WidgetTheme
 
 /** The app's sections, in the bottom bar (phones) or the side rail (tablets, open foldables). */
 enum class Page(val label: String, val title: String, val icon: ImageVector) {
-    Create("Create", "AI Creator", Icons.Filled.Create),
     Widgets("Widgets", "Widgets", Icons.Filled.Home),
+    Create("Create", "AI Creator", Icons.Filled.Create),
     Active("Active", "Active widgets", Icons.Filled.CheckCircle),
     Mine("Mine", "Your designs", Icons.Filled.Favorite),
     Settings("Settings", "Settings", Icons.Filled.Settings),
@@ -88,17 +91,20 @@ enum class Page(val label: String, val title: String, val icon: ImageVector) {
 private val WIDE = 600.dp
 
 @Composable
-fun MakerScreen(viewModel: MakerViewModel, start: Page = Page.Create) {
+fun MakerScreen(viewModel: MakerViewModel, start: Page = Page.Widgets) {
     val state by viewModel.state.collectAsState()
     var section by rememberSaveable { mutableStateOf(start) }
     fun go(to: Page) {
         if (section == Page.Settings && to != Page.Settings) viewModel.clearSourcesStatus()
+        if (to != Page.Mine) pickedDesigns.value = emptySet()
         section = to
     }
-    // Back from any other section returns to the creator first.
-    BackHandler(enabled = section != Page.Create) { go(Page.Create) }
+    // The app opens on the widget gallery; back from any other section returns there first.
+    BackHandler(enabled = section != Page.Widgets) { go(Page.Widgets) }
     // Back from an open category returns to the category menu first.
     BackHandler(enabled = section == Page.Widgets && openCategory.value != null) { openCategory.value = null }
+    // Back while picking designs to delete stops picking.
+    BackHandler(enabled = section == Page.Mine && pickedDesigns.value.isNotEmpty()) { pickedDesigns.value = emptySet() }
     // Starting from a ready-made design, editing one or using one again opens it in the creator.
     val making = state.draft != null || state.chat != null
     // Where it was opened from (a category of the gallery, your designs), so back returns there.
@@ -361,10 +367,21 @@ private fun LazyStaggeredGridScope.MineItems(state: MakerState, viewModel: Maker
     }
     if (state.assignTo != null) full("assign") { AssignBanner(viewModel::cancelAssign) }
     if (made.isNotEmpty()) {
+        // Picking several to delete: started by holding one.
+        val picked = pickedDesigns.value.filter { id -> made.any { it.id == id } }.toSet()
+        if (picked.isNotEmpty()) full("picking") { PickBar(picked, viewModel) }
         item(key = "made") {
-            CategoryCard("Made by you", made.size, hint = "Tap one to make another from it") {
-                PreviewGrid(made, state.theme, title = { it.design.name }, about = { it.prompt }, design = { it.design }) { saved ->
-                    if (state.assignTo != null) viewModel.assign(saved = saved) else viewModel.useAgain(saved)
+            CategoryCard("Made by you", made.size, hint = if (picked.isEmpty()) "Tap one to make another from it. Hold one to pick several to delete." else "Tap designs to pick or unpick them") {
+                PreviewGrid(
+                    made, state.theme, title = { it.design.name }, about = { it.prompt }, design = { it.design },
+                    picked = { it.id in picked },
+                    onHold = { saved -> pickedDesigns.value = pickedDesigns.value + saved.id },
+                ) { saved ->
+                    when {
+                        picked.isNotEmpty() -> pickedDesigns.value = if (saved.id in picked) pickedDesigns.value - saved.id else pickedDesigns.value + saved.id
+                        state.assignTo != null -> viewModel.assign(saved = saved)
+                        else -> viewModel.useAgain(saved)
+                    }
                 }
             }
         }
@@ -424,6 +441,37 @@ private fun SavedItem(saved: SavedDesign, count: Int, theme: WidgetTheme, viewMo
         onDelete = { viewModel.delete(saved) },
         theme = theme,
     )
+}
+
+/** Your designs picked to delete together (holding one starts picking). */
+private val pickedDesigns = mutableStateOf(setOf<String>())
+
+/** While picking: how many are picked, Delete (after asking) and Cancel. */
+@Composable
+private fun PickBar(picked: Set<String>, viewModel: MakerViewModel) {
+    var confirm by remember { mutableStateOf(false) }
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), shape = RoundedCornerShape(28.dp)) {
+        Row(Modifier.padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(if (picked.size == 1) "1 picked" else "${picked.size} picked", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onClick = { pickedDesigns.value = emptySet() }) { Text("Cancel") }
+            androidx.compose.material3.Button(onClick = { confirm = true }) { Text("Delete") }
+        }
+    }
+    if (confirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirm = false },
+            title = { Text(if (picked.size == 1) "Delete 1 design?" else "Delete ${picked.size} designs?") },
+            text = { Text("Widgets showing them switch to your newest design. This can't be undone.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    confirm = false
+                    viewModel.deleteMany(picked)
+                    pickedDesigns.value = emptySet()
+                }) { Text("Delete") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = false }) { Text("Cancel") } },
+        )
+    }
 }
 
 /** What the widget gallery is filtered by; kept across the section's recompositions. */
@@ -518,7 +566,7 @@ private fun CategoryMenuItem(name: String, count: Int, example: Starters.Starter
         border = cardEdge(),
     ) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            GalleryPreview(example.title, example.design, theme)
+            GalleryPreview(example.title, example.design, theme, menu = true)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 EchoTitle(name, copies = 3, step = 9.dp, size = 19.sp, maxLines = 3)
                 Text(
@@ -562,14 +610,17 @@ private fun <T> PreviewGrid(
     title: (T) -> String,
     about: (T) -> String,
     design: (T) -> com.sidequest.widgetmaker.spec.WidgetDesign,
+    picked: (T) -> Boolean = { false },
+    onHold: ((T) -> Unit)? = null,
     onPick: (T) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items.chunked(2).forEach { row -> PreviewRow(row, theme, title, about, design, onPick) }
+        items.chunked(2).forEach { row -> PreviewRow(row, theme, title, about, design, onPick, picked, onHold) }
     }
 }
 
 /** One row of up to two previews, each with its name and what it shows. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun <T> PreviewRow(
     row: List<T>,
@@ -578,13 +629,19 @@ private fun <T> PreviewRow(
     about: (T) -> String,
     design: (T) -> com.sidequest.widgetmaker.spec.WidgetDesign,
     onPick: (T) -> Unit,
+    picked: (T) -> Boolean = { false },
+    onHold: ((T) -> Unit)? = null,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         row.forEach { item ->
+            val isPicked = picked(item)
             Column(
                 Modifier
                     .weight(1f)
-                    .clickable { onPick(item) }
+                    .then(
+                        if (isPicked) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(24.dp)) else Modifier,
+                    )
+                    .combinedClickable(onLongClick = onHold?.let { hold -> { hold(item) } }, onClick = { onPick(item) })
                     .background(
                         Brush.verticalGradient(
                             listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainer),
@@ -598,7 +655,10 @@ private fun <T> PreviewRow(
                     GalleryPreview(title(item), design(item), theme)
                 }
                 Spacer(Modifier.size(2.dp))
-                Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isPicked) Icon(Icons.Filled.CheckCircle, contentDescription = "Picked", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp).padding(end = 4.dp))
+                    Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                }
                 Text(about(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
             }
         }
@@ -636,16 +696,26 @@ private val galleryQueue = kotlinx.coroutines.sync.Mutex()
 /**
  * A design's preview in a list: a picture of it when one was taken already (coming back to the list shows it at
  * once), else drawn live in its turn, with still weather icons, and a picture taken once it's fully drawn.
+ *
+ * A [menu] example (beside a category's name) is only a picture: kept on the phone and keyed by the design, the
+ * theme, the look and dark mode, not by the time or the data, so after the first time the menu never draws a widget.
  */
 @Composable
-private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec.WidgetDesign, theme: WidgetTheme) {
+private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec.WidgetDesign, theme: WidgetTheme, menu: Boolean = false) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val tokens by PreviewTokens.state(context).collectAsState()
     val look = com.sidequest.widgetmaker.data.DesignStore(context).look
     val dark = androidx.compose.foundation.isSystemInDarkTheme()
-    // What the picture shows: a change to any of these (or a new minute, for clocks) draws it afresh.
-    val key = "$title|$theme|${look.hashCode()}|$dark|${System.identityHashCode(tokens)}|${System.currentTimeMillis() / 60_000}"
-    PreviewSnapshots.get(key)?.let { picture ->
+    // What the picture shows: a change to any of these (or, outside the menu, the data or a new minute) draws it afresh.
+    val key = if (menu) "menu|$theme|$look|$dark|${com.sidequest.widgetmaker.spec.DesignParser.encode(design)}"
+    else "$title|$theme|$look|$dark|${System.identityHashCode(tokens)}|${System.currentTimeMillis() / 60_000}"
+    // The menu's picture from the phone, read off the main thread; until it's looked for, a placeholder.
+    var looked by remember(key) { mutableStateOf(!menu || PreviewSnapshots.get(key) != null) }
+    val stored by produceState(PreviewSnapshots.get(key), key) {
+        if (value == null && menu) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { PreviewSnapshots.load(context, key) }
+        looked = true
+    }
+    stored?.let { picture ->
         val density = androidx.compose.ui.platform.LocalDensity.current
         androidx.compose.foundation.Image(
             picture, contentDescription = null,
@@ -663,7 +733,7 @@ private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec
             galleryQueue.unlock()
         }
     }
-    if (!turn) {
+    if (!turn || !looked) {
         Box(
             Modifier.size(PreviewSize.Square.width * 0.9f, PreviewSize.Square.height * 0.9f)
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), RoundedCornerShape(26.dp)),
@@ -691,7 +761,10 @@ private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec
         if (ready && recorded) {
             // A couple of frames for the drawn background to show, then keep a picture of it.
             kotlinx.coroutines.delay(150)
-            runCatching { layer.toImageBitmap() }.getOrNull()?.let { PreviewSnapshots.put(key, it) }
+            runCatching { layer.toImageBitmap() }.getOrNull()?.let { picture ->
+                if (menu) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { PreviewSnapshots.save(context, key, picture) }
+                else PreviewSnapshots.put(key, picture)
+            }
         }
     }
 }

@@ -325,6 +325,17 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Deletes several of your designs at once (picked by holding one in Your designs). */
+    fun deleteMany(ids: Set<String>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { ids.forEach(store::delete) }
+            AiWidget.refreshAll(getApplication())
+            reload()
+            _state.update { it.copy(message = if (ids.size == 1) "Deleted 1 design." else "Deleted ${ids.size} designs.") }
+        }
+    }
+
     fun delete(saved: SavedDesign) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { store.delete(saved.id) }

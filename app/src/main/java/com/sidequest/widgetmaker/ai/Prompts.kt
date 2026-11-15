@@ -112,6 +112,11 @@ Elements ("type" picks one; leave out any field to use its default):
    bottom, with "text" (like "{devices.1.num}") in a small pill at its top
 - chart can be "style":"ticks": fine bars like a sound meter ({weather.hours.temps} is the next 12 hours' temperatures)
 - text can be a "chip":true: a small pill behind it (dates like "03", times, tags)
+- "tone":"strong" or "tone":"pop" on text, clock, icon, progress, ring, row or column: Expressive emphasis. "strong"
+  is the deep tone of the phone's main color (filled tiles, chips, bars), "pop" its second color, for what's
+  happening now (the next event, the current hour, a play button). A row or column with a tone is a filled tile
+  (give it "cornerRadius" and "padding"); text and icons in it take the color that reads on it. Use pop once or
+  twice per widget at most. Tiles without a tone: "background" with the container color, "cornerRadius":16-18.
 - {"type":"map","height":120,"cornerRadius":16,"grow":false}   the Nearby traffic map: TomTom's map with live
    traffic around home (needs traffic set up); "grow":true fills the room left
 A widget can fill up like a battery: add "fill":{"value":"{battery}","color":"#FF9FD8CF",

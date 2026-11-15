@@ -175,4 +175,13 @@ class SquareCellTest {
         assertEquals(340, com.sidequest.widgetmaker.spec.Shapes.panel(170, 340, design, look).height)
         assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look.copy(squareCells = false)).height)
     }
+
+    @Test
+    fun aThreeByTwoMatchesOneUisHeight() {
+        // A 3×2 on a phone (about 260 × 200): One UI's own widgets are about 9% shorter than the cell.
+        assertEquals(182, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, design, look).height)
+        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, design, look).width)
+        // Off with One UI proportions.
+        assertEquals(200, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, design, look.copy(squareCells = false)).height)
+    }
 }

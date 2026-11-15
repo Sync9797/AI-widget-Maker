@@ -59,6 +59,7 @@ object Taps {
         node.tap?.let { return it }
         // The time opens the Clock app; a date opens the calendar.
         if (node is MonthNode) return TapKind.calendar.name
+        if (node is AnalogNode) return TapKind.clock.name
         if (node is ClockNode) return if (node.format.contains('h', ignoreCase = true)) TapKind.clock.name else TapKind.calendar.name
         if (node !is TextNode) return null
         val listed = TOKEN.findAll(node.text).map { it.groupValues[1] }.firstNotNullOfOrNull { LISTED.find(it) }
@@ -103,6 +104,7 @@ object Taps {
                 is SleepNode -> add(TapKind.health)
                 is MonthNode -> repeat(3) { add(TapKind.calendar) }
                 is MapNode -> repeat(3) { add(TapKind.commute) }
+                is AnalogNode -> repeat(2) { add(TapKind.clock) }
                 is ScaleNode -> TOKEN.findAll(node.value).forEach { add(kindOf(it.groupValues[1])) }
                 is AppIconNode -> Unit
                 is ChartNode -> TOKEN.findAll(node.series).forEach { add(kindOf(it.groupValues[1])) }

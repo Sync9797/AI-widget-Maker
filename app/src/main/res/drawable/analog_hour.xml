@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An analog clock hand, pointing to 12 from the middle (the clock turns it), tinted to the theme. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp" android:height="200dp"
+    android:viewportWidth="200" android:viewportHeight="200">
+    <path android:strokeColor="#FF6E7378" android:strokeWidth="8" android:strokeLineCap="round" android:pathData="M100,112L100,54" />
+    <path android:fillColor="#FF6E7378" android:pathData="M100,100m-7.2,0a7.2,7.2 0,1 1,14.4,0a7.2,7.2 0,1 1,-14.4,0" />
+</vector>

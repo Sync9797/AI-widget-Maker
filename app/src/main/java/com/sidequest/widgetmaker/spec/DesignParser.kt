@@ -192,6 +192,14 @@ object DesignParser {
             height = node.height.coerceIn(40, 400),
             cornerRadius = node.cornerRadius.coerceIn(0, 60),
         )
+        is AnalogNode -> node.copy(
+            show = sanitize(node.show),
+            tap = node.tap?.take(80),
+            size = node.size.coerceIn(40, 300),
+            handColor = Colors.orDefault(node.handColor, "#FFFFFFFF"),
+            accent = Colors.orDefault(node.accent, "#FF2FA7B8"),
+            dialColor = Colors.orDefault(node.dialColor, "#59FFFFFF"),
+        )
         is ScaleNode -> node.copy(
             show = sanitize(node.show),
             tap = node.tap?.take(80),

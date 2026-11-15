@@ -81,13 +81,13 @@ class DesignStore(context: Context) {
     /** How every widget is colored (Settings). */
     var theme: WidgetTheme
         get() = prefs.getString("widget_theme", null)
-            ?.let { runCatching { WidgetTheme.valueOf(it) }.getOrNull() } ?: WidgetTheme.expressive
+            ?.let { runCatching { WidgetTheme.valueOf(it) }.getOrNull() }?.let(WidgetTheme::current) ?: WidgetTheme.expressive
         set(value) = prefs.edit().putString("widget_theme", value.name).apply()
 
     /** A placed widget's own theme, if one was picked in its settings; otherwise the app's. */
     fun themeFor(appWidgetId: Int): WidgetTheme =
         prefs.getString("widget_theme_$appWidgetId", null)
-            ?.let { runCatching { WidgetTheme.valueOf(it) }.getOrNull() } ?: theme
+            ?.let { runCatching { WidgetTheme.valueOf(it) }.getOrNull() }?.let(WidgetTheme::current) ?: theme
 
     /** Whether a widget has its own theme (rather than following the app's). */
     fun hasOwnTheme(appWidgetId: Int) = prefs.contains("widget_theme_$appWidgetId")

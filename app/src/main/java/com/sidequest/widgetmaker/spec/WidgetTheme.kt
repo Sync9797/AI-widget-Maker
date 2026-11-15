@@ -61,8 +61,17 @@ enum class WidgetTheme(val label: String) {
         /** The thinnest progress bar Expressive draws, in dp. */
         const val EXPRESSIVE_BAR = 8
 
-        /** The styles for every widget (Ambient is for music widgets only). */
-        val everywhere: List<WidgetTheme> get() = entries.filter { it != ambient }
+        /**
+         * The styles for every widget (Ambient is for music widgets only). Material 3 is retired: Expressive, Google's
+         * newer design language built on the same Material You colors, takes its place.
+         */
+        val everywhere: List<WidgetTheme> get() = entries.filter { it != ambient && it != material }
+
+        /** The styles a music widget can have: every one, and Ambient. */
+        val forMusic: List<WidgetTheme> get() = everywhere + ambient
+
+        /** A saved style as it's drawn now: Material 3, retired, is Expressive. */
+        fun current(theme: WidgetTheme) = if (theme == material) expressive else theme
 
         /**
          * Whether a theme takes on the weather's color for weather widgets (Settings → Weather moods). Not the

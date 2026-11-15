@@ -102,8 +102,9 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                 Text(
                     when (state.theme) {
                         WidgetTheme.glass -> "Smoky see-through glass with white text. Icons and bars keep their colors."
-                        WidgetTheme.expressive -> "Solid panels pooled from your phone's colors, with a second color for what matters. " +
-                            "Shaped widgets (cookie, flower, circle) are bold; cards are soft. Light or dark with your phone."
+                        WidgetTheme.expressive -> "Material 3 Expressive, Google's newest design language: solid panels pooled from your " +
+                            "phone's colors (wallpaper or One UI color palette), with a second color for what matters. Shaped widgets " +
+                            "(cookie, flower, circle) are bold; cards are soft. Light or dark with your phone."
                         WidgetTheme.material -> "Your phone's colors (wallpaper or One UI color palette, Android 12+), light or dark with your phone."
                         WidgetTheme.original -> "The colors Claude chose for each design."
                         WidgetTheme.oneui -> "Like Samsung One UI: your wallpaper behind each widget, blurred and frosted, with " +
@@ -124,7 +125,7 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                 )
                 if (state.theme == WidgetTheme.oneui || state.theme == WidgetTheme.liquid) OneUiBlurControls(onChanged = viewModel::refreshWidgets)
                 if (state.theme == WidgetTheme.liquid) LiquidClarityChips(onChanged = viewModel::refreshWidgets)
-                if (state.theme == WidgetTheme.material) MaterialSwatches()
+                if (state.theme == WidgetTheme.expressive) MaterialSwatches()
             }
 
             Section(
@@ -651,7 +652,7 @@ private fun LookControls(theme: WidgetTheme, onChange: (Look) -> Unit) {
             Text("Weather moods", style = MaterialTheme.typography.bodyLarge)
             Text(
                 "Weather widgets take the weather's color: sky blue by day, warm at sunrise and sunset, slate in rain, " +
-                    "indigo in snow, lavender when cloudy. At night they keep their usual look, and Material 3, Tonal, " +
+                    "indigo in snow, lavender when cloudy. At night they keep their usual look, and Expressive, Tonal, " +
                     "Outline and Liquid glass always keep theirs.",
                 style = MaterialTheme.typography.bodySmall,
             )

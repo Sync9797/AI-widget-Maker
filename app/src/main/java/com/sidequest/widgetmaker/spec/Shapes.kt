@@ -42,6 +42,13 @@ enum class WidgetShape(val label: String) {
     puffy("Puffy"),
     /** Twelve small rounded rays, like a sun or a seal. */
     sunny("Sunny"),
+    ;
+
+    /**
+     * A hero shape (a circle, cookie, flower and the like): the shape is the widget, so the Expressive style draws it
+     * in a bold tone, where cards (rounded, squircle, pill and the like) get a soft one.
+     */
+    val bold: Boolean get() = this in setOf(circle, cookie, clover, flower, pebble, gem, softBurst, puffy, sunny, sideCircle)
 }
 
 /** How all widgets look, set in Settings → Widget look. */

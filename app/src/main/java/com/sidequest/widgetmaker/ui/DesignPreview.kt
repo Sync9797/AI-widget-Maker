@@ -134,7 +134,10 @@ fun DesignPreview(
     // main thread so lists of previews open at once; a soft placeholder shows meanwhile.
     val dark = isSystemInDarkTheme()
     val artKey = PanelArtCache.Key(theme, panel, usedLook, mood, sky, dark)
+    // produceState keeps its value when the key changes, so a preview given another design or theme would keep
+    // the old background: start each key from its own cached art (or the placeholder) instead.
     val art by produceState(PanelArtCache.get(artKey), artKey) {
+        value = PanelArtCache.get(artKey)
         if (value == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             PanelArtCache.getOrBuild(context, artKey, tokens.feeds)
         }
@@ -300,7 +303,22 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 colorFilter = ColorFilter.tint(accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }),
             )
         }
-        is ProgressNode -> if (node.segments > 0) {
+        is ProgressNode -> if (node.capsule) {
+            val h = (node.height * paint.k).dp
+            val f = tokens.progress(node.value)
+            val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
+            Box(modifier.width(h * com.sidequest.widgetmaker.widget.CAPSULE_WIDTH).height(h).clip(RoundedCornerShape(50)).background(paint(Role.Track, node.trackColor)), contentAlignment = Alignment.TopCenter) {
+                if (f > 0f) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(h * f).clip(RoundedCornerShape(50)).background(on))
+                node.text?.let {
+                    Text(
+                        tokens.fill(it), maxLines = 1,
+                        modifier = Modifier.padding(top = (6 * paint.k).dp).background(paint(Role.Background, null), RoundedCornerShape(50))
+                            .padding(horizontal = (6 * paint.k).dp, vertical = (2 * paint.k).dp),
+                        color = paint(Role.Text, node.textColor), fontSize = (node.textSize * paint.k).sp, fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        } else if (node.segments > 0) {
             val filled = Math.round(tokens.progress(node.value) * node.segments)
             val on = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) }
             val off = paint(Role.Track, node.trackColor)
@@ -378,9 +396,9 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             val density = LocalContext.current.resources.displayMetrics.density
             val px = (node.size * paint.k * density).toInt()
             val thick = node.thickness * paint.k * density
-            val fraction = tokens.progress(node.value)
-            val track = remember(px, thick) { ChartArt.ring(px, thick, null).asImageBitmap() }
-            val arc = remember(px, thick, fraction) { ChartArt.ring(px, thick, fraction).asImageBitmap() }
+            val fraction = node.fraction(tokens)
+            val track = remember(px, thick, node.sweep) { ChartArt.ring(px, thick, null, node.sweep).asImageBitmap() }
+            val arc = remember(px, thick, fraction, node.sweep) { ChartArt.ring(px, thick, fraction, node.sweep).asImageBitmap() }
             val (role, color) = accentColor(node.levelOf, node.levels, node.color, tokens)
             Box(modifier.size((node.size * paint.k).dp), contentAlignment = Alignment.Center) {
                 Image(track, null, Modifier.fillMaxSize(), colorFilter = ColorFilter.tint(paint(Role.Track, node.trackColor)))

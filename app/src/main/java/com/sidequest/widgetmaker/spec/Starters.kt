@@ -188,6 +188,13 @@ object Starters {
          {"type":"ring","value":"{devices.$n.level}","text":"{devices.$n.num}","size":56,"thickness":6,"textSize":16,"color":"#FF4CD964","trackColor":"#26FFFFFF","textColor":"#FFFFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS},
          {"type":"icon","name":"bluetooth","live":"{devices.$n.icon}","size":14,"color":"#CCFFFFFF","show":{"minHeight":130}}]}"""
 
+    /** A device's battery as an upright capsule (Expressive), its level at the top and its name under it. */
+    private fun deviceCapsule(n: Int, show: String = "") = """
+        {"type":"column","align":"center","grow":true,"show":{$show"ifSet":"{devices.$n.name}"},"children":[
+         {"type":"progress","value":"{devices.$n.level}","vertical":true,"height":92,"text":"{devices.$n.num}","textSize":13,"color":"#FFAFC8F0","trackColor":"#FF22375C","textColor":"#FFFFFFFF"},
+         {"type":"spacer","size":4},
+         {"type":"text","text":"{devices.$n.name}","size":11,"color":"#CCFFFFFF","weight":"bold","align":"center","maxLines":1}]}"""
+
     private val SOURCES = listOf(
         Triple(
             "Big clock", "An analog clock with the hour picked out in the accent and the minutes beside it; the date with its weekday. Weather, your next event and the hours as it grows.",
@@ -214,6 +221,19 @@ object Starters {
                {"type":"spacer","grow":true},
                {"type":"clock","format":"mm","size":30,"color":"#80FFFFFF","weight":"bold"}]}]},
              {"type":"column","show":{"minHeight":250},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"weather","size":14,"color":"#FFFFD27A"},{"type":"text","text":" {weather.temp} · {weather.outlook}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"H {weather.high} L {weather.low}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.1}"},"children":[{"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},{"type":"text","text":" {calendar.1}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{calendar.1.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8,"show":{"minHeight":300}},{"type":"column","show":{"minHeight":300},"children":[{"type":"row","children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]}]}]}]}}""",
+        ),
+        Triple(
+            "Stacked clock", "The hour over the minutes in big numbers on a cookie, with the day in the pop color; the weather under it when tall. Expressive: pick a hero shape like Cookie, Flower or Circle.",
+            """{"name":"Stacked clock","background":"#FF2F5C9E","cornerRadius":28,"padding":14,"shape":"cookie","root":
+            {"type":"column","align":"center","verticalAlign":"center","tap":"clock","children":[
+             {"type":"clock","format":"h:mm","size":18,"color":"#FFFFFFFF","weight":"bold","show":{"maxHeight":129}},
+             {"type":"column","align":"center","show":{"minHeight":130},"children":[
+              {"type":"clock","format":"hh","size":46,"color":"#FFFFFFFF","weight":"bold"},
+              {"type":"clock","format":"mm","size":46,"color":"#B3FFFFFF","weight":"light"},
+              {"type":"clock","format":"EEE d","size":13,"color":"#FFFF9E7A","weight":"bold","accent":true}]},
+             {"type":"row","verticalAlign":"center","show":{"minHeight":250,"ifSet":"{weather.temp}"},"children":[
+              {"type":"icon","name":"weather","size":22,"color":"#FFFF9E7A"},
+              {"type":"text","text":" {weather.temp}","size":13,"color":"#E6FFFFFF","weight":"bold","maxLines":1}]}]}}""",
         ),
         Triple(
             "Clock and weather", "Time and today's weather side by side, the next hours under them with their temperatures as tick bars; the next days when tall.",
@@ -262,6 +282,29 @@ object Starters {
               {"type":"chart","series":"{weather.hours.temps}","style":"ticks","height":34,"color":"#B3FFFFFF"},
               {"type":"spacer","size":8},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},
               ${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]},{"type":"column","show":{"minHeight":380},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","children":[{"type":"text","text":"Feels {weather.feelsLike}","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"Wind {weather.wind}","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true},{"type":"text","text":"Rain {weather.rain}","size":12,"color":"#CCFFFFFF","maxLines":1}]}]}]}}""",
+        ),
+        Triple(
+            "Weather gauge", "Now on a gauge from today's low to its high, with the weather's animated icon, the sky in words and the chance of rain; the next hours when tall. Expressive.",
+            """{"name":"Weather gauge","background":"#FFEEF3FB","cornerRadius":28,"padding":16,"root":
+            {"type":"column","tap":"weather","children":[
+             {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
+              {"type":"icon","name":"weather","size":44,"color":"#FFFF9E7A"},
+              {"type":"spacer","size":8},
+              {"type":"column","grow":true,"children":[
+               {"type":"text","text":"{weather.temp}","size":26,"color":"#FF0D2142","weight":"light","maxLines":1},
+               {"type":"text","text":"{weather.condition}","size":12,"color":"#CC0D2142","maxLines":1}]}]},
+             {"type":"column","grow":true,"show":{"minHeight":130},"children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"icon","name":"weather","size":28,"color":"#FFFF9E7A"},
+               {"type":"spacer","size":6},
+               {"type":"text","text":"{weather.condition}","size":12,"color":"#FF2F5C9E","weight":"bold","maxLines":1,"grow":true},
+               {"type":"text","text":"Rain {weather.rain}","size":12,"color":"#CC0D2142","weight":"bold","maxLines":1,"show":{"minWidth":250,"ifSet":"{weather.rain}"}}]},
+              {"type":"row","grow":true,"align":"center","verticalAlign":"center","children":[
+               {"type":"ring","value":"{weather.temp}","min":"{weather.low}","max":"{weather.high}","sweep":240,"text":"{weather.temp}","size":96,"thickness":12,"textSize":30,"color":"#FFFF9E7A","trackColor":"#FFD6E3F7","textColor":"#FF0D2142"}]},
+              {"type":"row","children":[
+               {"type":"text","text":"Low {weather.low}","size":12,"color":"#CC0D2142","weight":"bold","maxLines":1,"grow":true},
+               {"type":"text","text":"High {weather.high}","size":12,"color":"#CC0D2142","weight":"bold","maxLines":1}]},
+              {"type":"column","show":{"minHeight":250},"children":[{"type":"spacer","size":10},{"type":"row","children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]}]}]}]}}""",
         ),
         Triple(
             "Crypto ticker", "Bitcoin's price and change; more coins as it grows taller. Set your coins in Settings.",
@@ -462,6 +505,22 @@ object Starters {
               ${deviceRing(8)}]}]}}""",
         ),
         Triple(
+            "Battery capsules", "Your devices' batteries as capsules that fill up: phone, WHOOP strap (with not-NOOP), earbuds, watches. Expressive. Needs Device batteries in Data sources.",
+            """{"name":"Battery capsules","background":"#FF0D2142","cornerRadius":28,"padding":12,"root":
+            {"type":"column","verticalAlign":"center","tap":"battery","children":[
+             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
+              {"type":"text","text":"{devices.1.name} {devices.1.pct}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true},
+              {"type":"text","text":"{devices.2.name} {devices.2.pct}","size":14,"color":"#CCFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"ifSet":"{devices.2.name}"}}]},
+             {"type":"row","grow":true,"verticalAlign":"center","show":{"minHeight":130},"children":[
+              ${deviceCapsule(1)},
+              {"type":"spacer","size":6},
+              ${deviceCapsule(2)},
+              {"type":"spacer","size":6,"show":{"ifSet":"{devices.3.name}"}},
+              ${deviceCapsule(3)},
+              {"type":"spacer","size":6,"show":{"minWidth":250,"ifSet":"{devices.4.name}"}},
+              ${deviceCapsule(4, "\"minWidth\":250,")}]}]}}""",
+        ),
+        Triple(
             "Nearby traffic", "A map of live traffic around home (TomTom), with your commute under it when there's room. Needs a TomTom key and your home in Data sources.",
             """{"name":"Nearby traffic","background":"#E61A1C1E","cornerRadius":28,"padding":6,"root":
             {"type":"column","children":[
@@ -476,12 +535,10 @@ object Starters {
              {"type":"text","text":"{traffic.distance}","size":11,"color":"#99FFFFFF","align":"center","maxLines":1,"show":{"minHeight":300}}]}}""",
         ),
         Triple(
-            "Claude", "A shortcut that opens the Claude app, with its own icon. Pick a shape like Gem or Soft burst for fun.",
-            """{"name":"Claude","background":"#E6262422","cornerRadius":28,"padding":12,"root":
+            "Claude", "A shortcut that opens the Claude app, with its own icon, on a flower. Pick another hero shape like Gem or Soft burst for fun.",
+            """{"name":"Claude","background":"#E6262422","cornerRadius":28,"padding":12,"shape":"flower","root":
             {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.anthropic.claude","children":[
-             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
-              {"type":"appicon","packageName":"com.anthropic.claude","size":36},
-              {"type":"text","text":"  Claude","size":17,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+             {"type":"appicon","packageName":"com.anthropic.claude","size":40,"show":{"maxHeight":129}},
              {"type":"column","align":"center","show":{"minHeight":130},"children":[
               {"type":"appicon","packageName":"com.anthropic.claude","size":56},
               {"type":"spacer","size":8},
@@ -489,12 +546,10 @@ object Starters {
               {"type":"text","text":"Ask, write and think it through","size":12,"color":"#B3FFFFFF","align":"center","maxLines":2,"show":{"minHeight":200}}]}]}}""",
         ),
         Triple(
-            "Gemini", "A shortcut that opens the Gemini app, with its own icon. Pick a shape like Gem or Soft burst for fun.",
-            """{"name":"Gemini","background":"#E61B2033","cornerRadius":28,"padding":12,"root":
+            "Gemini", "A shortcut that opens the Gemini app, with its own icon, on a cookie. Pick another hero shape like Gem or Soft burst for fun.",
+            """{"name":"Gemini","background":"#E61B2033","cornerRadius":28,"padding":12,"shape":"cookie","root":
             {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.google.android.apps.bard","children":[
-             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
-              {"type":"appicon","packageName":"com.google.android.apps.bard","size":36},
-              {"type":"text","text":"  Gemini","size":17,"color":"#FFFFFFFF","weight":"bold","maxLines":1}]},
+             {"type":"appicon","packageName":"com.google.android.apps.bard","size":40,"show":{"maxHeight":129}},
              {"type":"column","align":"center","show":{"minHeight":130},"children":[
               {"type":"appicon","packageName":"com.google.android.apps.bard","size":56},
               {"type":"spacer","size":8},

@@ -259,6 +259,8 @@ data class ProgressNode(
     /**
      * Blocks instead of a bar: this many (2 to 10) that fill up with the value, like a level meter.
      * [vertical] stacks them bottom to top, [height] tall; otherwise they run left to right.
+     * [vertical] without segments is a capsule [height] tall that fills from the bottom,
+     * with [text] (like "{battery}") in a small pill at its top.
      */
     val segments: Int = 0,
     val vertical: Boolean = false,
@@ -267,7 +269,10 @@ data class ProgressNode(
     override val tap: String? = null,
 ) : Node {
     /** Drawn as a labeled pill rather than a thin bar. */
-    val pill get() = icon != null || iconLive != null || text != null
+    val pill get() = !capsule && (icon != null || iconLive != null || text != null)
+
+    /** Drawn as an upright capsule that fills from the bottom. */
+    val capsule get() = vertical && segments <= 0
 }
 
 /** A thin line between rows, [thickness] dp. */
@@ -397,10 +402,29 @@ data class RingNode(
     val textColor: String = "#FFFFFFFF",
     val levelOf: String? = null,
     val levels: List<Level>? = null,
+    /**
+     * How far round the ring goes, in degrees: 360 is a full ring; less is a gauge, open at the bottom (240 is a
+     * speedometer-like arc).
+     */
+    val sweep: Int = 360,
+    /** With both: [value] is placed between them (like a temperature between today's low and high) rather than 0-100. */
+    val min: String? = null,
+    val max: String? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
 ) : Node {
+    /** How full the ring is, 0 to 1: [value] out of 100, or between [min] and [max] when they're given. */
+    fun fraction(tokens: Tokens): Float {
+        if (min == null || max == null) return tokens.progress(value)
+        fun num(s: String) = Regex("-?[0-9]+(\\.[0-9]+)?").find(tokens.fill(s).replace(",", ""))?.value?.toFloatOrNull()
+        val v = num(value) ?: return 0f
+        val lo = num(min) ?: return 0f
+        val hi = num(max) ?: return 0f
+        if (hi <= lo) return 0.5f
+        return ((v - lo) / (hi - lo)).coerceIn(0f, 1f)
+    }
+
     /**
      * This ring shrunk to fit [room] (the height there is, in dp before scaling), with its line and
      * text in proportion, so a ring in a slim pill isn't cut off. Never grows it.

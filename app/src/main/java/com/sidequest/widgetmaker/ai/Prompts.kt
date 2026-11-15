@@ -96,6 +96,8 @@ Elements ("type" picks one; leave out any field to use its default):
   optional "min" and "max" fix the scale (stress: "min":0,"max":300)
 - {"type":"ring","value":"{health.charge}","text":"{health.charge}","size":72,"thickness":8,"textSize":22,
    "color":color,"trackColor":color,"textColor":color}   a ring filled to a 0-100 value with text in it (NOOP-style)
+  "sweep":240 makes it a gauge open at the bottom; with "min" and "max" the value sits between them (now between
+  {weather.low} and {weather.high}) instead of 0-100
 - {"type":"sleep","height":14}   last night's sleep as a bar of colored stages (awake, light, deep, REM)
 - {"type":"month","size":12,"color":color,"accent":color,"months":1,"header":true,"weekNumbers":false,"grow":true}
    this month's calendar (One UI style): today marked out, days with events in "accent"; "months":2 shows
@@ -106,7 +108,8 @@ Elements ("type" picks one; leave out any field to use its default):
    "ticks":21,"color":color,"tickColor":color}   a ruler of tick marks with the value's tick in "color" (thermometers,
    gauges); "grow":true makes a vertical one as tall as the room left
 - progress can be a level meter: "segments":2-10 blocks that fill up, "vertical":true stacks them ("height" is then
-   the meter's height)
+   the meter's height); "vertical":true without segments is an upright capsule "height" tall that fills from the
+   bottom, with "text" (like "{devices.1.num}") in a small pill at its top
 - chart can be "style":"ticks": fine bars like a sound meter ({weather.hours.temps} is the next 12 hours' temperatures)
 - text can be a "chip":true: a small pill behind it (dates like "03", times, tags)
 - {"type":"map","height":120,"cornerRadius":16,"grow":false}   the Nearby traffic map: TomTom's map with live

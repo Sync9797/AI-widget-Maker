@@ -177,7 +177,7 @@ object Starters {
 
     /** Device [n]'s battery as a pill like One UI's: its icon and percent inside a bar filled to its level. */
     private fun deviceBar(n: Int, show: String) = """
-        {"type":"column","show":{$show"ifSet":"{devices.$n.name}"},"children":[
+        {"type":"column","show":{$show"ifSet":"{devices.$n.level}"},"children":[
          {"type":"progress","value":"{devices.$n.level}","height":34,"color":"#FF4CD964","trackColor":"#26FFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS,
           "iconLive":"{devices.$n.icon}","text":"{devices.$n.pct}","textSize":15},
          {"type":"spacer","size":8}]}"""
@@ -187,13 +187,6 @@ object Starters {
         {"type":"column","align":"center","grow":true,"show":{$show"ifSet":"{devices.$n.name}"},"children":[
          {"type":"ring","value":"{devices.$n.level}","text":"{devices.$n.num}","size":56,"thickness":6,"textSize":16,"color":"#FF4CD964","trackColor":"#26FFFFFF","textColor":"#FFFFFFFF","levelOf":"{devices.$n.level}",$DEVICE_LEVELS},
          {"type":"icon","name":"bluetooth","live":"{devices.$n.icon}","size":14,"color":"#CCFFFFFF","show":{"minHeight":130}}]}"""
-
-    /** A device's battery as an upright capsule (Expressive), its level at the top and its name under it. */
-    private fun deviceCapsule(n: Int, show: String = "") = """
-        {"type":"column","align":"center","grow":true,"show":{$show"ifSet":"{devices.$n.name}"},"children":[
-         {"type":"progress","value":"{devices.$n.level}","vertical":true,"height":92,"text":"{devices.$n.num}","textSize":13,"color":"#FFAFC8F0","trackColor":"#FF22375C","textColor":"#FFFFFFFF"},
-         {"type":"spacer","size":4},
-         {"type":"text","text":"{devices.$n.name}","size":11,"color":"#CCFFFFFF","weight":"bold","align":"center","maxLines":1}]}"""
 
     private val SOURCES = listOf(
         Triple(
@@ -273,7 +266,7 @@ object Starters {
                {"type":"row","show":{"minHeight":120},"children":[
                 {"type":"icon","name":"pin","size":12,"color":"#B3FFFFFF"},
                 {"type":"text","text":" {weather.place}","size":12,"color":"#B3FFFFFF","maxLines":1}]},
-               {"type":"scale","value":"{weather.temp}","min":"{weather.low}","max":"{weather.high}","vertical":false,"ticks":25,"color":"#FFFFFFFF","tickColor":"#59FFFFFF","show":{"minHeight":170,"maxWidth":249}}]},
+               {"type":"scale","value":"{weather.temp}","min":"{weather.low}","max":"{weather.high}","vertical":false,"ticks":25,"color":"#FFFFFFFF","tickColor":"#59FFFFFF","show":{"minHeight":190,"maxWidth":249}}]},
               {"type":"spacer","size":20,"show":{"minWidth":250}},
               {"type":"column","grow":true,"show":{"minWidth":250},"verticalAlign":"center","children":[
                ${hourRow(1, 0)},${hourRow(2, 0)},${hourRow(3, 140)},${hourRow(4, 140, divider = false)}]}]},
@@ -505,22 +498,6 @@ object Starters {
               ${deviceRing(8)}]}]}}""",
         ),
         Triple(
-            "Battery capsules", "Your devices' batteries as capsules that fill up: phone, WHOOP strap (with not-NOOP), earbuds, watches. Expressive. Needs Device batteries in Data sources.",
-            """{"name":"Battery capsules","background":"#FF0D2142","cornerRadius":28,"padding":12,"root":
-            {"type":"column","verticalAlign":"center","tap":"battery","children":[
-             {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
-              {"type":"text","text":"{devices.1.name} {devices.1.pct}","size":14,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true},
-              {"type":"text","text":"{devices.2.name} {devices.2.pct}","size":14,"color":"#CCFFFFFF","weight":"bold","maxLines":1,"grow":true,"show":{"ifSet":"{devices.2.name}"}}]},
-             {"type":"row","grow":true,"verticalAlign":"center","show":{"minHeight":130},"children":[
-              ${deviceCapsule(1)},
-              {"type":"spacer","size":6},
-              ${deviceCapsule(2)},
-              {"type":"spacer","size":6,"show":{"ifSet":"{devices.3.name}"}},
-              ${deviceCapsule(3)},
-              {"type":"spacer","size":6,"show":{"minWidth":250,"ifSet":"{devices.4.name}"}},
-              ${deviceCapsule(4, "\"minWidth\":250,")}]}]}}""",
-        ),
-        Triple(
             "Nearby traffic", "A map of live traffic around home (TomTom), with your commute under it when there's room. Needs a TomTom key and your home in Data sources.",
             """{"name":"Nearby traffic","background":"#E61A1C1E","cornerRadius":28,"padding":6,"root":
             {"type":"column","children":[
@@ -538,9 +515,9 @@ object Starters {
             "Claude", "A shortcut that opens the Claude app, with its own icon, on a flower. Pick another hero shape like Gem or Soft burst for fun.",
             """{"name":"Claude","background":"#E6262422","cornerRadius":28,"padding":12,"shape":"flower","root":
             {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.anthropic.claude","children":[
-             {"type":"appicon","packageName":"com.anthropic.claude","size":40,"show":{"maxHeight":129}},
+             {"type":"appicon","packageName":"com.anthropic.claude","size":40,"mono":true,"show":{"maxHeight":129}},
              {"type":"column","align":"center","show":{"minHeight":130},"children":[
-              {"type":"appicon","packageName":"com.anthropic.claude","size":56},
+              {"type":"appicon","packageName":"com.anthropic.claude","size":56,"mono":true},
               {"type":"spacer","size":8},
               {"type":"text","text":"Claude","size":17,"color":"#FFFFFFFF","weight":"bold","align":"center","maxLines":1},
               {"type":"text","text":"Ask, write and think it through","size":12,"color":"#B3FFFFFF","align":"center","maxLines":2,"show":{"minHeight":200}}]}]}}""",
@@ -549,9 +526,9 @@ object Starters {
             "Gemini", "A shortcut that opens the Gemini app, with its own icon, on a cookie. Pick another hero shape like Gem or Soft burst for fun.",
             """{"name":"Gemini","background":"#E61B2033","cornerRadius":28,"padding":12,"shape":"cookie","root":
             {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.google.android.apps.bard","children":[
-             {"type":"appicon","packageName":"com.google.android.apps.bard","size":40,"show":{"maxHeight":129}},
+             {"type":"appicon","packageName":"com.google.android.apps.bard","size":40,"mono":true,"show":{"maxHeight":129}},
              {"type":"column","align":"center","show":{"minHeight":130},"children":[
-              {"type":"appicon","packageName":"com.google.android.apps.bard","size":56},
+              {"type":"appicon","packageName":"com.google.android.apps.bard","size":56,"mono":true},
               {"type":"spacer","size":8},
               {"type":"text","text":"Gemini","size":17,"color":"#FFFFFFFF","weight":"bold","align":"center","maxLines":1},
               {"type":"text","text":"Ask Gemini anything","size":12,"color":"#B3FFFFFF","align":"center","maxLines":2,"show":{"minHeight":200}}]}]}}""",

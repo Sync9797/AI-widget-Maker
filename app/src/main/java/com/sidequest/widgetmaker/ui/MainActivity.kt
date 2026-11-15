@@ -358,7 +358,7 @@ internal fun SavedCard(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("You can still resize it on the home screen afterwards.", style = MaterialTheme.typography.bodySmall)
-                    com.sidequest.widgetmaker.widget.WidgetSize.entries.forEach { size ->
+                    com.sidequest.widgetmaker.widget.WidgetSize.forDesign(saved.design).forEach { size ->
                         TextButton(onClick = { choosingSize = false; onAdd(size) }, modifier = Modifier.fillMaxWidth()) {
                             Text(size.label + if (size == suggested) "  (suggested)" else "", modifier = Modifier.fillMaxWidth())
                         }

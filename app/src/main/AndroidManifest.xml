@@ -173,6 +173,17 @@
                 android:resource="@xml/ai_widget_info_slim" />
         </receiver>
         <receiver
+            android:name=".widget.AiWidgetShortcutReceiver"
+            android:exported="true"
+            android:label="@string/widget_name_shortcut">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/ai_widget_info_shortcut" />
+        </receiver>
+        <receiver
             android:name=".widget.AiWidgetWideReceiver"
             android:exported="true"
             android:label="@string/widget_name_wide">

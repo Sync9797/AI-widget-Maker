@@ -101,7 +101,20 @@ fun MakerScreen(viewModel: MakerViewModel, start: Page = Page.Create) {
     BackHandler(enabled = section == Page.Widgets && openCategory.value != null) { openCategory.value = null }
     // Starting from a ready-made design, editing one or using one again opens it in the creator.
     val making = state.draft != null || state.chat != null
-    LaunchedEffect(making) { if (making) section = Page.Create }
+    // Where it was opened from (a category of the gallery, your designs), so back returns there.
+    var cameFrom by rememberSaveable { mutableStateOf<Page?>(null) }
+    LaunchedEffect(making) {
+        if (making) {
+            if (section != Page.Create) cameFrom = section
+            section = Page.Create
+        } else cameFrom = null
+    }
+    // Back from a design opened elsewhere puts it down and goes back to that menu, not to the creator.
+    BackHandler(enabled = section == Page.Create && state.draft != null && state.chat == null && cameFrom != null) {
+        val to = cameFrom ?: Page.Create
+        viewModel.discardDraft()
+        go(to)
+    }
     // Picking a design for a widget opens the gallery; once picked, back to the home screen.
     LaunchedEffect(state.assignTo) { if (state.assignTo != null) section = Page.Widgets }
     val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity

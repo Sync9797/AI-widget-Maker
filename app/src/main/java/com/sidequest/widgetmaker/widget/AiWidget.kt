@@ -255,6 +255,8 @@ class AiWidget : GlanceAppWidget() {
 
 /** The widget at each starting size. They draw the same way; each widget follows its own size. */
 enum class WidgetSize(val label: String, val receiver: Class<out AiWidgetReceiver>) {
+    /** Only for app shortcuts: every other widget is at least 2 cells wide. */
+    shortcut("1×1", AiWidgetShortcutReceiver::class.java),
     slim("2×1 slim", AiWidgetSlimReceiver::class.java),
     square("2×2", AiWidgetReceiver::class.java),
     wide("4×2", AiWidgetWideReceiver::class.java),
@@ -268,13 +270,24 @@ enum class WidgetSize(val label: String, val receiver: Class<out AiWidgetReceive
             return entries.flatMap { manager.getAppWidgetIds(android.content.ComponentName(context, it.receiver)).toList() }.toIntArray()
         }
 
-        /** The size to suggest for a design: a pill starts slim. */
-        fun suggested(design: com.sidequest.widgetmaker.spec.WidgetDesign) =
-            if (design.shape == WidgetShape.pill) slim else square
+        /** The size to suggest for a design: a shortcut starts 1×1, a pill slim. */
+        fun suggested(design: com.sidequest.widgetmaker.spec.WidgetDesign) = when {
+            isShortcut(design) -> shortcut
+            design.shape == WidgetShape.pill -> slim
+            else -> square
+        }
+
+        /** The sizes a design can be added at: 1×1 only for app shortcuts. */
+        fun forDesign(design: com.sidequest.widgetmaker.spec.WidgetDesign) = entries.filter { it != shortcut || isShortcut(design) }
+
+        /** An app shortcut (a widget that opens an app, like the Claude and Gemini ones). */
+        fun isShortcut(design: com.sidequest.widgetmaker.spec.WidgetDesign) = design.root.tap?.startsWith("app:") == true
     }
 }
 
 class AiWidgetSlimReceiver : AiWidgetReceiver()
+/** The 1×1 widget, for app shortcuts only (Claude, Gemini). */
+class AiWidgetShortcutReceiver : AiWidgetReceiver()
 class AiWidgetWideReceiver : AiWidgetReceiver()
 class AiWidgetLargeReceiver : AiWidgetReceiver()
 
@@ -335,8 +348,9 @@ private class Inputs(
     companion object {
         fun load(context: Context, appWidgetId: Int): Inputs {
             val store = DesignStore(context)
+            val saved = designFor(context, store, appWidgetId)
             return Inputs(
-                saved = store.designFor(appWidgetId),
+                saved = saved,
                 // This widget's own choice of devices to leave out of device batteries.
                 tokens = AiWidget.currentTokens(context).let { t ->
                     val hidden = store.hiddenDevices(appWidgetId)
@@ -344,13 +358,26 @@ private class Inputs(
                 },
                 // Ambient is for music widgets; another design shown there gets One UI's frost instead.
                 theme = store.themeFor(appWidgetId).let { t ->
-                    if (t == WidgetTheme.ambient && store.designFor(appWidgetId)?.design?.let(WidgetTheme::playsMusic) != true) WidgetTheme.oneui else t
+                    if (t == WidgetTheme.ambient && saved?.design?.let(WidgetTheme::playsMusic) != true) WidgetTheme.oneui else t
                 },
                 look = store.look,
                 shape = store.shapeFor(appWidgetId),
                 onScreen = store.boundsFor(appWidgetId, OneUiBackdrop.screenKey(context)),
-                art = store.designFor(appWidgetId)?.design?.let { if (usesArt(it.root)) com.sidequest.widgetmaker.music.Music.art(context) else null },
+                art = saved?.design?.let { if (usesArt(it.root)) com.sidequest.widgetmaker.music.Music.art(context) else null },
             )
+        }
+
+        /**
+         * The design a widget shows. A 1×1 shortcut widget that wasn't given one shows your newest shortcut, or
+         * the Claude one, rather than a design too big for it.
+         */
+        private fun designFor(context: Context, store: DesignStore, appWidgetId: Int): com.sidequest.widgetmaker.spec.SavedDesign? {
+            val picked = store.pickedFor(appWidgetId)
+            val shortcut = AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId)?.provider?.className == AiWidgetShortcutReceiver::class.java.name
+            if (picked != null || !shortcut) return picked ?: store.designFor(appWidgetId)
+            return store.all().firstOrNull { WidgetSize.isShortcut(it.design) }
+                ?: com.sidequest.widgetmaker.spec.Starters.all.firstOrNull { WidgetSize.isShortcut(it.design) }
+                    ?.let { com.sidequest.widgetmaker.spec.SavedDesign("starter_${it.title}", it.title, it.design, createdAt = 0) }
         }
 
         private fun usesArt(node: Node): Boolean = when (node) {
@@ -651,12 +678,20 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
                     }
                 }
             }
-        } else LinearProgressIndicator(
-            progress = tokens.progress(node.value),
-            modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp),
-            color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
-            backgroundColor = paint(Role.Track, node.trackColor),
-        )
+        } else {
+            // A plain bar; Expressive's is thicker and rounded at its ends.
+            val h = (paint.styler.theme.barHeight(node.height) * paint.k).dp
+            val bar = @Composable { m: GlanceModifier ->
+                LinearProgressIndicator(
+                    progress = tokens.progress(node.value),
+                    modifier = m,
+                    color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
+                    backgroundColor = paint(Role.Track, node.trackColor),
+                )
+            }
+            if (paint.styler.theme == WidgetTheme.expressive) Box(modifier.fillMaxWidth().height(h).cornerRadius(h / 2)) { bar(GlanceModifier.fillMaxSize()) }
+            else bar(modifier.fillMaxWidth().height(h))
+        }
         is TimerNode -> AndroidRemoteViews(remoteViews = timerViews(node, paint.styler, paint.k), modifier = modifier)
         is ChartNode -> {
             val density = context.resources.displayMetrics.density
@@ -742,13 +777,19 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             }
         }
         is com.sidequest.widgetmaker.spec.AppIconNode -> {
-            val icon = AppIcons.bitmap(context, node.packageName, (node.size * paint.k * context.resources.displayMetrics.density).toInt())
+            val px = (node.size * paint.k * context.resources.displayMetrics.density).toInt()
             val size = (node.size * paint.k).dp
-            if (icon != null) Image(provider = ImageProvider(icon), contentDescription = null, modifier = modifier.size(size))
-            else Image(
-                provider = ImageProvider(R.drawable.icon_sparkle), contentDescription = null, modifier = modifier.size(size),
-                colorFilter = ColorFilter.tint(paint(Role.Accent, "#FFFFFFFF")),
-            )
+            val mono = if (node.mono) AppIcons.mono(context, node.packageName, px) else null
+            val icon = if (node.mono) null else AppIcons.bitmap(context, node.packageName, px)
+            when {
+                mono != null -> Image(provider = ImageProvider(mono), contentDescription = null, modifier = modifier.size(size),
+                    colorFilter = ColorFilter.tint(paint(Role.Text, "#FFFFFFFF")))
+                icon != null -> Image(provider = ImageProvider(icon), contentDescription = null, modifier = modifier.size(size))
+                else -> Image(
+                    provider = ImageProvider(R.drawable.icon_sparkle), contentDescription = null, modifier = modifier.size(size),
+                    colorFilter = ColorFilter.tint(paint(if (node.mono) Role.Text else Role.Accent, "#FFFFFFFF")),
+                )
+            }
         }
         is com.sidequest.widgetmaker.spec.MapNode -> {
             val sized = (if (node.grow) modifier.fillMaxWidth() else modifier.fillMaxWidth().height((node.height * paint.k).dp))
@@ -768,7 +809,8 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             }
         }
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
-        is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color))) {}
+        is DividerNode -> if (paint.styler.theme.drawsDividers) Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color))) {}
+            else Spacer(modifier.fillMaxWidth().height(node.thickness.dp))
     }
 }
 

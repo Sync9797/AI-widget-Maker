@@ -366,7 +366,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             }
         } else LinearProgressIndicator(
             progress = { tokens.progress(node.value) },
-            modifier = modifier.fillMaxWidth().height((node.height * paint.k).dp).clip(RoundedCornerShape((node.height * paint.k).dp)),
+            modifier = modifier.fillMaxWidth().height((paint.styler.theme.barHeight(node.height) * paint.k).dp).clip(RoundedCornerShape(50)),
             color = accentColor(node.levelOf, node.levels, node.color, tokens).let { (r, c) -> paint(r, c) },
             trackColor = paint(Role.Track, node.trackColor),
             gapSize = 0.dp,
@@ -489,13 +489,17 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
         is com.sidequest.widgetmaker.spec.AppIconNode -> {
             val context = LocalContext.current
             val px = (node.size * paint.k * context.resources.displayMetrics.density).toInt()
-            val icon = remember(node.packageName, px) { com.sidequest.widgetmaker.widget.AppIcons.bitmap(context, node.packageName, px) }
+            val mono = remember(node.packageName, px, node.mono) { if (node.mono) com.sidequest.widgetmaker.widget.AppIcons.mono(context, node.packageName, px) else null }
+            val icon = remember(node.packageName, px, node.mono) { if (node.mono) null else com.sidequest.widgetmaker.widget.AppIcons.bitmap(context, node.packageName, px) }
             val size = (node.size * paint.k).dp
-            if (icon != null) Image(icon.asImageBitmap(), contentDescription = null, modifier = modifier.size(size))
-            else Image(
-                painter = painterResource(R.drawable.icon_sparkle), contentDescription = null, modifier = modifier.size(size),
-                colorFilter = ColorFilter.tint(paint(Role.Accent, "#FFFFFFFF")),
-            )
+            when {
+                mono != null -> Image(mono.asImageBitmap(), contentDescription = null, modifier = modifier.size(size), colorFilter = ColorFilter.tint(paint(Role.Text, "#FFFFFFFF")))
+                icon != null -> Image(icon.asImageBitmap(), contentDescription = null, modifier = modifier.size(size))
+                else -> Image(
+                    painter = painterResource(R.drawable.icon_sparkle), contentDescription = null, modifier = modifier.size(size),
+                    colorFilter = ColorFilter.tint(paint(if (node.mono) Role.Text else Role.Accent, "#FFFFFFFF")),
+                )
+            }
         }
         is com.sidequest.widgetmaker.spec.MapNode -> {
             val context = LocalContext.current
@@ -521,7 +525,8 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             }
         }
         is SpacerNode -> Spacer(if (node.grow) modifier else modifier.size((node.size * paint.k).dp))
-        is DividerNode -> Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color)))
+        is DividerNode -> if (paint.styler.theme.drawsDividers) Box(modifier.fillMaxWidth().height(node.thickness.dp).background(paint(Role.Container, node.color)))
+            else Spacer(modifier.fillMaxWidth().height(node.thickness.dp))
     }
 }
 

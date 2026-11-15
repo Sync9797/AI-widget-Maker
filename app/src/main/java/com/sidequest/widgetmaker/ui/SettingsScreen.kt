@@ -255,18 +255,25 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("See Bluetooth devices", modifier = Modifier.weight(1f))
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    // Always enabled, so it's drawn in the app's colors (a disabled switch is near black in dark mode).
+                    // Android only lets the app ask: turning it off opens the app's settings, where it's taken back.
                     Switch(
                         checked = allowed,
-                        enabled = !allowed,
                         onCheckedChange = { on ->
                             if (on && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                                 askBluetooth.launch(Manifest.permission.BLUETOOTH_CONNECT)
+                            } else if (!on) {
+                                context.startActivity(
+                                    android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                        .setData(android.net.Uri.fromParts("package", context.packageName, null)),
+                                )
                             }
                         },
                     )
                 }
                 Text(
-                    "Not every device tells Android its battery; those that don't are left out. To turn this off, use Android's app settings.",
+                    "Not every device tells Android its battery; those that don't are left out. Turning this off opens Android's settings for this app, where you take the permission back.",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

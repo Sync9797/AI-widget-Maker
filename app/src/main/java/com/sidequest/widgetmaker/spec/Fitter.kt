@@ -122,7 +122,8 @@ object Fitter {
             is ArtNode -> node.size * k
             is AppIconNode -> node.size * k
             is AnalogNode -> node.size * k
-            is ScaleNode -> if (!node.vertical) 22 * k else if (node.grow || node.length <= 0) 40 * k else node.length * k
+            // A flat ruler, with room for its taller marker tick.
+            is ScaleNode -> if (!node.vertical) 26 * k else if (node.grow || node.length <= 0) 40 * k else node.length * k
             is TimerNode -> line(node.size * k)
             is ProgressNode -> node.height * k
             is DividerNode -> node.thickness * k

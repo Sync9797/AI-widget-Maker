@@ -101,8 +101,14 @@ class DesignStore(context: Context) {
 
     /** How all widgets look (Settings → Widget look). */
     var look: Look
-        get() = prefs.getString("look", null)
-            ?.let { runCatching { DesignParser.json.decodeFromString(Look.serializer(), it) }.getOrNull() } ?: Look()
+        get() {
+            val raw = prefs.getString("look", null)
+            // Decoded once per saved value: every preview reads it as it draws.
+            lastLook?.let { (text, look) -> if (text == raw) return look }
+            val look = raw?.let { runCatching { DesignParser.json.decodeFromString(Look.serializer(), it) }.getOrNull() } ?: Look()
+            lastLook = raw to look
+            return look
+        }
         set(value) = prefs.edit().putString("look", DesignParser.json.encodeToString(Look.serializer(), value)).apply()
 
     /** A widget's own shape (its settings), or null for its design's. */
@@ -176,6 +182,8 @@ class DesignStore(context: Context) {
     private fun widgetKey(appWidgetId: Int) = "widget_$appWidgetId"
 
     private companion object {
+        /** The last widget look decoded, with the text it came from: every preview reads it as it draws. */
+        @Volatile var lastLook: Pair<String?, Look>? = null
         val LOCK = Any()
         val WIDGET_KEY = Regex("widget_(?:theme_|shape_|bounds_)?(-?\\d+)(?:_\\d+x\\d+)?")
     }

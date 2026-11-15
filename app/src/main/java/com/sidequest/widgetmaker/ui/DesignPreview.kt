@@ -46,6 +46,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
@@ -124,9 +126,16 @@ fun DesignPreview(
     // The same panel the home screen widget gets (in the preview, One UI assumes the middle of the screen).
     val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, usedLook, tokens.feeds, System.currentTimeMillis())
     val sky = if (theme == WidgetTheme.timeOfDay) com.sidequest.widgetmaker.spec.Sky.of(tokens.feeds, System.currentTimeMillis()) else null
-    val art = remember(theme, panel, usedLook, mood, sky) { PanelArt.build(context, theme, panel, usedLook, null, mood, tokens.feeds) }
+    // Its background (shape, blur, edge), shared with every preview that has the same one, and built off the
+    // main thread so lists of previews open at once; a soft placeholder shows meanwhile.
+    val dark = isSystemInDarkTheme()
+    val artKey = PanelArtCache.Key(theme, panel, usedLook, mood, sky, dark)
+    val art by produceState(PanelArtCache.get(artKey), artKey) {
+        if (value == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            PanelArtCache.getOrBuild(context, artKey, tokens.feeds)
+        }
+    }
     val k = Shapes.scale(panel, usedLook)
-    val paint = PreviewPaint(art.styler, isSystemInDarkTheme(), k, usedLook.weatherIcons)
     // Shrinks to fit narrow screens, drawn exactly as at full size.
     BoxWithConstraints(modifier) {
         // Shrinks to the room it's given, across and (when limited, like in a widget's settings sheet) down.
@@ -136,9 +145,17 @@ fun DesignPreview(
                 Modifier.requiredSize(size.width, size.height).graphicsLayer(scaleX = scale, scaleY = scale),
                 contentAlignment = Alignment.Center,
             ) {
+                val art = art ?: run {
+                    Box(
+                        Modifier.size(panel.width.dp, panel.height.dp)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), RoundedCornerShape(minOf(panel.radius, 28).dp)),
+                    )
+                    return@Box
+                }
+                val paint = PreviewPaint(art.styler, dark, k, usedLook.weatherIcons)
                 Box(Modifier.size(panel.width.dp, panel.height.dp)) {
                     Image(
-                        bitmap = art.fill.asImageBitmap(),
+                        bitmap = remember(art) { art.fill.asImageBitmap() },
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.FillBounds,
@@ -154,17 +171,19 @@ fun DesignPreview(
                             )
                         }
                     }
-                    art.edge?.let {
-                        Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+                    art.edge?.let { edge ->
+                        Image(remember(edge) { edge.asImageBitmap() }, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
                     }
                     Box(Modifier.fillMaxSize().padding(start = (panel.padH * k).dp, end = (panel.padH * k).dp, top = (panel.padTop * k).dp, bottom = (panel.padV * k).dp)) {
                         val fit = Fit((panel.width / k).toInt(), (panel.height / k).toInt(), tokens, inner = (panel.height / k).toInt() - panel.padTop - panel.padV)
                         val phoneText = remember { com.sidequest.widgetmaker.widget.PhoneText(context) }
                         // Sized to fit, as on the home screen (see Fitter).
-                        val fitted = com.sidequest.widgetmaker.spec.Fitter.fit(
-                            design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens,
-                    measure = phoneText, fontScale = phoneText.fontScale, shows = fit::shows,
-                        )
+                        val fitted = remember(design, panel, k, tokens) {
+                            com.sidequest.widgetmaker.spec.Fitter.fit(
+                                design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens,
+                                measure = phoneText, fontScale = phoneText.fontScale, shows = fit::shows,
+                            )
+                        }
                         val fittedPaint = if (fitted.k == k) paint else PreviewPaint(art.styler, paint.dark, fitted.k, usedLook.weatherIcons)
                         if (fit.shows(fitted.root)) PreviewNode(fitted.root, tokens, fittedPaint, fit, Modifier.fillMaxSize())
                     }

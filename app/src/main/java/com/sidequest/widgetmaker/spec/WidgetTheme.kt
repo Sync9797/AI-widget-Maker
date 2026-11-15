@@ -47,10 +47,20 @@ enum class WidgetTheme(val label: String) {
     /** Frosted from a picture (wallpaper or album art), with text that suits it. */
     val frosted: Boolean get() = this == oneui || this == ambient || this == liquid
 
+    /**
+     * Expressive draws every design its way, whoever made it: progress bars as thick rounded pills (at least
+     * [EXPRESSIVE_BAR] dp) and no divider lines (space alone groups things, as in its cards).
+     */
+    fun barHeight(height: Int) = if (this == expressive) maxOf(height, EXPRESSIVE_BAR) else height
+    val drawsDividers: Boolean get() = this != expressive
+
     /** Seen through to the wallpaper, so it needs to know where the widget is. */
     val showsWallpaper: Boolean get() = frosted || this == outline
 
     companion object {
+        /** The thinnest progress bar Expressive draws, in dp. */
+        const val EXPRESSIVE_BAR = 8
+
         /** The styles for every widget (Ambient is for music widgets only). */
         val everywhere: List<WidgetTheme> get() = entries.filter { it != ambient }
 

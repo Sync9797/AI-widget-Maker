@@ -8,5 +8,7 @@
     <string name="widget_name_large">AI widget, large</string>
     <string name="widget_description_slim">One row (2×1): pills and slim widgets.</string>
     <string name="widget_description_wide">Wide (4×2): more beside the main content.</string>
+    <string name="widget_name_shortcut">AI shortcut</string>
+    <string name="widget_description_shortcut">1×1: opens Claude or Gemini.</string>
     <string name="widget_description_large">Large (4×4): everything a design can show.</string>
 </resources>

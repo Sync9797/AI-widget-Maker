@@ -459,6 +459,8 @@ data class MapNode(
 data class AppIconNode(
     val packageName: String,
     val size: Int = 48,
+    /** One color, like text: the app's monochrome (themed) icon in the panel's text color, light by day, dark by night. */
+    val mono: Boolean = false,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

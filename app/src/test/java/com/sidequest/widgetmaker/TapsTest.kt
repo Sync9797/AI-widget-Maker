@@ -55,7 +55,6 @@ class TapsTest {
             "Big clock" to TapKind.clock,
             "Stacked clock" to TapKind.clock,
             "Weather gauge" to TapKind.weather,
-            "Battery capsules" to TapKind.battery,
             "Clock and weather" to TapKind.weather,
             "Weather forecast" to TapKind.weather,
             "Crypto ticker" to TapKind.crypto,

@@ -40,10 +40,10 @@ class DesignStore(context: Context) {
     }
 
     /** The design a placed widget shows: the one picked for it, else the newest. */
-    fun designFor(appWidgetId: Int): SavedDesign? {
-        val picked = prefs.getString(widgetKey(appWidgetId), null)?.let { get(it) }
-        return picked ?: all().firstOrNull()
-    }
+    fun designFor(appWidgetId: Int): SavedDesign? = pickedFor(appWidgetId) ?: all().firstOrNull()
+
+    /** The design picked for a widget, if one was (and still exists). */
+    fun pickedFor(appWidgetId: Int): SavedDesign? = prefs.getString(widgetKey(appWidgetId), null)?.let { get(it) }
 
     fun assign(appWidgetId: Int, designId: String) {
         prefs.edit().putString(widgetKey(appWidgetId), designId).apply()

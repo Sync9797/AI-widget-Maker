@@ -37,6 +37,15 @@ class DesignStore(context: Context) {
 
     fun delete(id: String) = synchronized(LOCK) {
         writeAtomically(DesignParser.json.encodeToString(serializer, all().filterNot { it.id == id }))
+        setFavorite(id, false)
+    }
+
+    /** Designs you starred in Your designs: listed first, and left out when picking several to delete. */
+    val favorites: Set<String> get() = prefs.getStringSet("favorites", null)?.toSet() ?: emptySet()
+
+    fun setFavorite(id: String, on: Boolean) {
+        val now = if (on) favorites + id else favorites - id
+        prefs.edit().putStringSet("favorites", now).apply()
     }
 
     /** The design a placed widget shows: the one picked for it, else the newest. */

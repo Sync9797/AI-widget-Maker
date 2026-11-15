@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -353,7 +354,8 @@ private fun LazyStaggeredGridScope.ActiveItems(state: MakerState, viewModel: Mak
 
 /** Designs you made, and saved ones that aren't on your home screen. */
 private fun LazyStaggeredGridScope.MineItems(state: MakerState, viewModel: MakerViewModel, onGo: (Page) -> Unit) {
-    val saved = state.saved.distinctBy { it.id }
+    // Starred designs first, then newest first.
+    val saved = state.saved.distinctBy { it.id }.sortedByDescending { it.id in state.favorites }
     val made = saved.filter { it.madeByYou }
     val others = saved.filter { !it.madeByYou && it.id !in state.placed }
     if (made.isEmpty() && others.isEmpty()) {
@@ -371,14 +373,19 @@ private fun LazyStaggeredGridScope.MineItems(state: MakerState, viewModel: Maker
         val picked = pickedDesigns.value.filter { id -> made.any { it.id == id } }.toSet()
         if (picked.isNotEmpty()) full("picking") { PickBar(picked, viewModel) }
         item(key = "made") {
-            CategoryCard("Made by you", made.size, hint = if (picked.isEmpty()) "Tap one to make another from it. Hold one to pick several to delete." else "Tap designs to pick or unpick them") {
+            CategoryCard("Made by you", made.size, hint = if (picked.isEmpty()) "Tap one to make another from it. Star your favorites to keep them on top; hold one to pick several to delete." else "Tap designs to pick or unpick them (starred ones stay)") {
                 PreviewGrid(
                     made, state.theme, title = { it.design.name }, about = { it.prompt }, design = { it.design },
                     picked = { it.id in picked },
-                    onHold = { saved -> pickedDesigns.value = pickedDesigns.value + saved.id },
+                    // Starred designs are never picked to delete in bulk.
+                    onHold = { saved -> if (saved.id !in state.favorites) pickedDesigns.value = pickedDesigns.value + saved.id },
+                    starred = { it.id in state.favorites },
+                    onStar = { viewModel.toggleFavorite(it.id) },
                 ) { saved ->
                     when {
-                        picked.isNotEmpty() -> pickedDesigns.value = if (saved.id in picked) pickedDesigns.value - saved.id else pickedDesigns.value + saved.id
+                        picked.isNotEmpty() -> if (saved.id !in state.favorites) {
+                            pickedDesigns.value = if (saved.id in picked) pickedDesigns.value - saved.id else pickedDesigns.value + saved.id
+                        }
                         state.assignTo != null -> viewModel.assign(saved = saved)
                         else -> viewModel.useAgain(saved)
                     }
@@ -387,7 +394,7 @@ private fun LazyStaggeredGridScope.MineItems(state: MakerState, viewModel: Maker
         }
     }
     others.forEach { saved ->
-        item(key = "m_${saved.id}") { SavedItem(saved, 0, state.theme, viewModel) }
+        item(key = "m_${saved.id}") { SavedItem(saved, 0, state.theme, viewModel, starred = saved.id in state.favorites) }
     }
 }
 
@@ -432,7 +439,7 @@ private fun CrashCard() {
 }
 
 @Composable
-private fun SavedItem(saved: SavedDesign, count: Int, theme: WidgetTheme, viewModel: MakerViewModel) {
+private fun SavedItem(saved: SavedDesign, count: Int, theme: WidgetTheme, viewModel: MakerViewModel, starred: Boolean? = null) {
     SavedCard(
         saved = saved,
         count = count,
@@ -440,6 +447,8 @@ private fun SavedItem(saved: SavedDesign, count: Int, theme: WidgetTheme, viewMo
         onEdit = { viewModel.edit(saved) },
         onDelete = { viewModel.delete(saved) },
         theme = theme,
+        starred = starred,
+        onStar = if (starred != null) ({ viewModel.toggleFavorite(saved.id) }) else null,
     )
 }
 
@@ -612,10 +621,12 @@ private fun <T> PreviewGrid(
     design: (T) -> com.sidequest.widgetmaker.spec.WidgetDesign,
     picked: (T) -> Boolean = { false },
     onHold: ((T) -> Unit)? = null,
+    starred: ((T) -> Boolean)? = null,
+    onStar: ((T) -> Unit)? = null,
     onPick: (T) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items.chunked(2).forEach { row -> PreviewRow(row, theme, title, about, design, onPick, picked, onHold) }
+        items.chunked(2).forEach { row -> PreviewRow(row, theme, title, about, design, onPick, picked, onHold, starred, onStar) }
     }
 }
 
@@ -631,6 +642,8 @@ private fun <T> PreviewRow(
     onPick: (T) -> Unit,
     picked: (T) -> Boolean = { false },
     onHold: ((T) -> Unit)? = null,
+    starred: ((T) -> Boolean)? = null,
+    onStar: ((T) -> Unit)? = null,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         row.forEach { item ->
@@ -657,7 +670,18 @@ private fun <T> PreviewRow(
                 Spacer(Modifier.size(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isPicked) Icon(Icons.Filled.CheckCircle, contentDescription = "Picked", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp).padding(end = 4.dp))
-                    Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f))
+                    if (starred != null && onStar != null) {
+                        val on = starred(item)
+                        androidx.compose.material3.IconButton(onClick = { onStar(item) }, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = if (on) "Remove from favorites" else "Add to favorites",
+                                // Unstarred: the same star, faint.
+                                tint = if (on) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                            )
+                        }
+                    }
                 }
                 Text(about(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
             }

@@ -74,6 +74,8 @@ data class MakerState(
     val assignTo: Int? = null,
     /** The pick is done: the app closes back to the home screen. */
     val assigned: Boolean = false,
+    /** Designs you starred: first in Your designs, and never picked to delete in bulk. */
+    val favorites: Set<String> = emptySet(),
 )
 
 /** Checking for, downloading and installing a newer build. */
@@ -148,7 +150,7 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
             val snapshot = withContext(Dispatchers.IO) { feeds.snapshot() }
             _state.update {
                 it.copy(
-                    saved = saved, placed = placed, hasApiKey = store.apiKey.isNotBlank(), theme = store.theme,
+                    saved = saved, placed = placed, hasApiKey = store.apiKey.isNotBlank(), theme = store.theme, favorites = store.favorites,
                     sources = sources, snapshot = snapshot,
                 )
             }
@@ -325,8 +327,16 @@ class MakerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Deletes several of your designs at once (picked by holding one in Your designs). */
-    fun deleteMany(ids: Set<String>) {
+    /** Stars a design (or takes its star away): starred ones come first and are kept out of bulk deletes. */
+    fun toggleFavorite(id: String) {
+        val on = id !in state.value.favorites
+        store.setFavorite(id, on)
+        _state.update { it.copy(favorites = if (on) it.favorites + id else it.favorites - id) }
+    }
+
+    /** Deletes several of your designs at once (picked by holding one in Your designs). Starred ones are kept. */
+    fun deleteMany(picked: Set<String>) {
+        val ids = picked - state.value.favorites
         if (ids.isEmpty()) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) { ids.forEach(store::delete) }

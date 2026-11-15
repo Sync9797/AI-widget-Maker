@@ -673,6 +673,10 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.AnalogNode -> AndroidRemoteViews(
+            remoteViews = analogViews(node, paint.styler),
+            modifier = modifier.size((node.size * paint.k).dp),
+        )
         is com.sidequest.widgetmaker.spec.ScaleNode -> {
             // A tick ruler, with the value's tick over it in the accent color.
             val density = context.resources.displayMetrics.density
@@ -733,8 +737,9 @@ private fun clockViews(node: ClockNode, styler: Styler, k: Float = 1f): RemoteVi
         // The same pattern whatever the phone's 12/24-hour setting: the design chose it.
         setCharSequence(R.id.clock, "setFormat12Hour", node.format)
         setCharSequence(R.id.clock, "setFormat24Hour", node.format)
+        val role = if (node.accent) Role.Accent else Role.Text
         if (styler.theme == WidgetTheme.material) {
-            val res = AiWidget.materialRes(styler.materialSlot(Role.Text, node.color))
+            val res = AiWidget.materialRes(styler.materialSlot(role, node.color))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 // Looked up by the launcher, like the rest of the Material 3 colors.
                 setColorStateList(R.id.clock, "setTextColor", res)
@@ -742,9 +747,29 @@ private fun clockViews(node: ClockNode, styler: Styler, k: Float = 1f): RemoteVi
                 setTextColor(R.id.clock, context.getColor(res))
             }
         } else {
-            setTextColor(R.id.clock, styler.argb(Role.Text, node.color, dark = false))
+            setTextColor(R.id.clock, styler.argb(role, node.color, dark = false))
         }
         setTextViewTextSize(R.id.clock, TypedValue.COMPLEX_UNIT_SP, node.size * k)
+    }
+}
+
+/**
+ * A live analog clock, its dial, hour hand and minute hand tinted to the theme (Android 12+; before that they keep
+ * their own grey and teal). The system turns the hands.
+ */
+@Composable
+private fun analogViews(node: com.sidequest.widgetmaker.spec.AnalogNode, styler: Styler): RemoteViews {
+    val context = androidx.glance.LocalContext.current
+    return RemoteViews(context.packageName, R.layout.analog_clock).apply {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            fun tint(method: String, role: Role, design: String) {
+                if (styler.theme == WidgetTheme.material) setColorStateList(R.id.analog, method, AiWidget.materialRes(styler.materialSlot(role, design)))
+                else setColorStateList(R.id.analog, method, android.content.res.ColorStateList.valueOf(styler.argb(role, design, dark = false)))
+            }
+            tint("setDialTintList", Role.Track, node.dialColor)
+            tint("setHourHandTintList", Role.Text, node.handColor)
+            tint("setMinuteHandTintList", Role.Accent, node.accent)
+        }
     }
 }
 

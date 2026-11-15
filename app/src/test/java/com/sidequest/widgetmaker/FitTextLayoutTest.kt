@@ -14,6 +14,13 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class FitTextLayoutTest {
     @Test
+    fun analogClockInflatesAsALauncherWould() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val view = RemoteViews(context.packageName, R.layout.analog_clock).apply(context, FrameLayout(context))
+        assertTrue(view is android.widget.AnalogClock)
+    }
+
+    @Test
     fun everyFitLayoutAutosizes() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         for (w in listOf("n", "m", "b")) for (size in listOf(10, 44, 96)) {

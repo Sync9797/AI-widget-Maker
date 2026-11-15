@@ -100,6 +100,7 @@ object Fitter {
             is RingNode -> node.size * k
             is ArtNode -> node.size * k
             is AppIconNode -> node.size * k
+            is AnalogNode -> node.size * k
             is ScaleNode -> if (node.vertical) 30 * k else 0f
             is TimerNode -> textWidth("00:00", node.size * k)
             is SpacerNode -> if (node.grow) 0f else node.size * k
@@ -120,6 +121,7 @@ object Fitter {
             is RingNode -> node.size * k
             is ArtNode -> node.size * k
             is AppIconNode -> node.size * k
+            is AnalogNode -> node.size * k
             is ScaleNode -> if (!node.vertical) 22 * k else if (node.grow || node.length <= 0) 40 * k else node.length * k
             is TimerNode -> line(node.size * k)
             is ProgressNode -> node.height * k

@@ -100,6 +100,8 @@ Elements ("type" picks one; leave out any field to use its default):
 - {"type":"month","size":12,"color":color,"accent":color,"months":1,"header":true,"weekNumbers":false,"grow":true}
    this month's calendar (One UI style): today marked out, days with events in "accent"; "months":2 shows
    next month beside it (wide widgets); give it "grow":true so its weeks fill the height
+- {"type":"analog","size":110,"handColor":color,"accent":color,"dialColor":color}   a live analog clock (ticking dial,
+   hour hand in handColor, minute hand in accent)
 - {"type":"scale","value":"{weather.temp}","min":"{weather.low}","max":"{weather.high}","vertical":true,"length":110,
    "ticks":21,"color":color,"tickColor":color}   a ruler of tick marks with the value's tick in "color" (thermometers,
    gauges); "grow":true makes a vertical one as tall as the room left

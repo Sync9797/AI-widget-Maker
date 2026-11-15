@@ -212,6 +212,8 @@ data class ClockNode(
     val size: Int = 40,
     val color: String = "#FFFFFFFF",
     val weight: Weight = Weight.light,
+    /** In the theme's accent color rather than its text color (an hour picked out, a weekday). */
+    val accent: Boolean = false,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -433,6 +435,22 @@ data class MapNode(
 data class AppIconNode(
     val packageName: String,
     val size: Int = 48,
+    override val grow: Boolean = false,
+    override val show: Show? = null,
+    override val tap: String? = null,
+) : Node
+
+/**
+ * A live analog clock, [size] dp across: a dial of ticks in [dialColor], the hour hand in [handColor], the
+ * minute hand in [accent]. The system turns the hands, so it keeps time without the widget redrawing.
+ */
+@Serializable
+@SerialName("analog")
+data class AnalogNode(
+    val size: Int = 110,
+    val handColor: String = "#FFFFFFFF",
+    val accent: String = "#FF2FA7B8",
+    val dialColor: String = "#59FFFFFF",
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

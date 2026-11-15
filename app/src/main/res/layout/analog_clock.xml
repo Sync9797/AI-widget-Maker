@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A live analog clock: the system turns its hands, no app updates needed. -->
+<AnalogClock xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/analog"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:dial="@drawable/analog_dial"
+    android:hand_hour="@drawable/analog_hour"
+    android:hand_minute="@drawable/analog_minute" />

@@ -233,7 +233,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
         is ClockNode -> Text(
             text = android.text.format.DateFormat.format(node.format, Calendar.getInstance()).toString(),
             modifier = modifier,
-            color = paint(Role.Text, node.color),
+            color = paint(if (node.accent) Role.Accent else Role.Text, node.color),
             fontSize = (node.size * paint.k).sp,
             lineHeight = (node.size * paint.k).sp,
             fontWeight = weight(node.weight),
@@ -388,6 +388,42 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
             }
         }
         is com.sidequest.widgetmaker.spec.MonthNode -> Unit // Drawn as its rows and columns, above.
+        is com.sidequest.widgetmaker.spec.AnalogNode -> {
+            // The same clock as on the home screen, drawn here at the current time.
+            val dial = paint(Role.Track, node.dialColor)
+            val hand = paint(Role.Text, node.handColor)
+            val accent = paint(Role.Accent, node.accent)
+            val now = java.time.LocalTime.now()
+            androidx.compose.foundation.Canvas(modifier.size((node.size * paint.k).dp)) {
+                val r = size.minDimension / 2
+                val c = center
+                for (i in 0 until 60) {
+                    val a = Math.toRadians(i * 6.0)
+                    val big = i % 5 == 0
+                    val r1 = r * 0.92f; val r2 = r * (if (big) 0.80f else 0.87f)
+                    drawLine(
+                        dial,
+                        androidx.compose.ui.geometry.Offset(c.x + r1 * Math.sin(a).toFloat(), c.y - r1 * Math.cos(a).toFloat()),
+                        androidx.compose.ui.geometry.Offset(c.x + r2 * Math.sin(a).toFloat(), c.y - r2 * Math.cos(a).toFloat()),
+                        strokeWidth = r * (if (big) 0.04f else 0.016f),
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    )
+                }
+                fun handLine(angle: Double, length: Float, width: Float, color: Color) {
+                    val a = Math.toRadians(angle)
+                    drawLine(
+                        color,
+                        androidx.compose.ui.geometry.Offset(c.x - r * 0.12f * Math.sin(a).toFloat(), c.y + r * 0.12f * Math.cos(a).toFloat()),
+                        androidx.compose.ui.geometry.Offset(c.x + r * length * Math.sin(a).toFloat(), c.y - r * length * Math.cos(a).toFloat()),
+                        strokeWidth = r * width,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    )
+                }
+                handLine((now.hour % 12 + now.minute / 60.0) * 30, 0.46f, 0.08f, hand)
+                handLine(now.minute * 6.0, 0.72f, 0.05f, accent)
+                drawCircle(accent, r * 0.05f, c)
+            }
+        }
         is com.sidequest.widgetmaker.spec.ScaleNode -> {
             val density = LocalContext.current.resources.displayMetrics.density
             val (wDp, hDp) = if (node.vertical) 30f * paint.k to (if (node.grow || node.length <= 0) fit.inner * 0.8f else node.length.toFloat()) * paint.k

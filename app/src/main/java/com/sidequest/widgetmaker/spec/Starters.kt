@@ -190,22 +190,33 @@ object Starters {
 
     private val SOURCES = listOf(
         Triple(
-            "Big clock", "The time, large. Adds the date, then a greeting and battery as it grows.",
-            """{"name":"Big clock","background":"#E6141B2D","cornerRadius":28,"padding":16,"root":
-            {"type":"column","tap":"clock","align":"center","verticalAlign":"center","children":[
-             {"type":"text","text":"{greeting}","size":14,"color":"#B3FFFFFF","weight":"medium","show":{"minHeight":200}},
-             {"type":"clock","format":"h:mm","size":40,"color":"#FFFFFFFF","weight":"light","show":{"maxHeight":119}},
-             {"type":"clock","format":"h:mm","size":44,"color":"#FFFFFFFF","weight":"light","show":{"minHeight":120,"maxWidth":249}},
-             {"type":"clock","format":"h:mm","size":56,"color":"#FFFFFFFF","weight":"light","show":{"minHeight":120,"minWidth":250}},
-             {"type":"clock","format":"EEE, MMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120,"maxWidth":249}},
-             {"type":"clock","format":"EEEE, MMMM d","size":14,"color":"#CCFFFFFF","weight":"normal","show":{"minHeight":120,"minWidth":250}},
-             {"type":"spacer","size":12,"show":{"minHeight":200}},
-             {"type":"row","show":{"minHeight":200},"children":[
-              {"type":"icon","name":"battery","size":14,"color":"#FF7CF29C","levelOf":"{battery}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"},{"from":31,"color":"#FF7CF29C"}]},
-              {"type":"text","text":" {battery}%  {charging}","size":13,"color":"#B3FFFFFF"}]},{"type":"column","show":{"minHeight":250},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"weather","size":14,"color":"#FFFFD27A"},{"type":"text","text":" {weather.temp} · {weather.outlook}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"H {weather.high} L {weather.low}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.1}"},"children":[{"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},{"type":"text","text":" {calendar.1}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{calendar.1.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8,"show":{"minHeight":300}},{"type":"column","show":{"minHeight":300},"children":[{"type":"row","children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]}]}]}]}}""",
+            "Big clock", "An analog clock with the hour picked out in the accent and the minutes beside it; the date with its weekday. Weather, your next event and the hours as it grows.",
+            """{"name":"Big clock","background":"#E6141B2D","cornerRadius":28,"padding":14,"root":
+            {"type":"column","tap":"clock","children":[
+             {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
+              {"type":"analog","size":64,"handColor":"#FFFFFFFF","accent":"#FF8AB4F8","dialColor":"#59FFFFFF"},
+              {"type":"spacer","size":12},
+              {"type":"column","grow":true,"children":[
+               {"type":"clock","format":"h:mm","size":28,"color":"#FFFFFFFF","weight":"medium"},
+               {"type":"row","children":[
+                {"type":"clock","format":"d MMM ","size":12,"color":"#B3FFFFFF","weight":"normal"},
+                {"type":"clock","format":"EEEE","size":12,"color":"#FF8AB4F8","weight":"medium","accent":true}]}]}]},
+             {"type":"column","grow":true,"show":{"minHeight":130},"children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"clock","format":"h","size":36,"color":"#FF8AB4F8","weight":"bold","accent":true},
+               {"type":"spacer","grow":true},
+               {"type":"text","text":"{greeting}","size":12,"color":"#B3FFFFFF","maxLines":1,"show":{"minWidth":250}}]},
+              {"type":"row","grow":true,"align":"center","verticalAlign":"center","children":[
+               {"type":"analog","size":104,"handColor":"#FFFFFFFF","accent":"#FF8AB4F8","dialColor":"#59FFFFFF"}]},
+              {"type":"row","verticalAlign":"bottom","children":[
+               {"type":"clock","format":"d MMM ","size":12,"color":"#CCFFFFFF","weight":"medium"},
+               {"type":"clock","format":"EEEE","size":12,"color":"#FF8AB4F8","weight":"medium","accent":true},
+               {"type":"spacer","grow":true},
+               {"type":"clock","format":"mm","size":30,"color":"#80FFFFFF","weight":"bold"}]}]},
+             {"type":"column","show":{"minHeight":250},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","children":[{"type":"icon","name":"weather","size":14,"color":"#FFFFD27A"},{"type":"text","text":" {weather.temp} · {weather.outlook}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"H {weather.high} L {weather.low}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.1}"},"children":[{"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},{"type":"text","text":" {calendar.1}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{calendar.1.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8,"show":{"minHeight":300}},{"type":"column","show":{"minHeight":300},"children":[{"type":"row","children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]}]}]}]}}""",
         ),
         Triple(
-            "Clock and weather", "Time and today's weather side by side; the hourly forecast when it's taller.",
+            "Clock and weather", "Time and today's weather side by side, the next hours under them with their temperatures as tick bars; the next days when tall.",
             """{"name":"Clock and weather","background":"#E6102236","cornerRadius":26,"padding":16,"root":
             {"type":"column","verticalAlign":"center","children":[
              {"type":"row","children":[
@@ -220,9 +231,10 @@ object Starters {
              {"type":"row","show":{"maxWidth":219,"minHeight":120},"children":[
               {"type":"icon","name":"weather","size":16,"color":"#FFFFD27A"},
               {"type":"text","text":" {weather.temp} {weather.condition}","size":13,"color":"#CCFFFFFF","maxLines":1}]},
-             {"type":"spacer","size":14,"show":{"minHeight":200}},
-             {"type":"row","show":{"minHeight":200},"children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]},
-             {"type":"chart","series":"{weather.hours.temps}","style":"ticks","height":26,"color":"#99FFFFFF","show":{"minHeight":240}},{"type":"column","show":{"minHeight":270},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
+             {"type":"spacer","size":10,"show":{"minHeight":150}},
+             {"type":"row","show":{"minHeight":150},"children":[${hour(1)},${hour(2)},${hour(3)},${hour(4)}]},
+             {"type":"spacer","size":6,"show":{"minHeight":170}},
+             {"type":"chart","series":"{weather.hours.temps}","style":"ticks","height":24,"color":"#99FFFFFF","show":{"minHeight":170}},{"type":"column","show":{"minHeight":270},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},${day(1)},{"type":"spacer","size":4},${day(2)},{"type":"spacer","size":4},${day(3)}]}]}}""",
         ),
         Triple(
             "Weather forecast", "Like One UI's weather: now, rain or snow on the way (else today's high, low and feels-like) and your town at 2x2; the next hours when wider; the next 3 days when taller.",

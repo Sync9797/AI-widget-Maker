@@ -157,32 +157,30 @@ class WeatherOutlookTest {
 }
 
 class SquareCellTest {
-    // A squircle: the shapes that keep One UI's 2×2 proportions (the default rounded panel fills its cell).
-    private val design = Starters.all.first { it.title == "Weather forecast" }.design.copy(shape = com.sidequest.widgetmaker.spec.WidgetShape.squircle)
+    private val design = Starters.all.first { it.title == "Weather forecast" }.design
     private val look = com.sidequest.widgetmaker.spec.Look()
 
     @Test
-    fun aTall2x2CellGetsOneUisProportions() {
-        val p = com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look)
-        assertEquals(170, p.width)
-        assertEquals(179, p.height)
-        // An open foldable's wider 2×2 is filled, as One UI fills its own.
-        assertEquals(330, com.sidequest.widgetmaker.spec.Shapes.panel(330, 200, design, look).width)
+    fun twoRowWidgetsAreAsTallAsOneUisOwn() {
+        // Measured beside Samsung's widgets on a Galaxy: a 2×2 and a 3×2 both about three quarters of their cell.
+        val twoByTwo = com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look)
+        assertEquals(170, twoByTwo.width)
+        assertEquals(194, twoByTwo.height)
+        val threeByTwo = com.sidequest.widgetmaker.spec.Shapes.panel(260, 262, design, look)
+        assertEquals(260, threeByTwo.width)
+        assertEquals(twoByTwo.height + 1, threeByTwo.height)
     }
 
     @Test
-    fun wideAndTallWidgetsKeepTheirShape() {
-        assertEquals(160, com.sidequest.widgetmaker.spec.Shapes.panel(320, 160, design, look).height)
-        assertEquals(340, com.sidequest.widgetmaker.spec.Shapes.panel(170, 340, design, look).height)
+    fun neverShortEnoughToPassForOneRow() {
+        assertEquals(131, com.sidequest.widgetmaker.spec.Shapes.panel(320, 160, design, look).height)
+        // One row is left as it is.
+        assertEquals(110, com.sidequest.widgetmaker.spec.Shapes.panel(320, 110, design, look).height)
+    }
+
+    @Test
+    fun offWithOneUiProportionsOrForOtherShapes() {
         assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look.copy(squareCells = false)).height)
-    }
-
-    @Test
-    fun theDefaultShapeFillsItsCellLikeOneUisOwn() {
-        val rounded = design.copy(shape = com.sidequest.widgetmaker.spec.WidgetShape.rounded)
-        // A 3×2 and a tall 2×2: the whole cell, so it lines up with Samsung's widgets beside it.
-        assertEquals(200, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, rounded, look).height)
-        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, rounded, look).width)
-        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, rounded, look).height)
+        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design.copy(shape = com.sidequest.widgetmaker.spec.WidgetShape.arch), look).height)
     }
 }

@@ -163,15 +163,16 @@ object Shapes {
     /** A pill's height for its width, like One UI's oval widgets. */
     const val PILL_RATIO = 0.32
 
-    /** Height to width of One UI's own 2×2 widgets (about 380 by 360). */
-    const val ONE_UI_RATIO = 1.055f
+    /**
+     * How much of the height a launcher gives a widget of two rows or more One UI's own widgets fill: about three
+     * quarters, centered. Measured beside Samsung's 2×2 and 3×2 widgets on a Galaxy home screen (421 and 425 px
+     * tall in cells of 569 and 570), where every two-row Samsung widget is that height whatever its width.
+     */
+    const val ONE_UI_HEIGHT = 0.745f
 
     // The arch isn't here: it fills its cell's height, since its round top takes room from the content.
-    /**
-     * Shapes kept to One UI's 2×2 proportions in a tall cell. Not the default rounded panel: it fills its cell
-     * edge to edge, as One UI's own widgets do, so it lines up with them whatever the cell (a 2×2, a 3×2...).
-     */
-    private val SQUARE_SHAPES = setOf(WidgetShape.squircle, WidgetShape.ticket, WidgetShape.leaf, WidgetShape.leafReverse)
+    /** Shapes kept to One UI's height (the default rounded panel among them), so they line up with Samsung's widgets. */
+    private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.ticket, WidgetShape.leaf, WidgetShape.leafReverse)
 
     /**
      * A [WidgetShape.leaf]'s corner radii as parts of its shorter side, clockwise from the top left
@@ -206,11 +207,10 @@ object Shapes {
         var shape = shapeOverride ?: design.shape
         val maxH = look.pillMaxHeight
         if (maxH != null && height <= ONE_ROW_MAX) shape = WidgetShape.pill
-        // A squarish cell that's taller than it is wide (a 2×2 in portrait) gets One UI's proportions,
-        // a touch taller than wide, like Samsung's own 2×2 widgets, not the whole tall cell.
-        // Wider cells (an open foldable's 2×2) are filled, as One UI fills its own; 2×4 keeps its shape.
-        if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX && w.toFloat() / h in 0.6f..1f) {
-            h = min(h, (w * ONE_UI_RATIO).roundToInt())
+        // A widget of two rows or more is as tall as One UI's own beside it: about three quarters of the height it's
+        // given, centered (never so short that it would pass for one row). Its width is all of its cell's.
+        if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX) {
+            h = max(min(h, ONE_ROW_MAX + 1), (h * ONE_UI_HEIGHT).roundToInt())
         }
         // A pill is a slim oval, centered in its cell like One UI's: about a third as tall as it is wide,
         // or the height set in Settings → Widget look (which applies to every pill, whatever its cell).

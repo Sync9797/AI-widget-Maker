@@ -246,7 +246,8 @@ class AutoScaleTest {
 
     @Test
     fun growsWithTheShorterSide() {
-        val more = com.sidequest.widgetmaker.spec.Look()
+        // Scaling alone: One UI's proportions (which shorten two-row widgets) are off here.
+        val more = com.sidequest.widgetmaker.spec.Look(squareCells = false)
         // A cover-screen 2×2 stays as it is.
         assertEquals(1f, com.sidequest.widgetmaker.spec.Shapes.scale(panel(165, 170, more), more), 0.001f)
         // An open-screen 2×2 (wider, a bit taller) grows a little.

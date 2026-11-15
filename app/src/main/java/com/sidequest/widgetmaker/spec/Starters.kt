@@ -6,7 +6,8 @@ package com.sidequest.widgetmaker.spec
  */
 object Starters {
     data class Starter(val title: String, val about: String, val design: WidgetDesign) {
-        val category: Category get() = categoryOf(this)
+        /** Worked out once: the gallery groups by it each time it draws. */
+        val category: Category by lazy { categoryOf(this) }
     }
 
     /** How the app groups ready-made designs. */

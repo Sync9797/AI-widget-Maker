@@ -728,10 +728,13 @@ private val galleryQueue = kotlinx.coroutines.sync.Mutex()
 private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec.WidgetDesign, theme: WidgetTheme, menu: Boolean = false) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val tokens by PreviewTokens.state(context).collectAsState()
-    val look = com.sidequest.widgetmaker.data.DesignStore(context).look
+    val store = remember { com.sidequest.widgetmaker.data.DesignStore(context) }
+    val look = store.look
     val dark = androidx.compose.foundation.isSystemInDarkTheme()
+    // The design as text, worked out once: a menu picture is kept on the phone by it.
+    val designText = if (menu) remember(design) { com.sidequest.widgetmaker.spec.DesignParser.encode(design) } else ""
     // What the picture shows: a change to any of these (or, outside the menu, the data or a new minute) draws it afresh.
-    val key = if (menu) "menu|$theme|$look|$dark|${com.sidequest.widgetmaker.spec.DesignParser.encode(design)}"
+    val key = if (menu) "menu|$theme|$look|$dark|$designText"
     else "$title|$theme|$look|$dark|${System.identityHashCode(tokens)}|${System.currentTimeMillis() / 60_000}"
     // The menu's picture from the phone, read off the main thread; until it's looked for, a placeholder.
     var looked by remember(key) { mutableStateOf(!menu || PreviewSnapshots.get(key) != null) }

@@ -15,8 +15,8 @@ android {
         applicationId = "com.sidequest.widgetmaker"
         minSdk = 26
         targetSdk = 35
-        versionCode = 67
-        versionName = "0.26.2"
+        versionCode = 68
+        versionName = "0.27.0"
         // Which commit this is (set by the GitHub build), so the app can tell when a newer build is out.
         buildConfigField("String", "GIT_SHA", "\"${System.getenv("GITHUB_SHA") ?: "dev"}\"")
     }
@@ -35,7 +35,9 @@ android {
         debug { signingConfig = signingConfigs.getByName("debug") }
         release {
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = false
+            // R8: optimizes the libraries (Compose above all), which is most of the app's speed; see proguard-rules.pro.
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 

@@ -126,7 +126,8 @@ fun DesignPreview(
     val tokens = if (hiddenDevices.isEmpty()) shared
     else shared.copy(feeds = com.sidequest.widgetmaker.feeds.DevicesMath.hide(shared.feeds, hiddenDevices))
     // Read each time, so previews follow Settings → Widget look as soon as it changes.
-    val usedLook = look ?: DesignStore(context).look
+    val store = remember { DesignStore(context) }
+    val usedLook = look ?: store.look
     val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, usedLook, shape)
     // The same panel the home screen widget gets (in the preview, One UI assumes the middle of the screen).
     val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, usedLook, tokens.feeds, System.currentTimeMillis())

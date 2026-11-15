@@ -70,11 +70,15 @@ internal object StarterDesigns {
 
     private const val DEVICE_LEVELS = """"levels":[{"from":0,"color":"#FFFF5C5C"},{"from":20,"color":"#FFFFB74D"},{"from":40,"color":"#FF4CD964"}]"""
 
-    /** Device [n]'s battery as a fixed-height pill: its icon and percent inside a bar filled to its level. */
+    /**
+     * Device [n]'s battery as a fixed-height pill: its icon and percent inside a bar filled to its level. With no
+     * device there (or one that doesn't say its level), an empty pill, so the bars stay even, like One UI's.
+     */
     private fun deviceBar(n: Int, show: String) = """
-        {"type":"column","show":{$show"ifSet":"{devices.$n.level}"},"children":[
+        {"type":"column","show":{${show.trimEnd(',')}},"children":[
          {"type":"progress","value":"{devices.$n.level}","height":34,"color":"#FF4CD964","trackColor":"$TILE","levelOf":"{devices.$n.level}",$DEVICE_LEVELS,
-          "iconLive":"{devices.$n.icon}","text":"{devices.$n.pct}","textSize":15,"textColor":"$INK"},
+          "iconLive":"{devices.$n.icon}","text":"{devices.$n.pct}","textSize":15,"textColor":"$INK","show":{"ifSet":"{devices.$n.level}"}},
+         {"type":"progress","value":"0","height":34,"color":"$TILE","trackColor":"$TILE","text":" ","textSize":15,"show":{"ifEmpty":"{devices.$n.level}"}},
          {"type":"spacer","size":8}]}"""
 
     /** Device [n]'s battery as a ring in a tile, its name under it. */
@@ -836,7 +840,7 @@ internal object StarterDesigns {
 
         // Battery
         Triple(
-            "Device batteries", "Your phone, your WHOOP strap (with not-NOOP) and connected Bluetooth devices as left-to-right pills that stay the same size. Hide any in the widget's settings. Needs Device batteries in Data sources.",
+            "Device batteries", "Your phone, your WHOOP strap (with not-NOOP) and connected Bluetooth devices as left-to-right pills that stay the same size, empty ones keeping the rows even. Hide any in the widget's settings. Needs Device batteries in Data sources.",
             card("Device batteries", 14, """
             {"type":"column","verticalAlign":"center","tap":"battery","children":[
              {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[

@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -112,8 +114,8 @@ class ChooseDesignActivity : ComponentActivity() {
             }
 
             MakerTheme {
-                // A sheet at the bottom of the screen, short enough that the home screen (and the widget on it)
-                // stays in view above; tapping above it closes it.
+                // A sheet at the bottom of the screen; tapping above it closes it. Its top part shows the widget,
+                // always in view, and its bottom part scrolls through the settings, so each change shows at once.
                 Box(Modifier.fillMaxSize()) {
                     Box(
                         Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0x66000000))
@@ -121,13 +123,16 @@ class ChooseDesignActivity : ComponentActivity() {
                     )
                     Surface(
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().widthIn(max = 640.dp)
-                            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.62f).dp),
+                            .then(
+                                if (picked != null) Modifier.fillMaxHeight(0.9f)
+                                else Modifier.heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.62f).dp),
+                            ),
                         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
                         color = MaterialTheme.colorScheme.surfaceContainer,
                         tonalElevation = 6.dp,
                     ) {
                         Column(
-                            Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+                            Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(14.dp),
                         ) {
                             // The grab handle.
@@ -135,16 +140,28 @@ class ChooseDesignActivity : ComponentActivity() {
                                 Modifier.align(Alignment.CenterHorizontally).size(width = 40.dp, height = 4.dp)
                                     .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)),
                             )
-                            // The widget being edited, live: style and shape changes show here at once.
+                            // The top part: the widget being edited, live, and always in view while the settings
+                            // under it scroll. A tall widget's preview is shrunk to fit it.
                             if (picked != null) {
-                                // A tall widget's preview is shrunk to fit, so the whole of it shows above the settings.
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                val pane = (LocalConfiguration.current.screenHeightDp * 0.34f).dp
+                                Box(
+                                    Modifier.fillMaxWidth().height(pane)
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(28.dp)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
                                     DesignPreview(
                                         picked.design, previewSize(appWidgetId), theme,
-                                        Modifier.weight(1f, fill = false).heightIn(max = 200.dp),
+                                        Modifier.padding(12.dp).heightIn(max = pane - 24.dp),
                                         shape = shape, hiddenDevices = hiddenDevices,
                                     )
                                 }
+                            }
+                            // The bottom part: the settings, scrolling.
+                            Column(
+                                Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                            if (picked != null) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
                                         Text(picked.design.name, style = MaterialTheme.typography.titleLarge)
@@ -273,6 +290,7 @@ class ChooseDesignActivity : ComponentActivity() {
                             }
 
                             Button(onClick = { apply(finishAfter = true) }, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+                            }
                         }
                     }
                 }

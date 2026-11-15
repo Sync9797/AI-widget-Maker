@@ -1,5 +1,8 @@
 package com.sidequest.widgetmaker.ui
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -486,7 +489,7 @@ private fun <T> PreviewGrid(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            DesignPreview(design(item), PreviewSize.Square, theme)
+                            GalleryPreview(title(item), design(item), theme)
                         }
                         Spacer(Modifier.size(2.dp))
                         Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
@@ -519,6 +522,65 @@ fun Masonry(columns: Int, spacing: Dp, modifier: Modifier = Modifier, content: @
         val height = ((heights.maxOrNull() ?: 0) - gap).coerceAtLeast(0)
         layout(constraints.maxWidth, height) {
             placed.forEach { (p, x, y) -> p.placeRelative(x, y) }
+        }
+    }
+}
+
+/** Previews in lists come in one at a time, a frame apart, so opening a list never waits on drawing them all. */
+private val galleryQueue = kotlinx.coroutines.sync.Mutex()
+
+/**
+ * A design's preview in a list: a picture of it when one was taken already (coming back to the list shows it at
+ * once), else drawn live in its turn, with still weather icons, and a picture taken once it's fully drawn.
+ */
+@Composable
+private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec.WidgetDesign, theme: WidgetTheme) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val tokens by PreviewTokens.state(context).collectAsState()
+    val look = com.sidequest.widgetmaker.data.DesignStore(context).look
+    val dark = androidx.compose.foundation.isSystemInDarkTheme()
+    // What the picture shows: a change to any of these (or a new minute, for clocks) draws it afresh.
+    val key = "$title|$theme|${look.hashCode()}|$dark|${System.identityHashCode(tokens)}|${System.currentTimeMillis() / 60_000}"
+    PreviewSnapshots.get(key)?.let { picture ->
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        androidx.compose.foundation.Image(
+            picture, contentDescription = null,
+            modifier = Modifier.size(with(density) { picture.width.toDp() }, with(density) { picture.height.toDp() }),
+        )
+        return
+    }
+    var turn by remember(key) { mutableStateOf(false) }
+    LaunchedEffect(key) {
+        galleryQueue.lock()
+        try {
+            turn = true
+            kotlinx.coroutines.delay(24)
+        } finally {
+            galleryQueue.unlock()
+        }
+    }
+    if (!turn) {
+        Box(
+            Modifier.size(PreviewSize.Square.width * 0.9f, PreviewSize.Square.height * 0.9f)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), RoundedCornerShape(26.dp)),
+        )
+        return
+    }
+    val layer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    var ready by remember(key) { mutableStateOf(false) }
+    Box(
+        Modifier.drawWithContent {
+            layer.record { this@drawWithContent.drawContent() }
+            drawLayer(layer)
+        },
+    ) {
+        DesignPreview(design, PreviewSize.Square, theme, still = true, onReady = { ready = true })
+    }
+    LaunchedEffect(ready) {
+        if (ready) {
+            // A couple of frames for the drawn background to show, then keep a picture of it.
+            kotlinx.coroutines.delay(150)
+            runCatching { layer.toImageBitmap() }.getOrNull()?.let { PreviewSnapshots.put(key, it) }
         }
     }
 }

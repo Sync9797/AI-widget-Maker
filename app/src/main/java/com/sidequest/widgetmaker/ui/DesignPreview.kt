@@ -114,6 +114,10 @@ fun DesignPreview(
     shape: WidgetShape? = null,
     /** Devices this widget leaves out of its device batteries (its settings sheet). */
     hiddenDevices: Set<String> = emptySet(),
+    /** Weather icons stay still (lists of previews, where dozens moving at once would be a lot). */
+    still: Boolean = false,
+    /** Told once the preview is fully drawn (its background ready), so a list can keep a picture of it. */
+    onReady: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     // Shared by every preview and worked out off the main thread (see PreviewTokens).
@@ -136,6 +140,8 @@ fun DesignPreview(
         }
     }
     val k = Shapes.scale(panel, usedLook)
+    val icons = if (still && usedLook.weatherIcons.moves) com.sidequest.widgetmaker.spec.WeatherIcons.meteocons else usedLook.weatherIcons
+    if (onReady != null && art != null) LaunchedEffect(art) { onReady() }
     // Shrinks to fit narrow screens, drawn exactly as at full size.
     BoxWithConstraints(modifier) {
         // Shrinks to the room it's given, across and (when limited, like in a widget's settings sheet) down.
@@ -152,7 +158,7 @@ fun DesignPreview(
                     )
                     return@Box
                 }
-                val paint = PreviewPaint(art.styler, dark, k, usedLook.weatherIcons)
+                val paint = PreviewPaint(art.styler, dark, k, icons)
                 Box(Modifier.size(panel.width.dp, panel.height.dp)) {
                     Image(
                         bitmap = remember(art) { art.fill.asImageBitmap() },
@@ -184,7 +190,7 @@ fun DesignPreview(
                                 measure = phoneText, fontScale = phoneText.fontScale, shows = fit::shows,
                             )
                         }
-                        val fittedPaint = if (fitted.k == k) paint else PreviewPaint(art.styler, paint.dark, fitted.k, usedLook.weatherIcons)
+                        val fittedPaint = if (fitted.k == k) paint else PreviewPaint(art.styler, paint.dark, fitted.k, icons)
                         if (fit.shows(fitted.root)) PreviewNode(fitted.root, tokens, fittedPaint, fit, Modifier.fillMaxSize())
                     }
                 }

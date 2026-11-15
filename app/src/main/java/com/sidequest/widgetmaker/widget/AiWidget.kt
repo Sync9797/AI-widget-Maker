@@ -421,7 +421,13 @@ private fun DesignWidget(
     val context = androidx.glance.LocalContext.current
     // The widget's size right now: its panel, and the elements with size rules, follow it.
     val size = LocalSize.current
-    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, look, shape)
+    // Launchers (Android 12+) may round a widget's corners to the system's radius; corners no tighter than that
+    // mean any rounding they do lands on ours, rather than cropping the panel's edge.
+    val rounded = systemCornerRadius(context)?.let { sys ->
+        val own = look.cornerRadius ?: design.cornerRadius
+        if (own < sys) look.copy(cornerRadius = sys) else null
+    } ?: look
+    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, rounded, shape)
     val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, look, tokens.feeds, System.currentTimeMillis())
     val art = PanelArt.build(context, theme, panel, look, onScreen, mood, tokens.feeds)
     // On a bigger screen (an open foldable) the content can grow with the widget.
@@ -1065,3 +1071,12 @@ private fun tapLayer(context: Context, intent: android.content.Intent): android.
  * Only a touch, so the text under a big one keeps its room; small ones (in forecast rows) stay as designed.
  */
 fun mcScale(size: Int): Float = if (size >= 24) 1.12f else 1f
+
+/** The corner radius launchers round widgets to (Android 12+), in dp, or null before then. */
+private fun systemCornerRadius(context: Context): Int? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+    return runCatching {
+        val px = context.resources.getDimension(android.R.dimen.system_app_widget_background_radius)
+        (px / context.resources.displayMetrics.density).toInt()
+    }.getOrNull()?.takeIf { it > 0 }
+}

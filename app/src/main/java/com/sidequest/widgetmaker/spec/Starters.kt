@@ -22,7 +22,7 @@ object Starters {
         game("Side Quest"),
     }
 
-    private val EVERYDAY = setOf("Daily briefing", "Smart stack", "Countdown", "Claude", "Gemini")
+    private val EVERYDAY = setOf("Daily briefing", "Briefing list", "Smart stack", "Countdown", "Claude", "Gemini")
 
     fun categoryOf(s: Starter): Category {
         if (s.title in EVERYDAY) return Category.everyday

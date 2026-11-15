@@ -54,6 +54,9 @@ enum class WidgetTheme(val label: String) {
     fun barHeight(height: Int) = if (this == expressive) maxOf(height, EXPRESSIVE_BAR) else height
     val drawsDividers: Boolean get() = this != expressive
 
+    /** Glass you see the wallpaper through (Glass, One UI, Ambient, Liquid glass, Outline): its tiles are frosted. */
+    val seeThrough: Boolean get() = this == glass || frosted || this == outline
+
     /** Seen through to the wallpaper, so it needs to know where the widget is. */
     val showsWallpaper: Boolean get() = frosted || this == outline
 
@@ -232,6 +235,13 @@ class Styler(
         // or white to suit.
         if (role == Role.Strong || role == Role.Pop || role == Role.OnStrong || role == Role.OnPop) {
             if (theme == WidgetTheme.material) return material(materialSlot(role, design), dark)
+            // See-through styles: tiles are frosted, a touch more for pop, and their text is the style's own,
+            // rather than solid colors laid over the glass.
+            if (theme.seeThrough) {
+                if (role == Role.OnStrong || role == Role.OnPop) return argbHere(Role.Text, design, dark)
+                val ink = if (theme != WidgetTheme.glass && backdropLight) 0x111114 else 0xFFFFFF
+                return withAlpha(ink, if (role == Role.Pop) 0x47 else 0x2E)
+            }
             if (theme == WidgetTheme.expressive) {
                 val slot = when (role) {
                     Role.Strong -> MaterialSlot.Strong; Role.Pop -> MaterialSlot.Pop

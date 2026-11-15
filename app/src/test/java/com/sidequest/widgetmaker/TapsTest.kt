@@ -82,6 +82,7 @@ class TapsTest {
             "Stress" to TapKind.health,
             "Coach brief" to TapKind.health,
             "Daily briefing" to TapKind.weather,
+            "Briefing list" to TapKind.weather,
             "Smart stack" to TapKind.weather,
             "Side Quest eggs" to TapKind.game,
             "Side Quest adventures" to TapKind.game,

@@ -53,6 +53,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -333,12 +334,26 @@ internal fun SavedCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     theme: WidgetTheme,
+    /** In Your designs: whether it's starred, and starring it. */
+    starred: Boolean? = null,
+    onStar: (() -> Unit)? = null,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
     var choosingSize by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth(), border = cardEdge()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(saved.design.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(saved.design.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                if (starred != null && onStar != null) {
+                    androidx.compose.material3.IconButton(onClick = onStar) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Filled.Star,
+                            contentDescription = if (starred) "Remove from favorites" else "Add to favorites",
+                            tint = if (starred) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                        )
+                    }
+                }
+            }
             if (count > 1) Text("On $count widgets", style = MaterialTheme.typography.bodySmall)
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 DesignPreview(saved.design, PreviewSize.Wide, theme)

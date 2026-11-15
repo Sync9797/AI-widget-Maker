@@ -157,7 +157,7 @@ class PanelArt(
                 WidgetTheme.material, WidgetTheme.original -> PanelArt(
                     ShapePainter.mask(panel.shape, outW, outH, radius), true,
                     edge(0x26FFFFFF, sheen = 0x14),
-                    AiWidget.styler(context, theme),
+                    AiWidget.styler(context, theme, bold = panel.shape.bold),
                 )
             }
         }

@@ -83,6 +83,23 @@ enum class Role {
     Background, Container, Text, Accent, Track, TrendUp, TrendDown,
     /** A color that means something (Charge red/yellow/green, low battery): kept in every theme. */
     Level,
+    /** A [Tone.strong] element (a filled tile, chip or bar), and text sitting on one. */
+    Strong, OnStrong,
+    /** A [Tone.pop] element (what's happening now), and text sitting on one. */
+    Pop, OnPop,
+    ;
+
+    companion object {
+        /** The role an element with [tone] takes instead of its own (a level color stays as it is). */
+        fun toned(role: Role, tone: com.sidequest.widgetmaker.spec.Tone?): Role = when {
+            tone == null || role == Level -> role
+            tone == com.sidequest.widgetmaker.spec.Tone.strong -> Strong
+            else -> Pop
+        }
+
+        /** Text on a tile of [tone]. */
+        fun on(tone: com.sidequest.widgetmaker.spec.Tone) = if (tone == com.sidequest.widgetmaker.spec.Tone.strong) OnStrong else OnPop
+    }
 }
 
 /**
@@ -90,7 +107,7 @@ enum class Role {
  * resource that the launcher looks up itself, so it always matches the phone's
  * current palette (including Samsung One UI's) and light or dark mode.
  */
-enum class MaterialSlot { Surface, Container, Text, Text80, Text65, Primary, Track, Up, Down }
+enum class MaterialSlot { Surface, Container, Text, Text80, Text65, Primary, Track, Up, Down, Strong, OnStrong, Pop, OnPop }
 
 /**
  * The Expressive style's palette: which tone of the phone's main (1) or pop (3) color each slot takes, as Material
@@ -107,12 +124,16 @@ object ExpressivePalette {
         MaterialSlot.Text, MaterialSlot.Text80, MaterialSlot.Text65 -> Tone(1, if (bold != dark) 50 else 900)
         MaterialSlot.Primary -> Tone(3, when { bold && !dark -> 200; bold -> 700; !dark -> 600; else -> 200 })
         MaterialSlot.Track -> Tone(1, when { bold && !dark -> 400; bold -> 400; !dark -> 200; else -> 700 })
+        MaterialSlot.Strong -> Tone(1, when { bold && !dark -> 800; bold -> 700; !dark -> 600; else -> 200 })
+        MaterialSlot.OnStrong -> Tone(1, if (!bold && dark) 900 else 50)
+        MaterialSlot.Pop -> Tone(3, if (bold && dark) 600 else 200)
+        MaterialSlot.OnPop -> Tone(3, if (bold && dark) 50 else 900)
         MaterialSlot.Up, MaterialSlot.Down -> null
     }
 
     /** Material's baseline tones (phones before Android 12, and tests). */
     fun baseline(t: Tone): Int = (if (t.accent == 3) when (t.tone) {
-        200 -> 0xFFEFB8C8; 600 -> 0xFF7D5260; else -> 0xFF633B48
+        50 -> 0xFFFFECF1; 200 -> 0xFFEFB8C8; 600 -> 0xFF7D5260; 900 -> 0xFF31111D; else -> 0xFF633B48
     } else when (t.tone) {
         50 -> 0xFFF6EDFF; 100 -> 0xFFEADDFF; 200 -> 0xFFD0BCFF; 300 -> 0xFFB69DF8; 400 -> 0xFF9A82DB
         600 -> 0xFF6750A4; 700 -> 0xFF4F378B; 800 -> 0xFF381E72; else -> 0xFF21005D
@@ -133,6 +154,10 @@ object Baseline {
         MaterialSlot.Track -> if (dark) 0x3DD0BCFF else 0x3D6750A4
         MaterialSlot.Up -> if (dark) 0xFF6EE7A0 else 0xFF1B873F
         MaterialSlot.Down -> if (dark) 0xFFFF8A80 else 0xFFC62828
+        MaterialSlot.Strong -> if (dark) 0xFFD0BCFF else 0xFF6750A4
+        MaterialSlot.OnStrong -> if (dark) 0xFF381E72 else 0xFFFFFFFF
+        MaterialSlot.Pop -> if (dark) 0xFF633B48 else 0xFFFFD8E4
+        MaterialSlot.OnPop -> if (dark) 0xFFFFD8E4 else 0xFF31111D
     }.toInt()
 }
 
@@ -146,13 +171,31 @@ class Styler(
     private val material: (MaterialSlot, Boolean) -> Int = Baseline::color,
     /** One UI: whether the frosted wallpaper behind this widget is light (so text is dark). */
     val backdropLight: Boolean = false,
+    /** Drawing inside a tile of this tone: its text takes the color that reads on it. */
+    val on: com.sidequest.widgetmaker.spec.Tone? = null,
+    /** Material 3: a hero shape (cookie, flower...), drawn in the strong tone with text that reads on it. */
+    val bold: Boolean = false,
 ) {
+    /** This styler inside a tile of [tone] (itself when there's none). */
+    fun inside(tone: com.sidequest.widgetmaker.spec.Tone?) = if (tone == null) this else Styler(theme, material, backdropLight, tone, bold)
+
+    /** [role] as it applies here: text, icons and accents inside a toned tile read on that tile; a bold panel is strong. */
+    private fun here(role: Role): Role {
+        if (on != null && (role == Role.Text || role == Role.Accent)) return Role.on(on)
+        if (bold && theme == WidgetTheme.material) return when (role) {
+            Role.Background -> Role.Strong
+            Role.Text -> Role.OnStrong
+            else -> role
+        }
+        return role
+    }
+
 
     /** Whether light and dark mode can give different colors (only Material 3 follows the phone). */
     val followsDarkMode get() = theme == WidgetTheme.material
 
     /** Which Material 3 slot a design color becomes. Text keeps roughly the design's fade. */
-    fun materialSlot(role: Role, design: String?): MaterialSlot = when (role) {
+    fun materialSlot(role: Role, design: String?): MaterialSlot = when (here(role)) {
         Role.Background -> MaterialSlot.Surface
         Role.Container -> MaterialSlot.Container
         Role.Text -> when (alphaOf(Colors.argb(design, fallback = 0xFFFFFFFF.toInt()))) {
@@ -164,15 +207,40 @@ class Styler(
         Role.Track -> MaterialSlot.Track
         Role.TrendUp -> MaterialSlot.Up
         Role.TrendDown -> MaterialSlot.Down
+        Role.Strong -> MaterialSlot.Strong
+        Role.OnStrong -> MaterialSlot.OnStrong
+        Role.Pop -> MaterialSlot.Pop
+        Role.OnPop -> MaterialSlot.OnPop
     }
 
     /** The color to draw for a design color with this [role], as ARGB. */
-    fun argb(role: Role, design: String?, dark: Boolean): Int {
+    fun argb(role: Role, design: String?, dark: Boolean): Int = argbHere(here(role), design, dark)
+
+    private fun argbHere(role: Role, design: String?, dark: Boolean): Int {
         val original = Colors.argb(design, fallback = 0)
         if (role == Role.Level) return original
+        // Tones: Expressive and Material 3 have their own; elsewhere a tone is the theme's accent, its text black
+        // or white to suit.
+        if (role == Role.Strong || role == Role.Pop || role == Role.OnStrong || role == Role.OnPop) {
+            if (theme == WidgetTheme.material) return material(materialSlot(role, design), dark)
+            if (theme == WidgetTheme.expressive) {
+                val slot = when (role) {
+                    Role.Strong -> MaterialSlot.Strong; Role.Pop -> MaterialSlot.Pop
+                    Role.OnStrong -> MaterialSlot.OnStrong; else -> MaterialSlot.OnPop
+                }
+                val c = material(slot, !backdropLight)
+                return if (role == Role.OnStrong || role == Role.OnPop) withAlpha(c, alphaOf(original).coerceAtLeast(0xA6)) else c
+            }
+            val fill = argbHere(Role.Accent, design, dark)
+            return when (role) {
+                Role.Strong, Role.Pop -> fill
+                else -> withAlpha(contrast(fill), alphaOf(original).coerceAtLeast(0xA6))
+            }
+        }
         return when (theme) {
             WidgetTheme.original -> original
             WidgetTheme.glass -> when (role) {
+                Role.Strong, Role.OnStrong, Role.Pop, Role.OnPop -> original // Tones are worked out above.
                 Role.Background -> GLASS_TINT
                 Role.Container -> 0x1FFFFFFF
                 // White, keeping the design's opacity so faded text stays faded.
@@ -186,6 +254,7 @@ class Styler(
             WidgetTheme.expressive -> {
                 val dark = !backdropLight
                 when (role) {
+                    Role.Strong, Role.OnStrong, Role.Pop, Role.OnPop -> original // Tones are worked out above.
                     Role.Background -> material(MaterialSlot.Surface, dark)
                     Role.Container -> material(MaterialSlot.Container, dark)
                     Role.Text -> withAlpha(material(MaterialSlot.Text, dark), alphaOf(original).coerceAtLeast(0xA6))
@@ -200,6 +269,7 @@ class Styler(
                 // [backdropLight] here is the phone's light mode; the slots come from the tonal palette.
                 val dark = !backdropLight
                 when (role) {
+                    Role.Strong, Role.OnStrong, Role.Pop, Role.OnPop -> original // Tones are worked out above.
                     Role.Background -> material(MaterialSlot.Surface, dark)
                     Role.Container -> material(MaterialSlot.Container, dark)
                     Role.Text -> withAlpha(material(MaterialSlot.Text, dark), alphaOf(original).coerceAtLeast(0xA6))
@@ -217,6 +287,7 @@ class Styler(
                 val ink = if (light) 0x15181B else 0xF2F4F5
                 val accent = material(MaterialSlot.Primary, !light)
                 when (role) {
+                    Role.Strong, Role.OnStrong, Role.Pop, Role.OnPop -> original // Tones are worked out above.
                     Role.Background -> if (light) 0xFFF2F4F5.toInt() else 0xFF1D2023.toInt()
                     Role.Container -> withAlpha(accent, if (light) 0x26 else 0x33)
                     Role.Text -> withAlpha(ink, alphaOf(original).coerceAtLeast(0x8C))
@@ -231,6 +302,7 @@ class Styler(
             WidgetTheme.timeOfDay, WidgetTheme.outline -> {
                 val ink = if (theme == WidgetTheme.outline && backdropLight) 0x111114 else 0xFFFFFF
                 when (role) {
+                    Role.Strong, Role.OnStrong, Role.Pop, Role.OnPop -> original // Tones are worked out above.
                     Role.Background -> if (theme == WidgetTheme.outline) 0 else GLASS_TINT
                     Role.Container -> withAlpha(ink, 0x24)
                     Role.Text -> withAlpha(ink, alphaOf(original).coerceAtLeast(0xA6))
@@ -239,6 +311,7 @@ class Styler(
                 }
             }
             WidgetTheme.oneui, WidgetTheme.ambient, WidgetTheme.liquid -> when (role) {
+                Role.Strong, Role.OnStrong, Role.Pop, Role.OnPop -> original // Tones are worked out above.
                 Role.Background -> if (backdropLight) 0x8CF4F4F6.toInt() else 0x73202024
                 Role.Container -> if (backdropLight) 0x47FFFFFF else 0x24FFFFFF
                 // Text suits what's behind it, keeping the design's fade.

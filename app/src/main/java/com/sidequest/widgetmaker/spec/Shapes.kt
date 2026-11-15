@@ -166,6 +166,9 @@ object Shapes {
     /** Height to width of One UI's own 2×2 widgets (about 380 by 360). */
     const val ONE_UI_RATIO = 1.055f
 
+    /** How tall One UI's widgets are in a 3×2 cell, as a part of the cell. */
+    const val ONE_UI_WIDE_HEIGHT = 0.91f
+
     // The arch isn't here: it fills its cell's height, since its round top takes room from the content.
     private val SQUARE_SHAPES = setOf(WidgetShape.rounded, WidgetShape.squircle, WidgetShape.ticket, WidgetShape.leaf, WidgetShape.leafReverse)
 
@@ -207,6 +210,11 @@ object Shapes {
         // Wider cells (an open foldable's 2×2) are filled, as One UI fills its own; 2×4 keeps its shape.
         if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX && w.toFloat() / h in 0.6f..1f) {
             h = min(h, (w * ONE_UI_RATIO).roundToInt())
+        }
+        // A 3×2 (a bit wider than tall, more than a row): One UI's own widgets leave a little room above and below
+        // it, so ours match their height beside them. Wider cells (4×2, an open foldable's 2×2) are filled.
+        if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX && w.toFloat() / h in 1.1f..1.5f) {
+            h = (h * ONE_UI_WIDE_HEIGHT).roundToInt()
         }
         // A pill is a slim oval, centered in its cell like One UI's: about a third as tall as it is wide,
         // or the height set in Settings → Widget look (which applies to every pill, whatever its cell).

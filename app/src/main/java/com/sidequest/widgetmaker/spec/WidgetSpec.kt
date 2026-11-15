@@ -10,6 +10,14 @@ import kotlinx.serialization.Serializable
  * building blocks (rows, columns, text, a live clock, icons, progress bars)
  * that the app knows how to draw on the home screen and the lock screen.
  */
+/**
+ * An element's emphasis, beyond the panel's own colors: [strong] is the deep tone of the phone's main color
+ * (a filled tile, chip or bar), [pop] its second color (for what's happening now). A tile with a tone has its
+ * text in the color that reads on it.
+ */
+@Serializable
+enum class Tone { strong, pop }
+
 @Serializable
 data class WidgetDesign(
     val name: String = "My widget",
@@ -123,6 +131,8 @@ data class ColumnNode(
      * it takes the room that's left; each child is one row of the list. One per widget at most.
      */
     val scroll: Boolean = false,
+    /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
+    val tone: Tone? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -137,6 +147,8 @@ data class RowNode(
     val background: String? = null,
     val cornerRadius: Int = 0,
     val padding: Int = 0,
+    /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
+    val tone: Tone? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -171,6 +183,8 @@ data class TextNode(
     val autoFit: Boolean = false,
     /** A small pill behind the text, in the theme's container color: dates like "03", tags like "P.M.". */
     val chip: Boolean = false,
+    /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
+    val tone: Tone? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -214,6 +228,8 @@ data class ClockNode(
     val weight: Weight = Weight.light,
     /** In the theme's accent color rather than its text color (an hour picked out, a weekday). */
     val accent: Boolean = false,
+    /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
+    val tone: Tone? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -230,6 +246,8 @@ data class IconNode(
     /** Colors it by a number's level, like "{battery}": see [Level]. */
     val levelOf: String? = null,
     val levels: List<Level>? = null,
+    /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
+    val tone: Tone? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -264,6 +282,8 @@ data class ProgressNode(
      */
     val segments: Int = 0,
     val vertical: Boolean = false,
+    /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
+    val tone: Tone? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,
@@ -410,6 +430,8 @@ data class RingNode(
     /** With both: [value] is placed between them (like a temperature between today's low and high) rather than 0-100. */
     val min: String? = null,
     val max: String? = null,
+    /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
+    val tone: Tone? = null,
     override val grow: Boolean = false,
     override val show: Show? = null,
     override val tap: String? = null,

@@ -108,6 +108,7 @@ object OneUiBackdrop {
 
     /** Forgets the wallpaper read last, so the next drawing reads it again (after access is allowed). */
     fun forgetCached() {
+        com.sidequest.widgetmaker.ui.PanelArtCache.clear()
         cached = null
     }
 

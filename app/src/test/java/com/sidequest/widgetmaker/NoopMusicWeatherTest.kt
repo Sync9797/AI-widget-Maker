@@ -157,7 +157,8 @@ class WeatherOutlookTest {
 }
 
 class SquareCellTest {
-    private val design = Starters.all.first { it.title == "Weather forecast" }.design
+    // A squircle: the shapes that keep One UI's 2×2 proportions (the default rounded panel fills its cell).
+    private val design = Starters.all.first { it.title == "Weather forecast" }.design.copy(shape = com.sidequest.widgetmaker.spec.WidgetShape.squircle)
     private val look = com.sidequest.widgetmaker.spec.Look()
 
     @Test
@@ -177,11 +178,11 @@ class SquareCellTest {
     }
 
     @Test
-    fun aThreeByTwoMatchesOneUisHeight() {
-        // A 3×2 on a phone (about 260 × 200): One UI's own widgets are about 9% shorter than the cell.
-        assertEquals(182, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, design, look).height)
-        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, design, look).width)
-        // Off with One UI proportions.
-        assertEquals(200, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, design, look.copy(squareCells = false)).height)
+    fun theDefaultShapeFillsItsCellLikeOneUisOwn() {
+        val rounded = design.copy(shape = com.sidequest.widgetmaker.spec.WidgetShape.rounded)
+        // A 3×2 and a tall 2×2: the whole cell, so it lines up with Samsung's widgets beside it.
+        assertEquals(200, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, rounded, look).height)
+        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(260, 200, rounded, look).width)
+        assertEquals(260, com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, rounded, look).height)
     }
 }

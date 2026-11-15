@@ -207,23 +207,73 @@ internal object StarterDesigns {
                  {"type":"text","text":"Tomorrow","size":10,"color":"$INK","weight":"bold","maxLines":1},
                  {"type":"text","text":"{calendar.tomorrow.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.tomorrow}"}},
                  {"type":"text","text":"{calendar.tomorrow}","size":11,"color":"$INK","maxLines":2,"show":{"ifSet":"{calendar.tomorrow}"}},
-                 {"type":"text","text":"Nothing planned","size":11,"color":"$INK","maxLines":1,"show":{"ifEmpty":"{calendar.tomorrow}"}}]}]},
+                 {"type":"text","text":"Nothing planned","size":11,"color":"$INK","maxLines":1,"show":{"ifEmpty":"{calendar.tomorrow}"}}]},
+                {"type":"row","verticalAlign":"center","show":{"minHeight":150,"ifSet":"{health.charge}"},"children":[
+                 {"type":"spacer","size":4},
+                 {"type":"icon","name":"bolt","size":14,"color":"$INK"},
+                 {"type":"text","text":" {health.charge}","size":14,"color":"$INK","weight":"bold","maxLines":1}]}]},
                {"type":"spacer","size":6,"show":{"minWidth":250}},
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"show":{"minWidth":250},"children":[
                 {"type":"ring","value":"{health.stepsPct}","text":"","size":30,"thickness":5,"color":"$STRONG","trackColor":"$SOFT","tone":"strong"},
                 {"type":"spacer","grow":true},
                 {"type":"text","text":"{health.stepsLeft.text}","size":11,"color":"$INK","weight":"bold","maxLines":2}]}]},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":170,"maxHeight":249,"ifSet":"{traffic.commute}"},"children":[
+               {"type":"icon","name":"car","size":14,"color":"$STRONG","tone":"strong"},
+               {"type":"text","text":" {traffic.commute}","size":12,"color":"$INK","weight":"bold","maxLines":1,"grow":true},
+               {"type":"text","text":"{traffic.delay}","size":11,"color":"$SUB","maxLines":1,"show":{"ifSet":"{traffic.delay}"}}]},
               {"type":"column","show":{"minHeight":250},"children":[
                {"type":"spacer","size":6},
                {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":16,"padding":8,"show":{"ifSet":"{traffic.commute}"},"children":[
                 {"type":"icon","name":"car","size":16,"color":"$STRONG","tone":"strong"},
-                {"type":"text","text":"  {traffic.commute} to {traffic.to}","size":13,"color":"$INK","weight":"bold","maxLines":1,"grow":true},
+                {"type":"text","text":"  {traffic.commute}","size":13,"color":"$INK","weight":"bold","maxLines":1},
+                {"type":"text","text":" to {traffic.to}","size":13,"color":"$SUB","maxLines":1,"grow":true,"show":{"minWidth":250}},
+                {"type":"spacer","grow":true,"show":{"maxWidth":249}},
                 {"type":"text","text":"{traffic.delay}","size":11,"color":"#FF3A1608","weight":"bold","chip":true,"tone":"pop","maxLines":1,"show":{"ifSet":"{traffic.delay}"}}]},
                {"type":"spacer","size":6,"show":{"ifSet":"{health.charge}"}},
                {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":16,"padding":8,"show":{"ifSet":"{health.charge}"},"children":[
                 {"type":"icon","name":"bolt","size":16,"color":"$STRONG","tone":"strong"},
                 {"type":"text","text":"  Charge {health.charge}","size":13,"color":"$INK","weight":"bold","maxLines":1,"grow":true},
+                {"type":"spacer","size":8},
                 {"type":"text","text":"{health.charge.label}","size":11,"color":"$SUB","maxLines":1}]}]}]}]}"""),
+        ),
+        Triple(
+            "Briefing list", "The briefing as a list: your greeting, the weather big, then your first event, the commute and Charge, a line each; steps left and tomorrow later on.",
+            """{"name":"Briefing list","background":"#F2172030","cornerRadius":28,"padding":16,"root":
+            {"type":"column","verticalAlign":"center","tap":"weather","children":[
+             {"type":"text","text":"{greeting}","size":13,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100}},
+             {"type":"column","show":{"ifSet":"{time.morning}"},"children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"icon","name":"weather","size":22,"color":"#FFFFD27A"},
+               {"type":"text","text":" {weather.temp}","size":22,"color":"#FFFFFFFF","weight":"bold"},
+               {"type":"text","text":"  {weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1,"grow":true,"show":{"minWidth":250}}]},
+              {"type":"spacer","size":8,"show":{"minHeight":120}},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":120,"ifSet":"{calendar.1}"},"children":[
+               {"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},
+               {"type":"text","text":" {calendar.1}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"spacer","size":8,"show":{"minWidth":230}},{"type":"text","text":"{calendar.1.when}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":230}}]},
+              {"type":"text","text":"     {calendar.1.when}","size":11,"color":"#99FFFFFF","maxLines":1,"show":{"maxWidth":229,"minHeight":120,"ifSet":"{calendar.1}"}},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":150,"ifSet":"{traffic.commute}"},"children":[
+               {"type":"icon","name":"car","size":14,"color":"#FFFFB74D"},
+               {"type":"text","text":" {traffic.commute} to {traffic.to}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"spacer","size":8,"show":{"minWidth":230}},{"type":"text","text":"{traffic.delay}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":230}}]},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":170,"ifSet":"{health.charge}"},"children":[
+               {"type":"icon","name":"bolt","size":14,"color":"#FF2BE38A","levelOf":"{health.charge}","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":34,"color":"#FFFFD54F"},{"from":67,"color":"#FF2BE38A"}]},
+               {"type":"text","text":" Charge {health.charge}%","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"spacer","size":8,"show":{"minWidth":230}},{"type":"text","text":"{health.charge.label}","size":12,"color":"#99FFFFFF","maxLines":1,"show":{"minWidth":230}}]}]},
+             {"type":"column","show":{"ifEmpty":"{time.morning}"},"children":[
+              {"type":"row","verticalAlign":"center","children":[
+               {"type":"icon","name":"steps","size":18,"color":"#FF4CD137","levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]},
+               {"type":"text","text":" {health.stepsLeft.text}","size":16,"color":"#FFFFFFFF","weight":"bold","maxLines":1,"grow":true}]},
+              {"type":"progress","value":"{health.stepsPct}","color":"#FF4CD137","trackColor":"#26FFFFFF","height":5,"show":{"minHeight":100},"levelOf":"{health.stepsPct}","levels":[{"from":0,"color":"#FFFFB74D"},{"from":50,"color":"#FFFFE066"},{"from":100,"color":"#FF4CD137"}]},
+              {"type":"spacer","size":10,"show":{"minHeight":120}},
+              {"type":"text","text":"Tomorrow","size":11,"color":"#99FFFFFF","show":{"minHeight":120,"ifSet":"{calendar.tomorrow}"}},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":120,"ifSet":"{calendar.tomorrow}"},"children":[
+               {"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},
+               {"type":"text","text":" {calendar.tomorrow}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},
+               {"type":"spacer","size":8},{"type":"text","text":"{calendar.tomorrow.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},
+              {"type":"row","verticalAlign":"center","show":{"minHeight":160},"children":[
+               {"type":"icon","name":"weather","size":14,"color":"#FFFFD27A"},
+               {"type":"text","text":" {weather.temp} · {weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1}]}]},{"type":"column","show":{"minHeight":260},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.2}"},"children":[{"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},{"type":"text","text":" {calendar.2}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{calendar.2.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8},${hourPills()}]}]}}""",
         ),
         Triple(
             "Smart stack", "One widget that shows what matters now: your next event when it starts within the hour, what's playing, or else the weather.",

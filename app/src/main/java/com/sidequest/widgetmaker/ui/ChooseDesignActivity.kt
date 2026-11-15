@@ -227,7 +227,7 @@ class ChooseDesignActivity : ComponentActivity() {
                                 }, { Text("App default (${store.theme.label})") })
                                 // Ambient (album art) only for widgets that show music.
                                 val music = picked?.design?.let(WidgetTheme::playsMusic) == true
-                                (if (music) WidgetTheme.entries else WidgetTheme.everywhere).forEach { t ->
+                                (if (music) WidgetTheme.forMusic else WidgetTheme.everywhere).forEach { t ->
                                     FilterChip(own == t, {
                                         own = t
                                         store.setThemeFor(appWidgetId, t)

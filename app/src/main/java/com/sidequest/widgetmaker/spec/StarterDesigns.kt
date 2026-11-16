@@ -177,7 +177,7 @@ internal object StarterDesigns {
               {"type":"text","text":"{countdown.3.text}","size":11,"color":"$LSUB","align":"center","maxLines":1,"show":{"ifSet":"{countdown.3}"}}]}]}"""),
         ),
         Triple(
-            "Daily briefing", "Changes with the day: your greeting over tiles for the weather, what's next (in the pop color) and your steps; your drive's time, effort and Charge when tall.",
+            "Daily briefing", "Weather, what's next and your steps, in tiles.",
             card("Daily briefing", 14, """
             {"type":"column","tap":"weather","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -242,7 +242,7 @@ internal object StarterDesigns {
                 {"type":"text","text":"{health.charge.label}","size":11,"color":"$SUB","maxLines":1,"show":{"minWidth":250}}]}]}]}]}"""),
         ),
         Triple(
-            "Briefing list", "The briefing as a list: your greeting, the weather big, then your first event, the commute and Charge, a line each; steps left and tomorrow later on.",
+            "Briefing list", "Your day as a list: weather, what's next, steps.",
             """{"name":"Briefing list","background":"#F2172030","cornerRadius":28,"padding":16,"root":
             {"type":"column","verticalAlign":"center","tap":"weather","children":[
              {"type":"text","text":"{greeting}","size":13,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100}},
@@ -281,7 +281,7 @@ internal object StarterDesigns {
                {"type":"text","text":" {weather.temp} · {weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1}]}]},{"type":"column","show":{"minHeight":260},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.2}"},"children":[{"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},{"type":"text","text":" {calendar.2}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{calendar.2.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8},${hourPills()}]}]}}""",
         ),
         Triple(
-            "Smart stack", "One widget that shows what matters now: your next event when it starts within the hour, what's playing, or else the weather.",
+            "Smart stack", "Your next meeting, music or the weather.",
             card("Smart stack", 16, """
             {"type":"column","verticalAlign":"center","tap":"weather","children":[
              {"type":"column","show":{"ifSet":"{calendar.soon}"},"tap":"{calendar.1.link}","children":[

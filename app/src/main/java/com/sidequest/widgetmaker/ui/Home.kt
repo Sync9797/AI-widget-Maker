@@ -2,6 +2,7 @@ package com.sidequest.widgetmaker.ui
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.nativeCanvas
@@ -683,7 +684,7 @@ private fun <T> PreviewRow(
                         }
                     }
                 }
-                Text(about(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                Text(about(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         if (row.size == 1) Spacer(Modifier.weight(1f))

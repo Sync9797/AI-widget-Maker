@@ -146,4 +146,36 @@ class GameBridgeTest {
         val quests = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Side Quest quests" }.design
         assertEquals("mq-open:quests", Taps.forWidget(quests))
     }
+
+    @Test
+    fun eachSectionOfTheBriefingOpensItsOwnApp() {
+        // In the briefing, the weather tile opens the weather, the Next tile the calendar, the drive tile
+        // the maps, and the Effort and Charge lines the health app: not all of it the weather.
+        val briefing = Starters.all.first { it.title == "Daily briefing" }.design
+        val opens = mutableSetOf<String>()
+        fun visit(node: com.sidequest.widgetmaker.spec.Node, top: Boolean) {
+            if (!top) Taps.forSection(node)?.let(opens::add)
+            when (node) {
+                is com.sidequest.widgetmaker.spec.ColumnNode -> node.children.forEach { visit(it, false) }
+                is com.sidequest.widgetmaker.spec.RowNode -> node.children.forEach { visit(it, false) }
+                else -> Unit
+            }
+        }
+        visit(briefing.root, true)
+        listOf("weather", "calendar", "commute", "health").forEach { assertEquals(it, true, it in opens) }
+    }
+
+    @Test
+    fun aSectionOpensWhatItShows() {
+        val tile = DesignParser.parse("""{"name":"t","root":{"type":"column","children":[
+            {"type":"column","background":"#FF000000","children":[{"type":"icon","name":"weather"},{"type":"text","text":"{weather.temp}"},{"type":"text","text":"{greeting}"}]},
+            {"type":"row","children":[{"type":"text","text":"Charge {health.charge}"}]},
+            {"type":"row","children":[{"type":"text","text":"{weather.temp}"},{"type":"text","text":"{health.steps}"}]}
+        ]}}""").root as com.sidequest.widgetmaker.spec.ColumnNode
+        assertEquals("weather", Taps.forSection(tile.children[0]))
+        assertEquals("health", Taps.forSection(tile.children[1]))
+        // A plain row of two kinds is not one section: each part keeps its own tap (or the widget's).
+        assertNull(Taps.forSection(tile.children[2]))
+        assertNull(Taps.forSection(TextNode("{weather.temp}")))
+    }
 }

@@ -120,7 +120,7 @@ class AiWidget : GlanceAppWidget() {
                 // It goes through the tap screen, which also learns where the widget is (for the One UI blur).
                 val whole = Taps.forWidget(saved.design)?.let { Taps.resolve(it, tokens) }
                 val open = TapIntents.root(context, appWidgetId, whole)
-                DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open, inputs.art)
+                DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open, inputs.art, inputs.tappedOnce)
             }
         }
     }
@@ -349,6 +349,8 @@ private class Inputs(
     val shape: WidgetShape?,
     val onScreen: Backdrop.Box?,
     val art: android.graphics.Bitmap?,
+    /** Whether the widget's panel was ever tapped (whether or not the home screen said where it is). */
+    val tappedOnce: Boolean,
 ) {
     companion object {
         fun load(context: Context, appWidgetId: Int): Inputs {
@@ -368,6 +370,7 @@ private class Inputs(
                 look = store.look,
                 shape = store.shapeFor(appWidgetId),
                 onScreen = store.boundsFor(appWidgetId, OneUiBackdrop.screenKey(context)),
+                tappedOnce = store.lastTap(appWidgetId) != null,
                 art = saved?.design?.let { if (usesArt(it.root)) com.sidequest.widgetmaker.music.Music.art(context) else null },
             )
         }
@@ -417,6 +420,7 @@ private fun DesignWidget(
     onScreen: Backdrop.Box?,
     open: android.content.Intent,
     albumArt: android.graphics.Bitmap? = null,
+    tappedOnce: Boolean = true,
 ) {
     val context = androidx.glance.LocalContext.current
     // The widget's size right now: its panel, and the elements with size rules, follow it.
@@ -432,10 +436,14 @@ private fun DesignWidget(
     val art = PanelArt.build(context, theme, panel, look, onScreen, mood, tokens.feeds)
     // On a bigger screen (an open foldable) the content can grow with the widget.
     val k = Shapes.scale(panel, look)
-    // Until a blurred widget knows where it sits, its parts don't take taps of their own: any tap then
+    // Until a blurred widget's panel is first tapped, its parts don't take taps of their own: that tap
     // lands on the panel, which is the only tap that says where the widget is. (A pill that is all text
-    // otherwise never learns it.) Once it knows, the parts' own taps come back.
-    val paint = Paint(art.styler, albumArt, k, partTaps = !(theme.showsWallpaper && onScreen == null), weatherIcons = look.weatherIcons)
+    // otherwise never learns it.) After it, the parts' own taps come back, even when the home screen
+    // didn't say where the widget is, so a section never keeps opening the widget's app.
+    val paint = Paint(
+        art.styler, albumArt, k, partTaps = !(theme.showsWallpaper && onScreen == null && !tappedOnce), weatherIcons = look.weatherIcons,
+        whole = Taps.forWidget(design),
+    )
     Box(GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Box(GlanceModifier.size(panel.width.dp, panel.height.dp)) {
             // The panel: its shape and fill (tinted with live Material colors where they apply), then its edge.
@@ -475,8 +483,8 @@ private fun DesignWidget(
                     design.root, (panel.width - 2 * panel.padH).toFloat(), (panel.height - panel.padTop - panel.padV).toFloat(), k, tokens,
                     measure = phoneText, fontScale = phoneText.fontScale, shows = fit::shows,
                 )
-                val fittedPaint = if (fitted.k == k) paint else Paint(art.styler, albumArt, fitted.k, partTaps = paint.partTaps, weatherIcons = look.weatherIcons)
-                if (fit.shows(fitted.root)) GlanceNode(fitted.root, tokens, fittedPaint, fit, GlanceModifier.fillMaxSize())
+                val fittedPaint = if (fitted.k == k) paint else Paint(art.styler, albumArt, fitted.k, partTaps = paint.partTaps, weatherIcons = look.weatherIcons, whole = paint.whole)
+                if (fit.shows(fitted.root)) GlanceNode(fitted.root, tokens, fittedPaint, fit, GlanceModifier.fillMaxSize(), root = true)
             }
         }
     }
@@ -494,10 +502,12 @@ private class Paint(
     val k: Float = 1f,
     val partTaps: Boolean = true,
     val weatherIcons: com.sidequest.widgetmaker.spec.WeatherIcons = com.sidequest.widgetmaker.spec.WeatherIcons.classic,
+    /** What tapping the widget as a whole opens: a section that would open the same lets the tap through to the panel. */
+    val whole: String? = null,
 ) {
     /** Drawing inside a tile of [tone]: text there reads on the tile. */
     fun inside(tone: com.sidequest.widgetmaker.spec.Tone?) =
-        if (tone == null) this else Paint(styler.inside(tone), albumArt, k, partTaps, weatherIcons)
+        if (tone == null) this else Paint(styler.inside(tone), albumArt, k, partTaps, weatherIcons, whole)
 
     operator fun invoke(role: Role, design: String?): ColorProvider {
         // Colors that mean something (a red Charge) stay as they are in every theme.
@@ -514,15 +524,20 @@ private class Paint(
 }
 
 @Composable
-private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base: GlanceModifier = GlanceModifier) {
+private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base: GlanceModifier = GlanceModifier, root: Boolean = false) {
     // A month is drawn as the rows and columns of text it lays out to (the preview draws the same).
     if (node is com.sidequest.widgetmaker.spec.MonthNode) {
         GlanceNode(com.sidequest.widgetmaker.spec.MonthGrid.expand(node, tokens.now.toLocalDate(), tokens.feeds, tokens.locale), tokens, paint, fit, base)
         return
     }
-    // Its own tap, if it has one: a headline's article, a calendar entry, the clock app...
+    // Its own tap, if it has one: a headline's article, a calendar entry, the clock app... or, for a
+    // section (a weather tile, a steps line), the app for what it shows. The top is the panel's tap.
     val context = androidx.glance.LocalContext.current
-    val tap = if (paint.partTaps) Taps.forNode(node)?.let { Taps.resolve(it, tokens) } else null
+    val raw = when {
+        !paint.partTaps || root -> null
+        else -> Taps.forNode(node) ?: Taps.forSection(node)?.takeIf { it != paint.whole }
+    }
+    val tap = raw?.let { Taps.resolve(it, tokens) }
     val modifier = tap?.let {
         // Music buttons act at once, without opening anything.
         if (it is TapAction.Media) base.clickable(actionSendBroadcast(MusicControlReceiver.intent(context, it.command)))
@@ -561,7 +576,8 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             verticalAlignment = vertical(node.verticalAlign),
         ) {
             node.children.filter(fit::shows).forEach { child ->
-                GlanceNode(child, tokens, paint.inside(node.tone), fit, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
+                val tall = if (node.stretch) GlanceModifier.fillMaxHeight() else GlanceModifier
+                GlanceNode(child, tokens, paint.inside(node.tone), fit, if (child.grow) GlanceModifier.defaultWeight().then(tall) else tall)
             }
         }
         is TextNode -> {

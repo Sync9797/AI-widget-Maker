@@ -159,7 +159,7 @@ internal object StarterDesigns {
     val SOURCES = listOf(
         // Everyday
         Triple(
-            "Countdown", "Days until something you're looking forward to, big on a flower, its date in the pop color; the next ones when it's big. Add countdowns in Settings.",
+            "Countdown", "Counts the days to what's coming up.",
             hero("Countdown", "flower", 14, """
             {"type":"column","align":"center","verticalAlign":"center","children":[
              {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
@@ -177,7 +177,7 @@ internal object StarterDesigns {
               {"type":"text","text":"{countdown.3.text}","size":11,"color":"$LSUB","align":"center","maxLines":1,"show":{"ifSet":"{countdown.3}"}}]}]}"""),
         ),
         Triple(
-            "Daily briefing", "Changes with the day: your greeting over tiles for the weather, what's next (in the pop color) and your steps; your drive's time, effort and Charge when tall.",
+            "Daily briefing", "Weather, what's next and steps in tiles.",
             card("Daily briefing", 14, """
             {"type":"column","tap":"weather","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -190,7 +190,7 @@ internal object StarterDesigns {
                {"type":"text","text":"{greeting}","size":18,"color":"$INK","weight":"light","maxLines":1,"grow":true},
                {"type":"clock","format":"EEE d","size":11,"color":"$LIGHT","weight":"bold","tone":"strong","show":{"minWidth":250}}]},
               {"type":"spacer","size":8},
-              {"type":"row","grow":true,"verticalAlign":"top","children":[
+              {"type":"row","grow":true,"verticalAlign":"top","stretch":true,"children":[
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"children":[
                 {"type":"icon","name":"weather","size":26,"color":"$POP"},
                 {"type":"spacer","grow":true},
@@ -198,7 +198,7 @@ internal object StarterDesigns {
                 {"type":"text","text":"{weather.outlook}","size":10,"color":"$SUB","maxLines":2,"show":{"minHeight":160}}]},
                {"type":"spacer","size":6},
                {"type":"column","grow":true,"children":[
-               {"type":"column","background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
+               {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
                 {"type":"column","show":{"ifSet":"{time.morning}"},"children":[
                  {"type":"text","text":"Next","size":10,"color":"$INK","weight":"bold","maxLines":1},
                  {"type":"text","text":"{calendar.1.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.1}"}},
@@ -242,7 +242,7 @@ internal object StarterDesigns {
                 {"type":"text","text":"{health.charge.label}","size":11,"color":"$SUB","maxLines":1,"show":{"minWidth":250}}]}]}]}]}"""),
         ),
         Triple(
-            "Briefing list", "The briefing as a list: your greeting, the weather big, then your first event, the commute and Charge, a line each; steps left and tomorrow later on.",
+            "Briefing list", "Your day as a list: weather and plans.",
             """{"name":"Briefing list","background":"#F2172030","cornerRadius":28,"padding":16,"root":
             {"type":"column","verticalAlign":"center","tap":"weather","children":[
              {"type":"text","text":"{greeting}","size":13,"color":"#B3FFFFFF","maxLines":1,"show":{"minHeight":100}},
@@ -281,7 +281,7 @@ internal object StarterDesigns {
                {"type":"text","text":" {weather.temp} · {weather.outlook}","size":12,"color":"#CCFFFFFF","maxLines":1}]}]},{"type":"column","show":{"minHeight":260},"children":[{"type":"spacer","size":10},{"type":"divider","color":"#26FFFFFF"},{"type":"spacer","size":8},{"type":"row","verticalAlign":"center","show":{"ifSet":"{calendar.2}"},"children":[{"type":"icon","name":"calendar","size":14,"color":"#FF8AB4FF"},{"type":"text","text":" {calendar.2}","size":13,"color":"#FFFFFFFF","maxLines":1,"grow":true},{"type":"spacer","size":8},{"type":"text","text":"{calendar.2.when}","size":12,"color":"#99FFFFFF","maxLines":1}]},{"type":"spacer","size":8},${hourPills()}]}]}}""",
         ),
         Triple(
-            "Smart stack", "One widget that shows what matters now: your next event when it starts within the hour, what's playing, or else the weather.",
+            "Smart stack", "Your next meeting, music or the weather.",
             card("Smart stack", 16, """
             {"type":"column","verticalAlign":"center","tap":"weather","children":[
              {"type":"column","show":{"ifSet":"{calendar.soon}"},"tap":"{calendar.1.link}","children":[
@@ -315,7 +315,7 @@ internal object StarterDesigns {
                {"type":"icon","name":"next","size":22,"color":"$INK","tap":"music:next"}]}]}]}"""),
         ),
         Triple(
-            "Claude", "A shortcut that opens the Claude app: its icon in one color (light by day, dark by night) on a flower. 1×1 works too.",
+            "Claude", "Opens the Claude app. Works at 1×1 too.",
             hero("Claude", "flower", 12, """
             {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.anthropic.claude","children":[
              {"type":"appicon","packageName":"com.anthropic.claude","size":40,"mono":true,"show":{"maxHeight":129}},
@@ -326,7 +326,7 @@ internal object StarterDesigns {
               {"type":"text","text":"New chat","size":12,"color":"$LSUB","align":"center","maxLines":1,"show":{"minHeight":200}}]}]}"""),
         ),
         Triple(
-            "Gemini", "A shortcut that opens the Gemini app: its icon in one color (light by day, dark by night) on a cookie. 1×1 works too.",
+            "Gemini", "Opens the Gemini app. Works at 1×1 too.",
             hero("Gemini", "cookie", 12, """
             {"type":"column","align":"center","verticalAlign":"center","tap":"app:com.google.android.apps.bard","children":[
              {"type":"appicon","packageName":"com.google.android.apps.bard","size":40,"mono":true,"show":{"maxHeight":129}},
@@ -339,7 +339,7 @@ internal object StarterDesigns {
 
         // Clock & date
         Triple(
-            "Stacked clock", "The hour over the minutes in big numbers on a cookie, with the day in the pop color; the weather under it when tall.",
+            "Stacked clock", "The hour over the minutes, big.",
             hero("Stacked clock", "cookie", 14, """
             {"type":"column","align":"center","verticalAlign":"center","tap":"clock","children":[
              {"type":"clock","format":"h:mm","size":18,"color":"$LIGHT","weight":"bold","show":{"maxHeight":129}},
@@ -352,7 +352,7 @@ internal object StarterDesigns {
               {"type":"text","text":" {weather.temp}","size":13,"color":"$LIGHT","weight":"bold","maxLines":1}]}]}"""),
         ),
         Triple(
-            "Big clock", "An analog clock with the date in a chip; the time in big numbers beside it when wide, and the weather and what's next in tiles when tall.",
+            "Big clock", "An analog clock with the date beside it.",
             card("Big clock", 14, """
             {"type":"column","tap":"clock","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -384,7 +384,7 @@ internal object StarterDesigns {
 
         // Weather
         Triple(
-            "Weather gauge", "Now on a gauge from today's low to its high, with the weather's animated icon, the sky in words and the chance of rain; the next hours in pills when tall.",
+            "Weather gauge", "Now on a gauge from today's low to high.",
             card("Weather gauge", 16, """
             {"type":"column","tap":"weather","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -407,7 +407,7 @@ internal object StarterDesigns {
               {"type":"column","show":{"minHeight":250},"children":[{"type":"spacer","size":10},${hourPills()}]}]}]}"""),
         ),
         Triple(
-            "Clock and weather", "The weather big beside its icon, the time, and the next hours as pill tiles (the soonest in the pop color); the next days in tiles when tall.",
+            "Clock and weather", "The weather, the time and next hours.",
             card("Clock and weather", 16, """
             {"type":"column","tap":"weather","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -429,7 +429,7 @@ internal object StarterDesigns {
               ${gapped((1..3).map(::dayTile))}]}]}"""),
         ),
         Triple(
-            "Weather forecast", "Like One UI's weather: now, rain or snow on the way (else today's high, low and feels-like) and your town at 2x2; the next hours when wider; the next 3 days when taller.",
+            "Weather forecast", "Now, rain on the way and the days ahead.",
             card("Weather forecast", 16, """
             {"type":"column","children":[
              {"type":"row","grow":true,"children":[
@@ -469,7 +469,7 @@ internal object StarterDesigns {
 
         // Calendar
         Triple(
-            "Upcoming events", "What's next: today's date big beside your events as tiles, the first in the pop color, with a + to add one. More events the taller it is.",
+            "Upcoming events", "Today's date beside your next events.",
             card("Upcoming events", 14, """
             {"type":"column","tap":"calendar","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -498,7 +498,7 @@ internal object StarterDesigns {
                ${eventTiles(1, 5)}]}]}]}"""),
         ),
         Triple(
-            "Today's date", "The date: the day in a pop tile beside the weekday and month when slim, big in the middle when square, and what's coming up in tiles when tall.",
+            "Today's date", "The date, and what's coming up when tall.",
             card("Today's date", 14, """
             {"type":"column","tap":"calendar","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -523,7 +523,7 @@ internal object StarterDesigns {
               ${eventTiles(1, 3, tallFrom = 3, tallAt = 290)}]}]}"""),
         ),
         Triple(
-            "Month and agenda", "Wide: this month beside what's next in tiles, with a + to add an event. Tall: the month. 2×2: today's date big. Slim: the date and your next event.",
+            "Month and agenda", "This month beside your next events.",
             card("Month and agenda", 14, """
             {"type":"column","tap":"calendar","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -551,7 +551,7 @@ internal object StarterDesigns {
                ${eventTiles(1, 5, tallFrom = 3, tallAt = 230)}]}]}]}"""),
         ),
         Triple(
-            "Month", "This month, today in the pop color and days with events marked. Two months when wide; week numbers when big.",
+            "Month", "This month, with event days marked.",
             card("Month", 12, """
             {"type":"column","tap":"calendar","children":[
              {"type":"month","grow":true,"size":11,"color":"$INK","accent":"$POP","show":{"minHeight":130,"maxWidth":299}},
@@ -566,7 +566,7 @@ internal object StarterDesigns {
 
         // Health & fitness
         Triple(
-            "Steps", "Today's steps big inside a ring to your goal, on a cookie; what's left when tall. Pick the Pill shape for a slim oval.",
+            "Steps", "Today's steps in a ring to your goal.",
             hero("Steps", "cookie", 14, """
             {"type":"column","align":"center","verticalAlign":"center","tap":"health","children":[
              {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
@@ -578,7 +578,7 @@ internal object StarterDesigns {
              {"type":"text","text":"{health.stepsLeft.text}","size":12,"color":"$LIGHT","weight":"bold","align":"center","maxLines":1,"show":{"minHeight":250}}]}"""),
         ),
         Triple(
-            "Activity", "Today in tiles: steps, kcal, heart rate and effort, your last workout in a pop chip when wide, and last night's sleep when tall.",
+            "Activity", "Steps, kcal, heart rate and effort.",
             card("Activity", 14, """
             {"type":"column","tap":"health","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -610,7 +610,7 @@ internal object StarterDesigns {
                {"type":"sleep","height":12}]}]}]}"""),
         ),
         Triple(
-            "Sleep", "Last night's sleep big, its stages as a bar, and your week as capsules when wide. From NOOP, Samsung Health and others.",
+            "Sleep", "Last night's sleep and its stages.",
             card("Sleep", 16, """
             {"type":"column","tap":"health","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -638,7 +638,7 @@ internal object StarterDesigns {
               ${statTile("{health.sleep.avg}", "week average")}]}]}"""),
         ),
         Triple(
-            "Heart rate", "Your heart rate now, big, with today's low and high in a pop chip and the day as a line chart. From NOOP, Samsung Health and others via Health Connect.",
+            "Heart rate", "Your heart rate now and through the day.",
             card("Heart rate", 16, """
             {"type":"column","tap":"health","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -660,7 +660,7 @@ internal object StarterDesigns {
               ${statTile("{health.hrv}", "HRV")}]}]}"""),
         ),
         Triple(
-            "NOOP recovery", "Charge (estimated from HRV and resting heart rate) on a gauge, effort beside it; HRV, sleep, SpO2 and more in tiles as it grows. Turn on Health Connect in NOOP.",
+            "NOOP recovery", "Charge on a gauge, with effort and HRV.",
             card("NOOP recovery", 16, """
             {"type":"column","tap":"health","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -692,7 +692,7 @@ internal object StarterDesigns {
               ${statTile("{health.sleep.bed}–{health.sleep.wake}", "in bed")}]}]}"""),
         ),
         Triple(
-            "NOOP rings", "Charge, Effort and Rest as rings in tiles, like NOOP's: NOOP's own scores straight from not-NOOP; with NOOP via Health Connect, estimates (Rest is last night's sleep against 8 hours).",
+            "NOOP rings", "Charge, Effort and Rest as rings.",
             card("NOOP rings", 12, """
             {"type":"column","tap":"health","children":[
              {"type":"row","grow":true,"children":[
@@ -707,7 +707,7 @@ internal object StarterDesigns {
              {"type":"text","text":"Slept {health.sleep} · {health.charge.label}","size":12,"color":"$INK","weight":"bold","align":"center","maxLines":1,"show":{"minHeight":200}}]}"""),
         ),
         Triple(
-            "Stress", "Today's stress from not-NOOP on NOOP's 0-3 scale, big, with the day's curve, peak and average in tiles when there's room.",
+            "Stress", "Today's stress, with the day's curve.",
             card("Stress", 16, """
             {"type":"column","tap":"health","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -729,7 +729,7 @@ internal object StarterDesigns {
               ${statTile("{noop.stress.avg}", "average")}]}]}"""),
         ),
         Triple(
-            "Coach brief", "not-NOOP's daily Coach brief, point by point in tiles; scroll it to read it all. Turn the brief on in not-NOOP.",
+            "Coach brief", "not-NOOP's daily Coach brief to read.",
             card("Coach brief", 14, """
             {"type":"column","tap":"health","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -744,7 +744,7 @@ internal object StarterDesigns {
 
         // Music
         Triple(
-            "Now playing", "The album art round beside the song and artist, a progress pill and the play button in the pop color; big art when tall. Allow music access in Settings.",
+            "Now playing", "What's playing, with art and controls.",
             card("Now playing", 14, """
             {"type":"column","tap":"music","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -780,7 +780,7 @@ internal object StarterDesigns {
                {"type":"row","background":"$TILE","cornerRadius":20,"padding":8,"tap":"music:next","children":[{"type":"icon","name":"next","size":20,"color":"$INK"}]}]}]}]}"""),
         ),
         Triple(
-            "Music mini", "What's playing with the album art round and play/pause in the pop color (and next when wider); the artist and a progress pill when bigger. Pick the Pill shape for a slim oval.",
+            "Music mini", "A small player. Try the Pill shape.",
             card("Music mini", 12, """
             {"type":"column","verticalAlign":"center","tap":"music","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -807,7 +807,7 @@ internal object StarterDesigns {
 
         // Money, news & travel
         Triple(
-            "Crypto ticker", "Bitcoin's price big with its change in a pop chip; more coins in tiles as it grows taller. Set your coins in Settings.",
+            "Crypto ticker", "Bitcoin's price and its change today.",
             card("Crypto ticker", 16, """
             {"type":"column","tap":"crypto","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -822,7 +822,7 @@ internal object StarterDesigns {
               ${gapped(listOf(coin("ETH", 0), coin("SOL", 230), coin("XRP", 280)))}]}]}"""),
         ),
         Triple(
-            "Commute", "How long the drive takes with traffic, big beside a car tile, the delay in a pop chip; your next event and the weather when bigger. Set up Traffic in Settings.",
+            "Commute", "Your drive time with traffic and delay.",
             card("Commute", 14, """
             {"type":"column","tap":"commute","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -845,7 +845,7 @@ internal object StarterDesigns {
               ${hourPills()}]}]}"""),
         ),
         Triple(
-            "Local news", "Top headlines for your town: the first in a strong tile, more in tiles the taller it is.",
+            "Local news", "Top headlines for your town.",
             card("Local news", 14, """
             {"type":"column","tap":"news","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -864,7 +864,7 @@ internal object StarterDesigns {
              {"type":"column","show":{"minHeight":300},"children":[{"type":"spacer","size":6},${headline(4, 0)}]}]}"""),
         ),
         Triple(
-            "Nearby events", "What's on near you as tiles, when in a strong chip: concerts, games, shows. Set up Events in Settings.",
+            "Nearby events", "Concerts, games and shows near you.",
             card("Nearby events", 14, """
             {"type":"column","tap":"events","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -880,7 +880,7 @@ internal object StarterDesigns {
               ${gapped(listOf(event(2, 0), event(3, 230), event(4, 290)))}]}]}"""),
         ),
         Triple(
-            "Nearby traffic", "A map of live traffic around home (TomTom) with your commute in a pill under it, its delay in the pop color. Needs a TomTom key and your home in Data sources.",
+            "Nearby traffic", "A live traffic map around your home.",
             card("Nearby traffic", 6, """
             {"type":"column","tap":"commute","children":[
              {"type":"map","grow":true,"cornerRadius":22},
@@ -895,7 +895,7 @@ internal object StarterDesigns {
 
         // Battery
         Triple(
-            "Device batteries", "Your phone, your WHOOP strap (with not-NOOP) and connected Bluetooth devices as left-to-right pills that stay the same size, empty ones keeping the rows even. Hide any in the widget's settings. Needs Device batteries in Data sources.",
+            "Device batteries", "Your phone, strap and Bluetooth devices.",
             card("Device batteries", 14, """
             {"type":"column","verticalAlign":"center","tap":"battery","children":[
              {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
@@ -914,7 +914,7 @@ internal object StarterDesigns {
               ${deviceBar(6, "\"minHeight\":300,")}]}]}"""),
         ),
         Triple(
-            "Battery", "Your battery big over a pill that fills with it, charging in a pop chip; time left, memory and storage in tiles when bigger.",
+            "Battery", "Your battery big, and time left when tall.",
             card("Battery", 16, """
             {"type":"column","verticalAlign":"center","tap":"battery","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -941,7 +941,7 @@ internal object StarterDesigns {
               {"type":"text","text":"Drain {battery.drain}","size":11,"color":"$SUB","maxLines":1,"show":{"minHeight":330}}]}]}"""),
         ),
         Triple(
-            "Battery fill", "The whole widget fills with your charge, like glass filling up, the number big on top; orange then red when low. Bigger shows battery life, memory and storage. Pick the Pill or Circle shape for fun.",
+            "Battery fill", "The widget fills up with your charge.",
             """{"name":"Battery fill","background":"$TILE","cornerRadius":28,"padding":16,
             "fill":{"value":"{battery}","color":"$STRONG","levels":[{"from":0,"color":"#FFFF5C5C"},{"from":16,"color":"#FFFFB74D"}],"levelsUpTo":30},"root":
             {"type":"column","verticalAlign":"center","tap":"battery","children":[
@@ -957,7 +957,7 @@ internal object StarterDesigns {
               {"type":"text","text":"Drain {battery.drain} · {battery.temp}","size":11,"color":"$SUB","maxLines":1,"show":{"minHeight":260}}]}]}}""",
         ),
         Triple(
-            "Device batteries (circles)", "Your devices' batteries as rings in tiles, like One UI's: phone, WHOOP strap (with not-NOOP), earbuds, watches. Needs Device batteries in Data sources.",
+            "Device batteries (circles)", "Your devices' batteries as rings.",
             card("Device batteries (circles)", 12, """
             {"type":"column","verticalAlign":"center","tap":"battery","children":[
              {"type":"row","verticalAlign":"top","grow":true,"children":[
@@ -972,7 +972,7 @@ internal object StarterDesigns {
 
         // Side Quest
         Triple(
-            "Side Quest day", "Today's torches big on a strong card with pills for each, your hero and steps; your quests in tiles when tall.",
+            "Side Quest day", "Today's torches, your hero and steps.",
             """{"name":"Side Quest day","background":"$STRONG","cornerRadius":28,"padding":16,"root":
             {"type":"column","children":[
              {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
@@ -994,7 +994,7 @@ internal object StarterDesigns {
               ${gapped(listOf(quest(1, 0), quest(2, 0), quest(3, 330)))}]}]}}""",
         ),
         Triple(
-            "Side Quest eggs", "Your next egg as a ring that fills on the way to hatching, with a Hatch chip when it's ready; more eggs in tiles the taller it is.",
+            "Side Quest eggs", "Your next egg as it gets ready to hatch.",
             card("Side Quest eggs", 14, """
             {"type":"column","children":[
              {"type":"row","verticalAlign":"center","show":{"maxHeight":129},"children":[
@@ -1016,7 +1016,7 @@ internal object StarterDesigns {
              {"type":"text","text":"{mq.eggs.ready}","size":11,"color":"$SUB","align":"center","maxLines":1,"show":{"minHeight":200,"ifSet":"{mq.eggs.ready}"}}]}"""),
         ),
         Triple(
-            "Side Quest adventures", "Monsters out on adventures in tiles: where, who, a pill until they're back and a Claim chip when they are.",
+            "Side Quest adventures", "Monsters out on trips and when back.",
             card("Side Quest adventures", 14, """
             {"type":"column","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -1027,7 +1027,7 @@ internal object StarterDesigns {
              {"type":"column","show":{"minHeight":340},"children":[{"type":"spacer","size":6},${quest(1, 0)}]}]}"""),
         ),
         Triple(
-            "Side Quest quests", "Your next quests in tiles, each with a check button in the pop color: tap it to complete the quest in the game.",
+            "Side Quest quests", "Your next quests. Tap one to finish it.",
             card("Side Quest quests", 14, """
             {"type":"column","children":[
              {"type":"row","verticalAlign":"center","show":{"minHeight":130},"children":[
@@ -1038,7 +1038,7 @@ internal object StarterDesigns {
              {"type":"text","text":"All done for now","size":13,"color":"$SUB","show":{"ifEmpty":"{mq.quest.1}"}}]}"""),
         ),
         Triple(
-            "Side Quest progress", "Steps to your next torch big over its pill, the weekly bounty in pills, and a phone-free session's time left.",
+            "Side Quest progress", "Steps to your next torch and the bounty.",
             card("Side Quest progress", 14, """
             {"type":"column","children":[
              {"type":"row","verticalAlign":"center","children":[
@@ -1061,7 +1061,7 @@ internal object StarterDesigns {
                {"type":"progress","value":"{mq.focus.pct}","color":"$STRONG","trackColor":"$SOFT","height":8,"tone":"strong"}]}]}]}"""),
         ),
         Triple(
-            "Side Quest party", "Your party's monsters in tiles: their level in a chip and their health as a pill.",
+            "Side Quest party", "Your party's levels and health.",
             card("Side Quest party", 14, """
             {"type":"column","children":[
              {"type":"row","children":[${gapped(listOf(member(1, 0), member(2, 0), "{\"type\":\"column\",\"grow\":true,\"show\":{\"minWidth\":250},\"children\":[${member(3, 0)}]}"))}]},

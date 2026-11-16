@@ -90,6 +90,33 @@ object Taps {
     fun mainKind(design: WidgetDesign): TapKind? {
         // A design that says what it opens (like a big clock with the weather under it) is that kind.
         design.root.tap?.let { tap -> TapKind.entries.firstOrNull { it.name == tap } }?.let { return it }
+        return mostOf(kindsIn(design.root))
+    }
+
+    /**
+     * The tap for a section of a bigger widget (a row or column below the top): a tile opens the app
+     * for what it mostly shows, and a plain row or column that shows one kind of thing opens that.
+     * So in a briefing the weather tile opens the weather and the steps line opens your health app,
+     * rather than the whole widget opening one app. Side Quest parts are left to the widget's tap.
+     */
+    fun forSection(node: Node): String? {
+        node.tap?.let { return it }
+        val tile = when (node) {
+            is ColumnNode -> node.background != null || node.tone != null
+            is RowNode -> node.background != null || node.tone != null
+            else -> return null
+        }
+        val counts = kindsIn(node)
+        val kind = if (tile) mostOf(counts) else counts.keys.singleOrNull()
+        return kind?.takeIf { it != TapKind.game }?.name
+    }
+
+    // Ties go to the more specific kinds (data before the clock).
+    private fun mostOf(counts: Map<TapKind, Int>): TapKind? =
+        counts.entries.maxWithOrNull(compareBy({ it.value }, { -it.key.ordinal }))?.key
+
+    /** How many elements under [root] use each kind of data. */
+    private fun kindsIn(root: Node): Map<TapKind, Int> {
         val counts = mutableMapOf<TapKind, Int>()
         fun add(kind: TapKind?) { if (kind != null) counts[kind] = (counts[kind] ?: 0) + 1 }
         fun visit(node: Node) {
@@ -112,9 +139,8 @@ object Taps {
                 is SpacerNode, is DividerNode -> Unit
             }
         }
-        visit(design.root)
-        // Ties go to the more specific kinds (data before the clock).
-        return counts.entries.maxWithOrNull(compareBy({ it.value }, { -it.key.ordinal }))?.key
+        visit(root)
+        return counts
     }
 
     private fun kindOf(token: String): TapKind? = when (token.substringBefore('.')) {

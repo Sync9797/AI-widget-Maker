@@ -112,6 +112,7 @@ Elements ("type" picks one; leave out any field to use its default):
    bottom, with "text" (like "{devices.1.num}") in a small pill at its top
 - chart can be "style":"ticks": fine bars like a sound meter ({weather.hours.temps} is the next 12 hours' temperatures)
 - text can be a "chip":true: a small pill behind it (dates like "03", times, tags)
+- a row can be "stretch":true (with "grow"): its parts are as tall as the row, so tiles side by side end on one line
 - "tone":"strong" or "tone":"pop" on text, clock, icon, progress, ring, row or column: Expressive emphasis. "strong"
   is the deep tone of the phone's main color (filled tiles, chips, bars), "pop" its second color, for what's
   happening now (the next event, the current hour, a play button). A row or column with a tone is a filled tile

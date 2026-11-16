@@ -147,6 +147,8 @@ data class RowNode(
     val background: String? = null,
     val cornerRadius: Int = 0,
     val padding: Int = 0,
+    /** Its parts are as tall as the row, so tiles side by side end on one line (give the row "grow"). */
+    val stretch: Boolean = false,
     /** Expressive's emphasis: "strong" (the deep tone of the phone's main color) or "pop" (its second color). */
     val tone: Tone? = null,
     override val grow: Boolean = false,

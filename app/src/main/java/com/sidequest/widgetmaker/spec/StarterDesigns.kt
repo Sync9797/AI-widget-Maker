@@ -190,7 +190,7 @@ internal object StarterDesigns {
                {"type":"text","text":"{greeting}","size":18,"color":"$INK","weight":"light","maxLines":1,"grow":true},
                {"type":"clock","format":"EEE d","size":11,"color":"$LIGHT","weight":"bold","tone":"strong","show":{"minWidth":250}}]},
               {"type":"spacer","size":8},
-              {"type":"row","grow":true,"verticalAlign":"top","children":[
+              {"type":"row","grow":true,"verticalAlign":"top","stretch":true,"children":[
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"children":[
                 {"type":"icon","name":"weather","size":26,"color":"$POP"},
                 {"type":"spacer","grow":true},
@@ -198,7 +198,7 @@ internal object StarterDesigns {
                 {"type":"text","text":"{weather.outlook}","size":10,"color":"$SUB","maxLines":2,"show":{"minHeight":160}}]},
                {"type":"spacer","size":6},
                {"type":"column","grow":true,"children":[
-               {"type":"column","background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
+               {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
                 {"type":"column","show":{"ifSet":"{time.morning}"},"children":[
                  {"type":"text","text":"Next","size":10,"color":"$INK","weight":"bold","maxLines":1},
                  {"type":"text","text":"{calendar.1.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.1}"}},

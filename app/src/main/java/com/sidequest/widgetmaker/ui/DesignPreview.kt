@@ -238,7 +238,7 @@ private fun PreviewNode(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fi
                 VAlign.center -> Alignment.CenterVertically
                 VAlign.bottom -> Alignment.Bottom
             },
-        ) { node.children.filter(fit::shows).forEach { RowChild(it, tokens, paint.inside(node.tone), fit) } }
+        ) { node.children.filter(fit::shows).forEach { RowChild(it, tokens, paint.inside(node.tone), fit, node.stretch) } }
         is TextNode -> Text(
             text = tokens.fill(node.text),
             modifier = if (node.highlight) {
@@ -537,8 +537,8 @@ private fun ColumnScope.ColumnChild(node: Node, tokens: Tokens, paint: PreviewPa
     PreviewNode(node, tokens, paint, fit, if (node.grow) Modifier.weight(1f) else Modifier)
 
 @Composable
-private fun RowScope.RowChild(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit) =
-    PreviewNode(node, tokens, paint, fit, if (node.grow) Modifier.weight(1f) else Modifier)
+private fun RowScope.RowChild(node: Node, tokens: Tokens, paint: PreviewPaint, fit: Fit, stretch: Boolean = false) =
+    PreviewNode(node, tokens, paint, fit, (if (node.grow) Modifier.weight(1f) else Modifier).then(if (stretch) Modifier.fillMaxHeight() else Modifier))
 
 private fun container(
     modifier: Modifier, paint: PreviewPaint, background: String?, radius: Int, padding: Int,

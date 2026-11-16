@@ -561,7 +561,8 @@ private fun GlanceNode(node: Node, tokens: Tokens, paint: Paint, fit: Fit, base:
             verticalAlignment = vertical(node.verticalAlign),
         ) {
             node.children.filter(fit::shows).forEach { child ->
-                GlanceNode(child, tokens, paint.inside(node.tone), fit, if (child.grow) GlanceModifier.defaultWeight() else GlanceModifier)
+                val tall = if (node.stretch) GlanceModifier.fillMaxHeight() else GlanceModifier
+                GlanceNode(child, tokens, paint.inside(node.tone), fit, if (child.grow) GlanceModifier.defaultWeight().then(tall) else tall)
             }
         }
         is TextNode -> {

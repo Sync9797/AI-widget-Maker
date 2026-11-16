@@ -31,6 +31,12 @@ class StartersAndChatTest {
     }
 
     @Test
+    fun everyDescriptionFitsItsCard() {
+        // A gallery card shows two lines of about 21 characters on a 360 dp phone.
+        Starters.all.forEach { assertTrue("${it.title}: ${it.about}", it.about.length <= 42) }
+    }
+
+    @Test
     fun everyStarterShowsMoreWhenBigger() {
         Starters.all.forEach { s ->
             val small = count(s.design.root, 160, 80)

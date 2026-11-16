@@ -1,6 +1,8 @@
 package com.sidequest.widgetmaker.ui
 
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -671,7 +673,7 @@ private fun <T> PreviewRow(
                 Spacer(Modifier.size(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isPicked) Icon(Icons.Filled.CheckCircle, contentDescription = "Picked", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp).padding(end = 4.dp))
-                    Text(title(item), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f))
+                    OneLine(title(item), MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), Modifier.weight(1f))
                     if (starred != null && onStar != null) {
                         val on = starred(item)
                         androidx.compose.material3.IconButton(onClick = { onStar(item) }, modifier = Modifier.size(32.dp)) {
@@ -795,4 +797,15 @@ private fun GalleryPreview(title: String, design: com.sidequest.widgetmaker.spec
             }
         }
     }
+}
+
+
+/** One line of text that shrinks until it fits, so a long name is never cut off. */
+@Composable
+private fun OneLine(text: String, style: TextStyle, modifier: Modifier = Modifier) {
+    var scale by remember(text) { mutableFloatStateOf(1f) }
+    Text(
+        text, style = style.copy(fontSize = style.fontSize * scale), maxLines = 1, softWrap = false, modifier = modifier,
+        onTextLayout = { if (it.hasVisualOverflow && scale > 0.6f) scale -= 0.05f },
+    )
 }

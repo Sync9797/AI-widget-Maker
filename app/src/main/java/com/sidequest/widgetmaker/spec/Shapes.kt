@@ -164,11 +164,11 @@ object Shapes {
     const val PILL_RATIO = 0.32
 
     /**
-     * How much of the height a launcher gives a widget of two rows or more One UI's own widgets fill: about three
-     * quarters, centered. Measured beside Samsung's 2×2 and 3×2 widgets on a Galaxy home screen (421 and 425 px
-     * tall in cells of 569 and 570), where every two-row Samsung widget is that height whatever its width.
+     * The room One UI's own widgets leave above and below them, in dp, at two rows or more: the same whatever their
+     * height. Measured beside Samsung's widgets on a Galaxy home screen: a 2×2 and a 3×2 both sit about 33 dp inside
+     * the height a launcher gives a two-row widget, and a 2×3 spans exactly a 2×1 and a 2×2 stacked beside it.
      */
-    const val ONE_UI_HEIGHT = 0.745f
+    const val ONE_UI_MARGIN = 33
 
     // The arch isn't here: it fills its cell's height, since its round top takes room from the content.
     /** Shapes kept to One UI's height (the default rounded panel among them), so they line up with Samsung's widgets. */
@@ -207,10 +207,10 @@ object Shapes {
         var shape = shapeOverride ?: design.shape
         val maxH = look.pillMaxHeight
         if (maxH != null && height <= ONE_ROW_MAX) shape = WidgetShape.pill
-        // A widget of two rows or more is as tall as One UI's own beside it: about three quarters of the height it's
-        // given, centered (never so short that it would pass for one row). Its width is all of its cell's.
+        // A widget of two rows or more is as tall as One UI's own beside it: the height it's given less One UI's
+        // margin above and below, centered (never so short that it would pass for one row). Its width is its cell's.
         if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX) {
-            h = max(min(h, ONE_ROW_MAX + 1), (h * ONE_UI_HEIGHT).roundToInt())
+            h = max(min(h, ONE_ROW_MAX + 1), h - 2 * ONE_UI_MARGIN)
         }
         // A pill is a slim oval, centered in its cell like One UI's: about a third as tall as it is wide,
         // or the height set in Settings → Widget look (which applies to every pill, whatever its cell).

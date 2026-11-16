@@ -177,7 +177,7 @@ internal object StarterDesigns {
               {"type":"text","text":"{countdown.3.text}","size":11,"color":"$LSUB","align":"center","maxLines":1,"show":{"ifSet":"{countdown.3}"}}]}]}"""),
         ),
         Triple(
-            "Daily briefing", "Changes with the day: your greeting over tiles for the weather, what's next (in the pop color) and your steps; commute and Charge when tall.",
+            "Daily briefing", "Changes with the day: your greeting over tiles for the weather, what's next (in the pop color) and your steps; your drive's time, effort and Charge when tall.",
             card("Daily briefing", 14, """
             {"type":"column","tap":"weather","children":[
              {"type":"row","verticalAlign":"center","grow":true,"show":{"maxHeight":129},"children":[
@@ -190,14 +190,15 @@ internal object StarterDesigns {
                {"type":"text","text":"{greeting}","size":18,"color":"$INK","weight":"light","maxLines":1,"grow":true},
                {"type":"clock","format":"EEE d","size":11,"color":"$LIGHT","weight":"bold","tone":"strong","show":{"minWidth":250}}]},
               {"type":"spacer","size":8},
-              {"type":"row","grow":true,"children":[
+              {"type":"row","grow":true,"verticalAlign":"top","children":[
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"children":[
                 {"type":"icon","name":"weather","size":26,"color":"$POP"},
                 {"type":"spacer","grow":true},
                 {"type":"text","text":"{weather.temp}","size":24,"color":"$INK","weight":"light","maxLines":1},
                 {"type":"text","text":"{weather.outlook}","size":10,"color":"$SUB","maxLines":2,"show":{"minHeight":160}}]},
                {"type":"spacer","size":6},
-               {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
+               {"type":"column","grow":true,"children":[
+               {"type":"column","background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
                 {"type":"column","show":{"ifSet":"{time.morning}"},"children":[
                  {"type":"text","text":"Next","size":10,"color":"$INK","weight":"bold","maxLines":1},
                  {"type":"text","text":"{calendar.1.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.1}"}},
@@ -212,6 +213,12 @@ internal object StarterDesigns {
                  {"type":"spacer","size":4},
                  {"type":"icon","name":"bolt","size":14,"color":"$INK"},
                  {"type":"text","text":" {health.charge}","size":14,"color":"$INK","weight":"bold","maxLines":1}]}]},
+               {"type":"column","show":{"minHeight":250,"ifSet":"{traffic.commute}"},"children":[
+                {"type":"spacer","size":6},
+                {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":18,"padding":10,"children":[
+                 {"type":"icon","name":"car","size":18,"color":"$STRONG","tone":"strong"},
+                 {"type":"text","text":" {traffic.commute}","size":16,"color":"$INK","weight":"medium","maxLines":1},
+                 {"type":"spacer","grow":true}]}]}]},
                {"type":"spacer","size":6,"show":{"minWidth":250}},
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"show":{"minWidth":250},"children":[
                 {"type":"ring","value":"{health.stepsPct}","text":"","size":30,"thickness":5,"color":"$STRONG","trackColor":"$SOFT","tone":"strong"},
@@ -223,18 +230,16 @@ internal object StarterDesigns {
                {"type":"text","text":"{traffic.delay}","size":11,"color":"$SUB","maxLines":1,"show":{"ifSet":"{traffic.delay}"}}]},
               {"type":"column","show":{"minHeight":250},"children":[
                {"type":"spacer","size":6},
-               {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":16,"padding":8,"show":{"ifSet":"{traffic.commute}"},"children":[
-                {"type":"icon","name":"car","size":16,"color":"$STRONG","tone":"strong"},
-                {"type":"text","text":"  {traffic.commute}","size":13,"color":"$INK","weight":"bold","maxLines":1},
-                {"type":"text","text":" to {traffic.to}","size":13,"color":"$SUB","maxLines":1,"grow":true,"show":{"minWidth":250}},
-                {"type":"spacer","grow":true,"show":{"maxWidth":249}},
-                {"type":"text","text":"{traffic.delay}","size":11,"color":"#FF3A1608","weight":"bold","chip":true,"tone":"pop","maxLines":1,"show":{"ifSet":"{traffic.delay}"}}]},
+               {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":16,"padding":8,"show":{"ifSet":"{health.effort}"},"children":[
+                {"type":"icon","name":"flame","size":16,"color":"$STRONG","tone":"strong"},
+                {"type":"text","text":"  Effort {health.effort}","size":13,"color":"$INK","weight":"bold","maxLines":1},
+                {"type":"spacer","grow":true}]},
                {"type":"spacer","size":6,"show":{"ifSet":"{health.charge}"}},
                {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":16,"padding":8,"show":{"ifSet":"{health.charge}"},"children":[
                 {"type":"icon","name":"bolt","size":16,"color":"$STRONG","tone":"strong"},
-                {"type":"text","text":"  Charge {health.charge}","size":13,"color":"$INK","weight":"bold","maxLines":1,"grow":true},
-                {"type":"spacer","size":8},
-                {"type":"text","text":"{health.charge.label}","size":11,"color":"$SUB","maxLines":1}]}]}]}]}"""),
+                {"type":"text","text":"  Charge {health.charge}","size":13,"color":"$INK","weight":"bold","maxLines":1},
+                {"type":"spacer","grow":true},
+                {"type":"text","text":"{health.charge.label}","size":11,"color":"$SUB","maxLines":1,"show":{"minWidth":250}}]}]}]}]}"""),
         ),
         Triple(
             "Briefing list", "The briefing as a list: your greeting, the weather big, then your first event, the commute and Charge, a line each; steps left and tomorrow later on.",

@@ -162,13 +162,19 @@ class SquareCellTest {
 
     @Test
     fun twoRowWidgetsAreAsTallAsOneUisOwn() {
-        // Measured beside Samsung's widgets on a Galaxy: a 2×2 and a 3×2 both about three quarters of their cell.
+        // Measured beside Samsung's widgets on a Galaxy: 33 dp in from the top and the bottom, whatever the height.
         val twoByTwo = com.sidequest.widgetmaker.spec.Shapes.panel(170, 260, design, look)
         assertEquals(170, twoByTwo.width)
         assertEquals(194, twoByTwo.height)
-        val threeByTwo = com.sidequest.widgetmaker.spec.Shapes.panel(260, 262, design, look)
+        val threeByTwo = com.sidequest.widgetmaker.spec.Shapes.panel(260, 260, design, look)
         assertEquals(260, threeByTwo.width)
-        assertEquals(twoByTwo.height + 1, threeByTwo.height)
+        assertEquals(twoByTwo.height, threeByTwo.height)
+    }
+
+    @Test
+    fun aThreeRowWidgetSpansOneUisTwoAndOneRowsStacked() {
+        // A 2×3 given 395 dp: 329, like a Samsung 2×1 and 2×2 stacked beside it.
+        assertEquals(329, com.sidequest.widgetmaker.spec.Shapes.panel(170, 395, design, look).height)
     }
 
     @Test

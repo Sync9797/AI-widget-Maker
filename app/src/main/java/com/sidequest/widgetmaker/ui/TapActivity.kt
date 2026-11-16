@@ -105,11 +105,13 @@ private fun TapActivity.learnPlace() {
     if (id < 0) return
     val store = DesignStore(this)
     val bounds = intent?.sourceBounds
+    val first = store.lastTap(id) == null
     // What this tap told us, for the widget's settings to show (so a blur that won't line up can be traced).
     store.noteTap(id, bounds?.let { Backdrop.Box(it.left, it.top, it.right, it.bottom) }, OneUiBackdrop.screenKey(this))
-    if (bounds == null || bounds.width() < 8 || bounds.height() < 8) return
-    val moved = store.setBoundsFor(id, Backdrop.Box(bounds.left, bounds.top, bounds.right, bounds.bottom), OneUiBackdrop.screenKey(this))
-    if (moved && store.themeFor(id).showsWallpaper) {
+    val placed = bounds != null && bounds.width() >= 8 && bounds.height() >= 8
+    val moved = placed && store.setBoundsFor(id, Backdrop.Box(bounds!!.left, bounds.top, bounds.right, bounds.bottom), OneUiBackdrop.screenKey(this))
+    // The first tap also turns the parts' own taps on (see DesignWidget), so it redraws then too.
+    if ((moved || first) && store.themeFor(id).showsWallpaper) {
         val app = applicationContext
         CoroutineScope(Dispatchers.Default).launch { runCatching { updateWidget(app, id) } }
     }

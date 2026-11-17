@@ -170,6 +170,16 @@ object Shapes {
         return height > 0 && width.toFloat() / height > upright * 1.4f
     }
 
+    /** Screens at least this wide on their shorter side (dp) are big screens: a tablet or a foldable's inner screen. */
+    const val LARGE_SCREEN = 600
+
+    /**
+     * Whether a widget fills the height its cell gives it, as One UI's own do on a big screen
+     * ([smallestScreenWidthDp] of [LARGE_SCREEN] or more, either way up) and in [landscape]. Only on a
+     * phone-sized screen held upright do they sit [ONE_UI_MARGIN] inside it.
+     */
+    fun fillsHeight(landscape: Boolean, smallestScreenWidthDp: Int): Boolean = landscape || smallestScreenWidthDp >= LARGE_SCREEN
+
     /** A pill's height for its width, like One UI's oval widgets. */
     const val PILL_RATIO = 0.32
 
@@ -177,8 +187,8 @@ object Shapes {
      * The room One UI's own widgets leave above and below them, in dp, at two rows or more: the same whatever their
      * height. Measured beside Samsung's widgets on a Galaxy home screen: a 2×2 and a 3×2 both sit about 33 dp inside
      * the height a launcher gives a two-row widget, and a 2×3 spans exactly a 2×1 and a 2×2 stacked beside it.
-     * Only in portrait: on a landscape screen (a tablet, an open foldable turned sideways) the rows are short, and
-     * One UI's widgets fill the height they're given, so ours do too.
+     * Only on a phone-sized screen held upright: on a big screen (a tablet, a foldable's inner screen) and in
+     * landscape, One UI's widgets fill the height they're given, so ours do too (see [fillsHeight]).
      */
     const val ONE_UI_MARGIN = 33
 
@@ -213,7 +223,7 @@ object Shapes {
      * and the 1-row oval setting, its final shape and corner radius, and the
      * padding its content needs to stay inside the shape.
      */
-    fun panel(width: Int, height: Int, design: WidgetDesign, look: Look, shapeOverride: WidgetShape? = null, landscape: Boolean = false): Panel {
+    fun panel(width: Int, height: Int, design: WidgetDesign, look: Look, shapeOverride: WidgetShape? = null, fillHeight: Boolean = false): Panel {
         var w = max(24, width - 2 * look.inset)
         var h = max(24, height - 2 * look.inset)
         var shape = shapeOverride ?: design.shape
@@ -221,7 +231,7 @@ object Shapes {
         if (maxH != null && height <= ONE_ROW_MAX) shape = WidgetShape.pill
         // A widget of two rows or more is as tall as One UI's own beside it: the height it's given less One UI's
         // margin above and below, centered (never so short that it would pass for one row). Its width is its cell's.
-        if (look.squareCells && !landscape && shape in SQUARE_SHAPES && height > ONE_ROW_MAX) {
+        if (look.squareCells && !fillHeight && shape in SQUARE_SHAPES && height > ONE_ROW_MAX) {
             h = max(min(h, ONE_ROW_MAX + 1), h - 2 * ONE_UI_MARGIN)
         }
         // A pill is a slim oval, centered in its cell like One UI's: about a third as tall as it is wide,

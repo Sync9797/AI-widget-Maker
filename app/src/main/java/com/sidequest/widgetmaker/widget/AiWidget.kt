@@ -435,8 +435,11 @@ private fun DesignWidget(
         val own = look.cornerRadius ?: design.cornerRadius
         if (own < sys) look.copy(cornerRadius = sys) else null
     } ?: look
-    val landscape = Shapes.isLandscape(size.width.value.toInt(), size.height.value.toInt(), sizes)
-    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, rounded, shape, landscape)
+    val fill = Shapes.fillsHeight(
+        Shapes.isLandscape(size.width.value.toInt(), size.height.value.toInt(), sizes),
+        context.resources.configuration.smallestScreenWidthDp,
+    )
+    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, rounded, shape, fill)
     val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, look, tokens.feeds, System.currentTimeMillis())
     val art = PanelArt.build(context, theme, panel, look, onScreen, mood, tokens.feeds)
     // On a bigger screen (an open foldable) the content can grow with the widget.

@@ -182,7 +182,11 @@ class SquareCellTest {
         assertEquals(false, com.sidequest.widgetmaker.spec.Shapes.isLandscape(portrait.first, portrait.second, sizes))
         assertEquals(true, com.sidequest.widgetmaker.spec.Shapes.isLandscape(landscape.first, landscape.second, sizes))
         assertEquals(false, com.sidequest.widgetmaker.spec.Shapes.isLandscape(900, 230, listOf(900 to 230)))
-        assertEquals(230, com.sidequest.widgetmaker.spec.Shapes.panel(900, 230, design, look, landscape = true).height)
+        assertEquals(230, com.sidequest.widgetmaker.spec.Shapes.panel(900, 230, design, look, fillHeight = true).height)
+        // A tablet or a foldable's inner screen fills the cell either way up; a phone upright keeps the margin.
+        assertEquals(true, com.sidequest.widgetmaker.spec.Shapes.fillsHeight(false, 700))
+        assertEquals(false, com.sidequest.widgetmaker.spec.Shapes.fillsHeight(false, 384))
+        assertEquals(true, com.sidequest.widgetmaker.spec.Shapes.fillsHeight(true, 384))
         assertEquals(194, com.sidequest.widgetmaker.spec.Shapes.panel(430, 260, design, look).height)
     }
 

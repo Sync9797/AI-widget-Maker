@@ -120,7 +120,7 @@ class AiWidget : GlanceAppWidget() {
                 // It goes through the tap screen, which also learns where the widget is (for the One UI blur).
                 val whole = Taps.forWidget(saved.design)?.let { Taps.resolve(it, tokens) }
                 val open = TapIntents.root(context, appWidgetId, whole)
-                DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open, inputs.art, inputs.tappedOnce)
+                DesignWidget(saved.design, tokens, inputs.theme, inputs.look, inputs.shape, inputs.onScreen, open, inputs.art, inputs.tappedOnce, inputs.sizes)
             }
         }
     }
@@ -351,6 +351,8 @@ private class Inputs(
     val art: android.graphics.Bitmap?,
     /** Whether the widget's panel was ever tapped (whether or not the home screen said where it is). */
     val tappedOnce: Boolean,
+    /** Every size the launcher may show the widget at (dp), one for each way the screen turns. */
+    val sizes: List<Pair<Int, Int>>,
 ) {
     companion object {
         fun load(context: Context, appWidgetId: Int): Inputs {
@@ -371,6 +373,7 @@ private class Inputs(
                 shape = store.shapeFor(appWidgetId),
                 onScreen = store.boundsFor(appWidgetId, OneUiBackdrop.screenKey(context)),
                 tappedOnce = store.lastTap(appWidgetId) != null,
+                sizes = launcherSizes(context, appWidgetId),
                 art = saved?.design?.let { if (usesArt(it.root)) com.sidequest.widgetmaker.music.Music.art(context) else null },
             )
         }
@@ -421,6 +424,7 @@ private fun DesignWidget(
     open: android.content.Intent,
     albumArt: android.graphics.Bitmap? = null,
     tappedOnce: Boolean = true,
+    sizes: List<Pair<Int, Int>> = emptyList(),
 ) {
     val context = androidx.glance.LocalContext.current
     // The widget's size right now: its panel, and the elements with size rules, follow it.
@@ -431,7 +435,8 @@ private fun DesignWidget(
         val own = look.cornerRadius ?: design.cornerRadius
         if (own < sys) look.copy(cornerRadius = sys) else null
     } ?: look
-    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, rounded, shape)
+    val landscape = Shapes.isLandscape(size.width.value.toInt(), size.height.value.toInt(), sizes)
+    val panel = Shapes.panel(size.width.value.toInt(), size.height.value.toInt(), design, rounded, shape, landscape)
     val mood = com.sidequest.widgetmaker.spec.WeatherMood.forDesign(design, look, tokens.feeds, System.currentTimeMillis())
     val art = PanelArt.build(context, theme, panel, look, onScreen, mood, tokens.feeds)
     // On a bigger screen (an open foldable) the content can grow with the widget.
@@ -1095,4 +1100,19 @@ private fun systemCornerRadius(context: Context): Int? {
         val px = context.resources.getDimension(android.R.dimen.system_app_widget_background_radius)
         (px / context.resources.displayMetrics.density).toInt()
     }.getOrNull()?.takeIf { it > 0 }
+}
+
+/** The sizes the launcher gives a widget (dp): each it listed (Android 12+), else its portrait and landscape ones. */
+private fun launcherSizes(context: Context, appWidgetId: Int): List<Pair<Int, Int>> {
+    val options = android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetOptions(appWidgetId)
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        @Suppress("DEPRECATION")
+        val listed = options.getParcelableArrayList<android.util.SizeF>(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_SIZES)
+        if (!listed.isNullOrEmpty()) return listed.map { it.width.toInt() to it.height.toInt() }
+    }
+    val minW = options.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+    val maxW = options.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH)
+    val minH = options.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+    val maxH = options.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
+    return listOf(minW to maxH, maxW to minH)
 }

@@ -175,6 +175,15 @@ class SquareCellTest {
     fun aThreeRowWidgetSpansOneUisTwoAndOneRowsStacked() {
         // A 2×3 given 395 dp: 329, like a Samsung 2×1 and 2×2 stacked beside it.
         assertEquals(329, com.sidequest.widgetmaker.spec.Shapes.panel(170, 395, design, look).height)
+        // In landscape (a tablet, an open foldable sideways) rows are short and One UI fills them: no margin.
+        val portrait = 430 to 260
+        val landscape = 900 to 230
+        val sizes = listOf(portrait, landscape)
+        assertEquals(false, com.sidequest.widgetmaker.spec.Shapes.isLandscape(portrait.first, portrait.second, sizes))
+        assertEquals(true, com.sidequest.widgetmaker.spec.Shapes.isLandscape(landscape.first, landscape.second, sizes))
+        assertEquals(false, com.sidequest.widgetmaker.spec.Shapes.isLandscape(900, 230, listOf(900 to 230)))
+        assertEquals(230, com.sidequest.widgetmaker.spec.Shapes.panel(900, 230, design, look, landscape = true).height)
+        assertEquals(194, com.sidequest.widgetmaker.spec.Shapes.panel(430, 260, design, look).height)
     }
 
     @Test

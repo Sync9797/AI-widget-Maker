@@ -160,6 +160,16 @@ object Shapes {
         }
     }
 
+    /**
+     * Whether a widget drawn [width]×[height] dp is its landscape layout: the launcher hands over a size for each
+     * way the screen can turn (portrait tall and narrow, landscape short and wide), all in [sizes]. A size much
+     * wider for its height than the most upright of them is the landscape one. With one size, it's portrait.
+     */
+    fun isLandscape(width: Int, height: Int, sizes: List<Pair<Int, Int>>): Boolean {
+        val upright = sizes.filter { it.first > 0 && it.second > 0 }.minOfOrNull { it.first.toFloat() / it.second } ?: return false
+        return height > 0 && width.toFloat() / height > upright * 1.4f
+    }
+
     /** A pill's height for its width, like One UI's oval widgets. */
     const val PILL_RATIO = 0.32
 
@@ -167,6 +177,8 @@ object Shapes {
      * The room One UI's own widgets leave above and below them, in dp, at two rows or more: the same whatever their
      * height. Measured beside Samsung's widgets on a Galaxy home screen: a 2×2 and a 3×2 both sit about 33 dp inside
      * the height a launcher gives a two-row widget, and a 2×3 spans exactly a 2×1 and a 2×2 stacked beside it.
+     * Only in portrait: on a landscape screen (a tablet, an open foldable turned sideways) the rows are short, and
+     * One UI's widgets fill the height they're given, so ours do too.
      */
     const val ONE_UI_MARGIN = 33
 
@@ -201,7 +213,7 @@ object Shapes {
      * and the 1-row oval setting, its final shape and corner radius, and the
      * padding its content needs to stay inside the shape.
      */
-    fun panel(width: Int, height: Int, design: WidgetDesign, look: Look, shapeOverride: WidgetShape? = null): Panel {
+    fun panel(width: Int, height: Int, design: WidgetDesign, look: Look, shapeOverride: WidgetShape? = null, landscape: Boolean = false): Panel {
         var w = max(24, width - 2 * look.inset)
         var h = max(24, height - 2 * look.inset)
         var shape = shapeOverride ?: design.shape
@@ -209,7 +221,7 @@ object Shapes {
         if (maxH != null && height <= ONE_ROW_MAX) shape = WidgetShape.pill
         // A widget of two rows or more is as tall as One UI's own beside it: the height it's given less One UI's
         // margin above and below, centered (never so short that it would pass for one row). Its width is its cell's.
-        if (look.squareCells && shape in SQUARE_SHAPES && height > ONE_ROW_MAX) {
+        if (look.squareCells && !landscape && shape in SQUARE_SHAPES && height > ONE_ROW_MAX) {
             h = max(min(h, ONE_ROW_MAX + 1), h - 2 * ONE_UI_MARGIN)
         }
         // A pill is a slim oval, centered in its cell like One UI's: about a third as tall as it is wide,

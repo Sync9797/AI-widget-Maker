@@ -10,6 +10,9 @@ data class Place(val name: String, val lat: Double, val lon: Double)
 @Serializable
 data class Countdown(val name: String, val date: String)
 
+/** A calendar on the phone (Samsung, Google, a subscription), for choosing which ones widgets show. */
+data class PhoneCalendar(val id: Long, val name: String, val account: String, val color: Int)
+
 /** What the user set up in Data sources. */
 @Serializable
 data class FeedSettings(
@@ -40,6 +43,8 @@ data class FeedSettings(
 
     /** Show your upcoming calendar events (needs the calendar permission). */
     val calendar: Boolean = false,
+    /** Phone calendars left out (their ids); every calendar is used until some are turned off. */
+    val hiddenCalendars: List<Long> = emptyList(),
 
     /** Exercise and health from Health Connect. */
     val health: Boolean = false,

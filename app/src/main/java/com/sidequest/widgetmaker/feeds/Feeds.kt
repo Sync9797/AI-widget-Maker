@@ -206,7 +206,36 @@ class Feeds(private val context: Context) {
     fun canReadCalendar() =
         context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
 
-    /** The next week's events from the phone's visible calendars. */
+    /** Which events to read: those on calendars shown in the phone's calendar app, less any turned off in Settings. */
+    private fun shownCalendars(): String {
+        val hidden = settings.hiddenCalendars
+        val visible = "${CalendarContract.Instances.VISIBLE} = 1"
+        return if (hidden.isEmpty()) visible else "$visible AND ${CalendarContract.Instances.CALENDAR_ID} NOT IN (${hidden.joinToString(",")})"
+    }
+
+    /** The calendars on the phone (those its calendar app shows), for choosing which ones widgets use. */
+    fun phoneCalendars(): List<PhoneCalendar> {
+        if (!canReadCalendar()) return emptyList()
+        val out = mutableListOf<PhoneCalendar>()
+        runCatching {
+            context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI,
+                arrayOf(
+                    CalendarContract.Calendars._ID,
+                    CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+                    CalendarContract.Calendars.ACCOUNT_NAME,
+                    CalendarContract.Calendars.CALENDAR_COLOR,
+                ),
+                "${CalendarContract.Calendars.VISIBLE} = 1", null, "${CalendarContract.Calendars.ACCOUNT_NAME} ASC",
+            )?.use { c ->
+                while (c.moveToNext()) {
+                    out += PhoneCalendar(c.getLong(0), c.getString(1).orEmpty().ifBlank { "Calendar" }, c.getString(2).orEmpty(), c.getInt(3))
+                }
+            }
+        }
+        return out
+    }
+
     /** Upcoming events for countdowns: one per title, soonest first (empty without calendar access). */
     fun upcomingEvents(days: Int): List<Countdown> {
         if (!canReadCalendar()) return emptyList()
@@ -219,7 +248,7 @@ class Feeds(private val context: Context) {
         runCatching {
             context.contentResolver.query(
                 uri, arrayOf(CalendarContract.Instances.TITLE, CalendarContract.Instances.BEGIN, CalendarContract.Instances.ALL_DAY),
-                "${CalendarContract.Instances.VISIBLE} = 1", null, "${CalendarContract.Instances.BEGIN} ASC",
+                shownCalendars(), null, "${CalendarContract.Instances.BEGIN} ASC",
             )?.use { c ->
                 while (c.moveToNext() && out.size < 60) {
                     val title = c.getString(0).orEmpty().ifBlank { continue }
@@ -250,7 +279,7 @@ class Feeds(private val context: Context) {
         val local = ZoneId.systemDefault()
         val events = mutableListOf<FeedParsers.CalendarEvent>()
         context.contentResolver.query(
-            uri, columns, "${CalendarContract.Instances.VISIBLE} = 1", null, "${CalendarContract.Instances.BEGIN} ASC",
+            uri, columns, shownCalendars(), null, "${CalendarContract.Instances.BEGIN} ASC",
         )?.use { c ->
             while (c.moveToNext() && events.size < 50) {
                 val allDay = c.getInt(3) == 1
@@ -286,7 +315,7 @@ class Feeds(private val context: Context) {
         runCatching {
             context.contentResolver.query(
                 uri, arrayOf(CalendarContract.Instances.BEGIN, CalendarContract.Instances.END, CalendarContract.Instances.ALL_DAY),
-                "${CalendarContract.Instances.VISIBLE} = 1", null, null,
+                shownCalendars(), null, null,
             )?.use { c ->
                 var rows = 0
                 while (c.moveToNext() && rows++ < 1000) {

@@ -242,6 +242,9 @@ fun SettingsContent(viewModel: MakerViewModel, state: MakerState, columns: Int, 
                         },
                     )
                 }
+                if (form.calendar) {
+                    CalendarChoices(form.hiddenCalendars) { form = form.copy(hiddenCalendars = it) }
+                }
             }
 
             Section(
@@ -754,6 +757,43 @@ private fun HealthControls(on: Boolean, onChange: (Boolean) -> Unit) {
     report?.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
 }
 
+/** A countdown's day ("2026-12-25") as month-day-year: 12-25-26. */
+internal fun usDate(iso: String): String =
+    runCatching { java.time.LocalDate.parse(iso).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd-yy")) }.getOrDefault(iso)
+
+/** The phone's calendars, each with a checkbox: unticked ones are left out of every widget. */
+@Composable
+private fun CalendarChoices(hidden: List<Long>, onChange: (List<Long>) -> Unit) {
+    val context = LocalContext.current
+    var calendars by remember { mutableStateOf<List<com.sidequest.widgetmaker.feeds.PhoneCalendar>?>(null) }
+    LaunchedEffect(Unit) {
+        calendars = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            com.sidequest.widgetmaker.feeds.Feeds(context).phoneCalendars()
+        }
+    }
+    val list = calendars ?: return
+    if (list.isEmpty()) {
+        Text("No calendars found on this phone (or calendar access is off).", style = MaterialTheme.typography.bodySmall)
+        return
+    }
+    Text("Calendars to show", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+    list.forEach { cal ->
+        val on = cal.id !in hidden
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clickable { onChange(if (on) hidden + cal.id else hidden - cal.id) },
+        ) {
+            androidx.compose.material3.Checkbox(checked = on, onCheckedChange = { onChange(if (on) hidden + cal.id else hidden - cal.id) })
+            // The calendar's own color, as the calendar app shows it.
+            Box(Modifier.size(12.dp).background(androidx.compose.ui.graphics.Color(cal.color or 0xFF000000.toInt()), androidx.compose.foundation.shape.CircleShape))
+            Column(Modifier.padding(start = 10.dp).weight(1f)) {
+                Text(cal.name, style = MaterialTheme.typography.bodyLarge)
+                if (cal.account.isNotBlank() && cal.account != cal.name) Text(cal.account, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
 /** The list of countdowns, with adding by date or from the calendar. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -768,7 +808,7 @@ private fun CountdownControls(list: List<com.sidequest.widgetmaker.feeds.Countdo
             val days = runCatching { java.time.temporal.ChronoUnit.DAYS.between(today, java.time.LocalDate.parse(c.date)) }.getOrNull()
             Column(Modifier.weight(1f)) {
                 Text(c.name, style = MaterialTheme.typography.bodyLarge)
-                Text("${c.date} · " + when {
+                Text("${usDate(c.date)} · " + when {
                     days == null -> ""
                     days < 0 -> "passed"
                     days == 0L -> "today"
@@ -812,7 +852,7 @@ private fun CountdownControls(list: List<com.sidequest.widgetmaker.feeds.Countdo
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         events.forEach { e ->
                             Text(
-                                "${e.name}  ·  ${e.date}",
+                                "${e.name}  ·  ${usDate(e.date)}",
                                 modifier = Modifier.fillMaxWidth().clickable {
                                     onChange(list + e)
                                     fromCalendar = null

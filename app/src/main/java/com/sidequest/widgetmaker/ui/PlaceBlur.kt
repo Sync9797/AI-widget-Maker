@@ -139,12 +139,14 @@ private fun panelPx(context: Context, appWidgetId: Int, store: DesignStore): Pai
     val cellH = options.getInt(if (portrait) AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT else AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT).takeIf { it > 0 } ?: 160
     val design = store.designFor(appWidgetId)?.design
     val (w, h) = if (design != null) {
-        // Landscape decided the way the widget decides it, so the blur and the panel agree on its height.
+        // Its height decided the way the widget decides it, so the blur and the panel agree on it.
         val sizes = listOf(
             options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) to options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
             options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH) to options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
         )
-        Shapes.panel(cellW, cellH, design, store.look, store.shapeFor(appWidgetId), Shapes.isLandscape(cellW, cellH, sizes)).let { it.width to it.height }
+        Shapes.panel(cellW, cellH, design, store.look, store.shapeFor(appWidgetId),
+            Shapes.fillsHeight(Shapes.isLandscape(cellW, cellH, sizes), context.resources.configuration.smallestScreenWidthDp),
+        ).let { it.width to it.height }
     } else cellW to cellH
     return (w * density).roundToInt() to (h * density).roundToInt()
 }

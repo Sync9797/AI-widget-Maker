@@ -111,6 +111,16 @@ object Taps {
         return kind?.takeIf { it != TapKind.game }?.name
     }
 
+    /**
+     * Whether [design] is mostly about [kind] by what it shows (at least [share] of its elements that show
+     * data are that kind), whatever its tap opens: a briefing that opens the weather isn't a weather widget.
+     */
+    fun mostlyShows(design: WidgetDesign, kind: TapKind, share: Double = 0.6): Boolean {
+        val counts = kindsIn(design.root)
+        val total = counts.values.sum()
+        return total > 0 && (counts[kind] ?: 0) >= total * share
+    }
+
     // Ties go to the more specific kinds (data before the clock).
     private fun mostOf(counts: Map<TapKind, Int>): TapKind? =
         counts.entries.maxWithOrNull(compareBy({ it.value }, { -it.key.ordinal }))?.key

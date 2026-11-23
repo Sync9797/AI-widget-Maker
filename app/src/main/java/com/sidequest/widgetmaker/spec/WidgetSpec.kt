@@ -59,6 +59,17 @@ data class SavedDesign(
 ) {
     /** Whether you made it: older saves count as yours unless they're named after a ready-made design. */
     val madeByYou: Boolean get() = custom ?: Starters.all.none { it.title == prompt }
+
+    /**
+     * A ready-made design saved as is follows the app's latest version of it, so a widget placed before an update
+     * (a new layout, a scrolling list) gets it too. Only the shape picked for it is kept. Designs you made or
+     * changed with Claude stay exactly as saved.
+     */
+    fun latest(): SavedDesign {
+        if (madeByYou) return this
+        val starter = Starters.all.firstOrNull { it.title == prompt } ?: return this
+        return if (starter.design == design) this else copy(design = starter.design.copy(shape = design.shape))
+    }
 }
 
 enum class HAlign { start, center, end }

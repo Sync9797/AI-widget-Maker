@@ -15,6 +15,14 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // Robolectric's Android system jars (about 150 MB each) from Google's mirror of Maven Central: Maven
+        // Central itself often answers these big downloads with 429 Too Many Requests, which failed the build.
+        exclusiveContent {
+            forRepository {
+                maven("https://maven-central.storage-download.googleapis.com/maven2/") { name = "MavenCentralMirror" }
+            }
+            filter { includeModule("org.robolectric", "android-all-instrumented") }
+        }
         google()
         mavenCentral()
     }

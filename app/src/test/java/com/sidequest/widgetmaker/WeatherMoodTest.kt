@@ -48,4 +48,31 @@ class WeatherMoodTest {
         assertEquals("0", v["weather.code"])
         assertEquals("1", v["weather.isDay"])
     }
+
+    @Test
+    fun onlyWidgetsThatMostlyShowTheWeatherGetAMood() {
+        val look = com.sidequest.widgetmaker.spec.Look()
+        val noon = sunrise + 5 * 3600_000L
+        fun mood(title: String) = WeatherMood.forDesign(
+            com.sidequest.widgetmaker.spec.Starters.all.first { it.title == title }.design, look, feeds(0), noon,
+        )
+        assertEquals(WeatherMood.day, mood("Weather gauge"))
+        assertEquals(WeatherMood.day, mood("Weather forecast"))
+        // A briefing opens the weather but shows much more: it keeps its usual look, morning or night.
+        assertNull(mood("Daily briefing"))
+        assertNull(mood("Briefing list"))
+        assertNull(mood("Commute"))
+    }
+
+    @Test
+    fun readyMadeWidgetsFollowTheLatestDesignButKeepTheirShape() {
+        val starter = com.sidequest.widgetmaker.spec.Starters.all.first { it.title == "Upcoming events" }
+        val old = starter.design.copy(root = com.sidequest.widgetmaker.spec.TextNode("old layout"), shape = com.sidequest.widgetmaker.spec.WidgetShape.squircle)
+        val saved = com.sidequest.widgetmaker.spec.SavedDesign("a", starter.title, old, 0, custom = false)
+        assertEquals(starter.design.root, saved.latest().design.root)
+        assertEquals(com.sidequest.widgetmaker.spec.WidgetShape.squircle, saved.latest().design.shape)
+        // One made with Claude stays exactly as saved.
+        val yours = saved.copy(custom = true)
+        assertEquals(old, yours.latest().design)
+    }
 }

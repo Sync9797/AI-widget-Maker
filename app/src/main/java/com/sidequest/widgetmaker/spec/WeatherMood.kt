@@ -16,9 +16,12 @@ enum class WeatherMood(val top: Int, val bottom: Int) {
         /** How long either side of sunrise and sunset counts as golden. */
         const val GOLDEN_MS = 45 * 60_000L
 
-        /** The mood for [design] now: only for weather widgets, and only with Settings' weather moods on. */
+        /**
+         * The mood for [design] now: only for widgets that mostly show the weather (not a briefing with the weather
+         * in one tile, whatever it opens), and only with Settings' weather moods on.
+         */
         fun forDesign(design: WidgetDesign, look: Look, feeds: Map<String, String>, nowMs: Long): WeatherMood? =
-            if (look.weatherMoods && Taps.mainKind(design) == TapKind.weather) of(feeds, nowMs) else null
+            if (look.weatherMoods && Taps.mainKind(design) == TapKind.weather && Taps.mostlyShows(design, TapKind.weather)) of(feeds, nowMs) else null
 
         /** The mood for the weather values [feeds] at [nowMs], or null at night (or with no weather yet). */
         fun of(feeds: Map<String, String>, nowMs: Long): WeatherMood? {

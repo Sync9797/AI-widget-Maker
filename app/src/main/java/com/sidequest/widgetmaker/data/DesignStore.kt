@@ -25,6 +25,8 @@ class DesignStore(context: Context) {
         if (!file.exists()) return emptyList()
         runCatching { DesignParser.json.decodeFromString(serializer, file.readText()) }
             .getOrDefault(emptyList())
+            // Ready-made designs saved as is follow the app's latest version of them.
+            .map { it.latest() }
             .sortedByDescending { it.createdAt }
     }
 

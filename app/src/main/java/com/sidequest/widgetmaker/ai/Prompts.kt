@@ -160,6 +160,9 @@ Live data from the internet (refreshed every 15 to 60 minutes, as set in Setting
   (often empty), and {calendar.today} like "2 more today". For agendas grouped by day: {calendar.1.time}
   "7:00 AM" or "All day", {calendar.1.date} "NOV 14", and {calendar.1.day} (that date) or
   {calendar.1.heading} ("Today, Sat, Nov 14"), set only on each day's first event (show them with "ifSet").
+  Day by day for a scrolling agenda (a "scroll" column): {calendar.d0.num} ("23"), {calendar.d0.month}, {calendar.d0.weekday},
+  {calendar.d0.label} ("Today", "Tomorrow", "Wed") for days d0 to d3, their events {calendar.d0.1} to {calendar.d0.6}
+  with .time, .where and .link, and {calendar.d0.none} ("No events") on a day without any.
   A "tap":"calendar-new" starts a new event (a "+" button).
 - Device batteries (phone first, then the WHOOP strap via not-NOOP, then connected Bluetooth devices, emptiest
   first): {devices.1.name}, {devices.1.level} (a number, for rings, bars and levelOf), {devices.1.pct} "95%",

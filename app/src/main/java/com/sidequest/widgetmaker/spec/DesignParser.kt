@@ -13,8 +13,14 @@ object DesignParser {
         encodeDefaults = true
     }
 
-    /** Widgets get slow and launchers refuse them past a few dozen views. */
+    /** Widgets get slow and launchers refuse them past a few dozen views: what new designs are asked to keep to. */
     const val MAX_NODES = 100
+
+    /**
+     * What a design may hold at most. Higher than [MAX_NODES], since parts hidden by their show rules (a scrolling
+     * agenda's days and events that aren't there) are never drawn: only what shows costs anything.
+     */
+    const val HARD_MAX_NODES = 300
     const val MAX_DEPTH = 7
 
     class InvalidDesign(message: String) : Exception(message)
@@ -35,7 +41,7 @@ object DesignParser {
             throw InvalidDesign("The JSON didn't match the widget format: ${e.message}")
         }
         val count = countNodes(design.root)
-        if (count > MAX_NODES) throw InvalidDesign("The design has $count elements; the limit is $MAX_NODES.")
+        if (count > HARD_MAX_NODES) throw InvalidDesign("The design has $count elements; the limit is $MAX_NODES.")
         val depth = depth(design.root)
         if (depth > MAX_DEPTH) throw InvalidDesign("The design nests $depth levels deep; the limit is $MAX_DEPTH.")
         return sanitize(design)

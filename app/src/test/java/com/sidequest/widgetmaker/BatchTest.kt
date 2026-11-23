@@ -80,14 +80,28 @@ class SmartTest {
         val feeds = mapOf("calendar.1.startMs" to "$start", "calendar.1.endMs" to "${start + 3_600_000}")
         fun until(minutesBefore: Long) = Smart.calendarSoon(feeds, start - minutesBefore * 60_000)["calendar.1.in"]
         // Under an hour: the minutes. An hour or more: the hours, to the nearest.
-        assertEquals("in 45 min", until(45))
-        assertEquals("in 1 min", until(0) .let { Smart.until(start, start + 1, start - 10_000) })
-        assertEquals("in 1 hr", until(60))
-        assertEquals("in 3 hr", until(170))
+        assertEquals("45M", until(45))
+        assertEquals("1M", Smart.until(start, start + 1, start - 10_000))
+        assertEquals("1H", until(60))
+        assertEquals("3H", until(170))
         assertEquals("Now", Smart.calendarSoon(feeds, start + 60_000)["calendar.1.in"])
         assertEquals("", Smart.calendarSoon(feeds, start + 2 * 3_600_000)["calendar.1.in"])
         // An all-day event has no start time: nothing to count down.
         assertEquals("", Smart.calendarSoon(emptyMap(), start)["calendar.1.in"])
+    }
+
+    @Test
+    fun theBriefingShowsTheNextEventWhileTodayStillHasOne() {
+        val zone = java.time.ZoneOffset.UTC
+        val now = java.time.LocalDateTime.of(2026, 11, 23, 14, 0).toInstant(zone).toEpochMilli()
+        val at430 = java.time.LocalDateTime.of(2026, 11, 23, 16, 30).toInstant(zone).toEpochMilli()
+        val today = mapOf("calendar.1" to "Dynamic", "calendar.1.dayIso" to "2026-11-23", "calendar.1.endMs" to "${at430 + 3_600_000}")
+        // An event still to come this afternoon: show it, not tomorrow's.
+        assertEquals("yes", Smart.calendarLater(today, now, zone)["calendar.later"])
+        // Once it's over, or when the next one is tomorrow: tomorrow's first event.
+        assertEquals("", Smart.calendarLater(today, at430 + 2 * 3_600_000, zone)["calendar.later"])
+        assertEquals("", Smart.calendarLater(today + ("calendar.1.dayIso" to "2026-11-24"), now, zone)["calendar.later"])
+        assertEquals("", Smart.calendarLater(emptyMap(), now, zone)["calendar.later"])
     }
 
     @Test

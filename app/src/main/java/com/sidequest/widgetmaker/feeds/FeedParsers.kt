@@ -523,6 +523,8 @@ object FeedParsers {
             val first = day != lastDay
             lastDay = day
             out["calendar.${i + 1}.date"] = day.format(DateTimeFormatter.ofPattern("MMM d", Locale.US)).uppercase(Locale.US)
+            // The day it's on, for telling when the widget draws whether it's still today.
+            out["calendar.${i + 1}.dayIso"] = day.toString()
             out["calendar.${i + 1}.time"] = if (e.allDay) "All day" else e.start.toLocalTime().format(DateTimeFormatter.ofPattern("h:mm a", Locale.US))
             // For date chips: the day of the month ("03") and the start time without AM/PM ("3:30").
             out["calendar.${i + 1}.dayNum"] = day.format(DateTimeFormatter.ofPattern("dd", Locale.US))

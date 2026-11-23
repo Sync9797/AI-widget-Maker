@@ -231,7 +231,7 @@ class StarterShots {
             "devices.3.name" to "Galaxy Buds3", "devices.3.level" to "15", "devices.3.pct" to "15%", "devices.3.icon" to "headphones",
             "devices.4.name" to "Galaxy Watch", "devices.4.level" to "100", "devices.4.pct" to "100%", "devices.4.icon" to "watch",
             "weather.hours.temps" to "72,73,74,74,73,71,69,67,65,63,62,61,60",
-            "calendar.1.dayNum" to "14", "calendar.1.clock" to "3:00", "calendar.1.startMs" to "${System.currentTimeMillis() + 45 * 60_000L}", "calendar.1.endMs" to "${System.currentTimeMillis() + 105 * 60_000L}",
+            "calendar.1.dayNum" to "14", "calendar.1.clock" to "3:00", "calendar.1.dayIso" to java.time.LocalDate.now().toString(), "calendar.1.startMs" to "${System.currentTimeMillis() + 45 * 60_000L}", "calendar.1.endMs" to "${System.currentTimeMillis() + 105 * 60_000L}",
             "calendar.tomorrow.startMs" to "${System.currentTimeMillis() + 14 * 3_600_000L}", "calendar.tomorrow.endMs" to "${System.currentTimeMillis() + 15 * 3_600_000L}",
             "calendar.d0.num" to "14", "calendar.d0.month" to "Nov", "calendar.d0.weekday" to "Sat", "calendar.d0.label" to "Today",
             "calendar.d0.1" to "Dentist", "calendar.d0.1.time" to "3:00 PM", "calendar.d0.1.where" to "Smile Dental, 5th St",

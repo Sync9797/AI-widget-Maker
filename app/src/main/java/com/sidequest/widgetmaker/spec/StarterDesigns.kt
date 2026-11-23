@@ -227,23 +227,23 @@ internal object StarterDesigns {
                {"type":"spacer","size":6},
                {"type":"column","grow":true,"children":[
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
-                {"type":"column","show":{"ifSet":"{time.morning}"},"children":[
+                {"type":"column","show":{"ifSet":"{calendar.later}"},"children":[
                  {"type":"text","text":"Next","size":10,"color":"$INK","weight":"bold","maxLines":1},
-                 {"type":"text","text":"{calendar.1.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.1}"}},
+                 {"type":"text","text":"{calendar.1.time}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.1}"}},
                  {"type":"text","text":"{calendar.1}","size":11,"color":"$INK","maxLines":2,"show":{"ifSet":"{calendar.1}"}},
                  {"type":"text","text":"Nothing planned","size":11,"color":"$INK","maxLines":1,"show":{"ifEmpty":"{calendar.1}"}}]},
-                {"type":"column","show":{"ifEmpty":"{time.morning}"},"children":[
+                {"type":"column","show":{"ifEmpty":"{calendar.later}"},"children":[
                  {"type":"text","text":"Tomorrow","size":10,"color":"$INK","weight":"bold","maxLines":1},
                  {"type":"text","text":"{calendar.tomorrow.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.tomorrow}"}},
                  {"type":"text","text":"{calendar.tomorrow}","size":11,"color":"$INK","maxLines":2,"show":{"ifSet":"{calendar.tomorrow}"}},
                  {"type":"text","text":"Nothing planned","size":11,"color":"$INK","maxLines":1,"show":{"ifEmpty":"{calendar.tomorrow}"}}]},
-                {"type":"text","text":"{calendar.1.in}","size":14,"color":"$INK","weight":"bold","maxLines":1,"show":{"minHeight":150,"ifSet":"{time.morning}"}},
-                {"type":"text","text":"{calendar.tomorrow.in}","size":14,"color":"$INK","weight":"bold","maxLines":1,"show":{"minHeight":150,"ifEmpty":"{time.morning}"}}]},
+                {"type":"text","text":"{calendar.1.in}","size":12,"color":"$INK","weight":"bold","maxLines":1,"show":{"minHeight":150,"ifSet":"{calendar.later}"}},
+                {"type":"text","text":"{calendar.tomorrow.in}","size":12,"color":"$INK","weight":"bold","maxLines":1,"show":{"minHeight":150,"ifEmpty":"{calendar.later}"}}]},
                {"type":"column","show":{"minHeight":250,"ifSet":"{traffic.commute}"},"children":[
                 {"type":"spacer","size":6},
-                {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":18,"padding":10,"children":[
-                 {"type":"icon","name":"car","size":18,"color":"$STRONG","tone":"strong"},
-                 {"type":"text","text":" {traffic.commute}","size":16,"color":"$INK","weight":"medium","maxLines":1},
+                {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":18,"padding":8,"children":[
+                 {"type":"icon","name":"car","size":16,"color":"$STRONG","tone":"strong"},
+                 {"type":"text","text":" {traffic.commute}","size":14,"color":"$INK","weight":"medium","maxLines":1},
                  {"type":"spacer","grow":true}]}]}]},
                {"type":"spacer","size":6,"show":{"minWidth":250}},
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"show":{"minWidth":250},"children":[

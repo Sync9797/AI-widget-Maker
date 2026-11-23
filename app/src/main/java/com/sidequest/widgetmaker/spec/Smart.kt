@@ -22,17 +22,28 @@ object Smart {
     }
 
     /**
-     * How long until an event that starts at [startMs] and ends at [endMs]: "in 45 min" under an hour, "in 3 hr"
-     * (to the nearest hour) after that, "Now" while it's on, and empty once it's over.
+     * How long until an event that starts at [startMs] and ends at [endMs], short enough for a small tile: "45M"
+     * under an hour, "3H" (to the nearest hour) after that, "Now" while it's on, and empty once it's over.
      */
     fun until(startMs: Long, endMs: Long, nowMs: Long): String {
         val minutes = (startMs - nowMs) / 60_000
         return when {
             nowMs >= endMs -> ""
             nowMs >= startMs -> "Now"
-            minutes < 60 -> "in ${maxOf(1, minutes)} min"
-            else -> "in ${(minutes + 30) / 60} hr"
+            minutes < 60 -> "${maxOf(1, minutes)}M"
+            else -> "${(minutes + 30) / 60}H"
         }
+    }
+
+    /**
+     * calendar.later is "yes" while the next event is still today (on now, or later on), so a briefing shows it;
+     * once today's are done, it's empty and the briefing turns to tomorrow's first event.
+     */
+    fun calendarLater(feeds: Map<String, String>, nowMs: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): Map<String, String> {
+        val today = java.time.Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate().toString()
+        val end = feeds["calendar.1.endMs"]?.toLongOrNull()
+        val later = feeds["calendar.1"].isNullOrBlank().not() && feeds["calendar.1.dayIso"] == today && (end == null || nowMs < end)
+        return mapOf("calendar.later" to if (later) "yes" else "")
     }
 
     /** calendar.1.in and calendar.tomorrow.in: how long until the next timed event, and tomorrow's first (see [until]). */
@@ -46,7 +57,7 @@ object Smart {
      * calendar.soon is "yes" from an hour before the next timed event until it
      * ends; calendar.soon.in is "in 25 min" or "Now".
      */
-    fun calendarSoon(feeds: Map<String, String>, nowMs: Long, withinMinutes: Int = 60): Map<String, String> = calendarUntil(feeds, nowMs) + run {
+    fun calendarSoon(feeds: Map<String, String>, nowMs: Long, withinMinutes: Int = 60): Map<String, String> = calendarUntil(feeds, nowMs) + calendarLater(feeds, nowMs) + run {
         val start = feeds["calendar.1.startMs"]?.toLongOrNull() ?: return@run mapOf("calendar.soon" to "")
         val end = feeds["calendar.1.endMs"]?.toLongOrNull() ?: start
         val minutes = (start - nowMs) / 60_000

@@ -237,10 +237,8 @@ internal object StarterDesigns {
                  {"type":"text","text":"{calendar.tomorrow.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.tomorrow}"}},
                  {"type":"text","text":"{calendar.tomorrow}","size":11,"color":"$INK","maxLines":2,"show":{"ifSet":"{calendar.tomorrow}"}},
                  {"type":"text","text":"Nothing planned","size":11,"color":"$INK","maxLines":1,"show":{"ifEmpty":"{calendar.tomorrow}"}}]},
-                {"type":"row","verticalAlign":"center","show":{"minHeight":150,"ifSet":"{health.charge}"},"children":[
-                 {"type":"spacer","size":4},
-                 {"type":"icon","name":"bolt","size":14,"color":"$INK"},
-                 {"type":"text","text":" {health.charge}","size":14,"color":"$INK","weight":"bold","maxLines":1}]}]},
+                {"type":"text","text":"{calendar.1.in}","size":14,"color":"$INK","weight":"bold","maxLines":1,"show":{"minHeight":150,"ifSet":"{time.morning}"}},
+                {"type":"text","text":"{calendar.tomorrow.in}","size":14,"color":"$INK","weight":"bold","maxLines":1,"show":{"minHeight":150,"ifEmpty":"{time.morning}"}}]},
                {"type":"column","show":{"minHeight":250,"ifSet":"{traffic.commute}"},"children":[
                 {"type":"spacer","size":6},
                 {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":18,"padding":10,"children":[

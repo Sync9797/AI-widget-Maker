@@ -75,6 +75,22 @@ class SmartTest {
     }
 
     @Test
+    fun timeUntilTheNextEvent() {
+        val start = 1_000_000_000_000L
+        val feeds = mapOf("calendar.1.startMs" to "$start", "calendar.1.endMs" to "${start + 3_600_000}")
+        fun until(minutesBefore: Long) = Smart.calendarSoon(feeds, start - minutesBefore * 60_000)["calendar.1.in"]
+        // Under an hour: the minutes. An hour or more: the hours, to the nearest.
+        assertEquals("in 45 min", until(45))
+        assertEquals("in 1 min", until(0) .let { Smart.until(start, start + 1, start - 10_000) })
+        assertEquals("in 1 hr", until(60))
+        assertEquals("in 3 hr", until(170))
+        assertEquals("Now", Smart.calendarSoon(feeds, start + 60_000)["calendar.1.in"])
+        assertEquals("", Smart.calendarSoon(feeds, start + 2 * 3_600_000)["calendar.1.in"])
+        // An all-day event has no start time: nothing to count down.
+        assertEquals("", Smart.calendarSoon(emptyMap(), start)["calendar.1.in"])
+    }
+
+    @Test
     fun countdowns() {
         val today = LocalDate.of(2026, 11, 12)
         val v = Smart.countdowns(

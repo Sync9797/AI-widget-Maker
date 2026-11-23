@@ -555,6 +555,11 @@ object FeedParsers {
             out["calendar.tomorrow"] = e.title.ifBlank { "(No title)" }
             out["calendar.tomorrow.when"] = if (e.allDay) "All day" else e.start.toLocalTime().format(DateTimeFormatter.ofPattern("h:mm a", Locale.US)).replace(":00", "")
             if (e.id > 0) out["calendar.tomorrow.link"] = "calendar-event:${e.id}:${e.beginMs}:${e.endMs}"
+            // For "in 14 hr" (worked out when the widget draws): timed events only.
+            if (!e.allDay && e.beginMs > 0) {
+                out["calendar.tomorrow.startMs"] = e.beginMs.toString()
+                out["calendar.tomorrow.endMs"] = e.endMs.toString()
+            }
         }
         val leftToday = upcoming.count { it.start.toLocalDate() == today || (it.allDay && it.start.toLocalDate() == today) }
         out["calendar.today"] = when (leftToday) {

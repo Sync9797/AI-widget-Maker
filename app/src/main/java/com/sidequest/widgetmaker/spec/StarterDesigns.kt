@@ -58,6 +58,34 @@ internal object StarterDesigns {
           {"type":"text","text":"{calendar.$n}","size":13,"color":"$INK","weight":"bold","maxLines":1},
           {"type":"text","text":"{calendar.$n.day}","size":11,"color":"$SUB","maxLines":1}]}]}"""
 
+    /**
+     * The agenda as list items, day by day (today first), for a scrolling column: each later day's header
+     * (its date big, the month and weekday beside it), then its events as tiles, or "No events".
+     */
+    private fun agendaItems(): String {
+        val items = mutableListOf<String>()
+        for (k in 0 until com.sidequest.widgetmaker.feeds.FeedParsers.AGENDA_DAYS) {
+            val d = "calendar.d$k"
+            if (k > 0) items += """{"type":"column","show":{"ifSet":"{$d.num}"},"children":[{"type":"spacer","size":12},
+                {"type":"row","verticalAlign":"center","children":[
+                 {"type":"text","text":"{$d.num}","size":24,"color":"$INK","weight":"light","maxLines":1},
+                 {"type":"spacer","size":6},
+                 {"type":"text","text":"{$d.month}","size":12,"color":"$SUB","weight":"bold","maxLines":1},
+                 {"type":"text","text":" · {$d.label}","size":12,"color":"$SUB","maxLines":1,"grow":true}]}]}"""
+            items += """{"type":"column","show":{"ifSet":"{$d.none}"},"children":[{"type":"spacer","size":6},
+                {"type":"text","text":"{$d.none}","size":12,"color":"$SUB","maxLines":1}]}"""
+            for (n in 1..com.sidequest.widgetmaker.feeds.FeedParsers.AGENDA_PER_DAY) {
+                val e = "$d.$n"
+                items += """{"type":"column","show":{"ifSet":"{$e}"},"children":[{"type":"spacer","size":6},
+                {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":16,"padding":8,"tap":"{$e.link}","children":[
+                 {"type":"text","text":"{$e.time}","size":11,"color":"$INK","weight":"bold","maxLines":1,"chip":true,"tone":"${if (k == 0 && n == 1) "pop" else "strong"}"},
+                 {"type":"spacer","size":8},
+                 {"type":"text","text":"{$e}","size":13,"color":"$INK","weight":"bold","maxLines":2,"grow":true}]}]}"""
+            }
+        }
+        return items.joinToString(",")
+    }
+
     /** Events [from]..[to] as tiles, a gap between, the later ones only on taller widgets. */
     private fun eventTiles(from: Int, to: Int, tallFrom: Int = 3, tallAt: Int = 200) =
         gapped((from..to).map { eventTile(it, if (it >= tallFrom) tallAt + (it - tallFrom) * 50 else 0) })
@@ -493,9 +521,8 @@ internal object StarterDesigns {
                 {"type":"spacer","size":6},
                 {"type":"clock","format":"MMM","size":12,"color":"$SUB","weight":"bold","grow":true},
                 $ADD_EVENT]},
-               {"type":"spacer","size":6,"show":{"maxWidth":249}},
-               {"type":"text","text":"No events coming up","size":13,"color":"$SUB","show":{"ifEmpty":"{calendar.1}"}},
-               ${eventTiles(1, 5)}]}]}]}"""),
+               {"type":"text","text":"Turn on Your calendar in Settings","size":13,"color":"$SUB","show":{"ifEmpty":"{calendar.d0.num}"}},
+               {"type":"column","grow":true,"scroll":true,"children":[${agendaItems()}]}]}]}]}"""),
         ),
         Triple(
             "Today's date", "The date, and what's coming up when tall.",

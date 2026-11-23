@@ -38,6 +38,9 @@ object Fitter {
      * How wide text is, in dp, at a text size in sp. On the phone it's measured with the font the home screen
      * draws with, at the phone's font size setting; [Estimate] guesses from typical character widths (tests).
      */
+    /** Rows of a scrolling list the widget is sized to show at once (the rest scroll into view). */
+    const val SCROLL_ROWS = 3
+
     fun interface TextMeasure {
         fun width(text: String, sizeSp: Float, weight: Weight): Float
     }
@@ -139,7 +142,9 @@ object Fitter {
             }
             is ColumnNode -> {
                 val inner = avail - 2 * node.padding * k
-                kids(node).sumOf { height(it, inner, k).toDouble() }.toFloat() + 2 * node.padding * k
+                // A scrolling list is sized for its first few rows: the rest scroll into view instead of shrinking it all.
+                val counted = if (node.scroll) kids(node).take(SCROLL_ROWS) else kids(node)
+                counted.sumOf { height(it, inner, k).toDouble() }.toFloat() + 2 * node.padding * k
             }
             is RowNode -> {
                 val inner = avail - 2 * node.padding * k

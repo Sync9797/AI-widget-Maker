@@ -448,6 +448,47 @@ object FeedParsers {
 
     // ---- Your calendar (on the phone) ----
 
+    /** Days in the scrolling agenda: today and the [AGENDA_DAYS] - 1 after it. */
+    const val AGENDA_DAYS = 4
+
+    /** Events listed under each agenda day. */
+    const val AGENDA_PER_DAY = 6
+
+    /**
+     * Day by day, for a scrolling agenda: for day K (0 is today, up to [AGENDA_DAYS] - 1) calendar.dK.num ("23"),
+     * calendar.dK.month ("Nov"), calendar.dK.weekday ("Mon"), calendar.dK.label ("Today", "Tomorrow", "Wed"),
+     * and its events calendar.dK.N (title, N from 1 to [AGENDA_PER_DAY]) with .time, .where and .link, or
+     * calendar.dK.none ("No events") when it has none. An event that started before now and hasn't ended is
+     * today's; an event is listed on the day it starts.
+     */
+    private fun agenda(upcoming: List<CalendarEvent>, now: LocalDateTime): Map<String, String> {
+        val today = now.toLocalDate()
+        val out = mutableMapOf<String, String>()
+        val byDay = upcoming.groupBy { e -> if (e.allDay || !e.start.isBefore(now)) e.start.toLocalDate() else today }
+        for (k in 0 until AGENDA_DAYS) {
+            val day = today.plusDays(k.toLong())
+            val key = "calendar.d$k"
+            out["$key.num"] = day.dayOfMonth.toString()
+            out["$key.month"] = day.format(DateTimeFormatter.ofPattern("MMM", Locale.US))
+            out["$key.weekday"] = day.format(DateTimeFormatter.ofPattern("EEE", Locale.US))
+            out["$key.label"] = when (k) { 0 -> "Today"; 1 -> "Tomorrow"; else -> out["$key.weekday"]!! }
+            val events = byDay[day].orEmpty().take(AGENDA_PER_DAY)
+            if (events.isEmpty()) out["$key.none"] = "No events"
+            events.forEachIndexed { i, e ->
+                val n = "$key.${i + 1}"
+                out[n] = e.title.ifBlank { "(No title)" }
+                out["$n.time"] = when {
+                    e.allDay -> "All day"
+                    !e.start.isAfter(now) -> "Now"
+                    else -> e.start.toLocalTime().format(DateTimeFormatter.ofPattern("h:mm a", Locale.US))
+                }
+                out["$n.where"] = e.location
+                if (e.id > 0) out["$n.link"] = "calendar-event:${e.id}:${e.beginMs}:${e.endMs}"
+            }
+        }
+        return out
+    }
+
     /** An upcoming event from the phone's calendar. */
     data class CalendarEvent(
         val title: String,
@@ -508,6 +549,7 @@ object FeedParsers {
                 out["calendar.${i + 1}.endMs"] = e.endMs.toString()
             }
         }
+        agenda(upcoming, now).forEach { (k, v) -> out[k] = v }
         // Tomorrow's first event, for evening briefings.
         upcoming.firstOrNull { it.start.toLocalDate() == today.plusDays(1) }?.let { e ->
             out["calendar.tomorrow"] = e.title.ifBlank { "(No title)" }

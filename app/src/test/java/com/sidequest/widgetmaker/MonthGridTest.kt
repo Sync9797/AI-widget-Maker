@@ -58,6 +58,34 @@ class MonthGridTest {
     }
 
     @Test
+    fun scrollingAgendaListsTodayAndTheNextThreeDays() {
+        val now = LocalDateTime.of(2026, 11, 22, 9, 0)
+        fun event(title: String, start: LocalDateTime) = FeedParsers.CalendarEvent(title, start, start.plusHours(1), false, "")
+        val out = FeedParsers.calendar(
+            listOf(
+                event("Meeting", LocalDateTime.of(2026, 11, 22, 19, 0)),
+                event("Work out", LocalDateTime.of(2026, 11, 23, 12, 0)),
+                event("Dentist", LocalDateTime.of(2026, 11, 25, 15, 0)),
+                event("Too far", LocalDateTime.of(2026, 11, 26, 9, 0)),
+            ),
+            now,
+        )
+        assertEquals("22", out["calendar.d0.num"])
+        assertEquals("Today", out["calendar.d0.label"])
+        assertEquals("Meeting", out["calendar.d0.1"])
+        assertEquals("7:00 PM", out["calendar.d0.1.time"])
+        assertEquals("23", out["calendar.d1.num"])
+        assertEquals("Tomorrow", out["calendar.d1.label"])
+        assertEquals("Work out", out["calendar.d1.1"])
+        // A day without events says so; the list stops three days out.
+        assertEquals("No events", out["calendar.d2.none"])
+        assertEquals("Wed", out["calendar.d3.label"])
+        assertEquals("Dentist", out["calendar.d3.1"])
+        assertEquals(null, out["calendar.d4.num"])
+        assertEquals(null, out.filterKeys { it.startsWith("calendar.d") }.values.firstOrNull { it == "Too far" })
+    }
+
+    @Test
     fun agendaGroupsByDay() {
         val now = LocalDateTime.of(2026, 11, 14, 8, 0)
         fun event(title: String, start: LocalDateTime, allDay: Boolean = false) =

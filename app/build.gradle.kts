@@ -107,8 +107,27 @@ kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
+// The Android system jars Robolectric runs the tests on: SDK 34 (most tests) and 35 (the target SDK). Fetched by
+// Gradle, so they're cached between builds, instead of downloaded by Robolectric at test time (from Maven
+// Central, where a rate-limited download fails every test that draws).
+// One configuration each, or Gradle would keep only the newer of the two versions.
+val robolectricSdk34: Configuration by configurations.creating
+val robolectricSdk35: Configuration by configurations.creating
+dependencies {
+    robolectricSdk34("org.robolectric:android-all-instrumented:14-robolectric-10818077-i7")
+    robolectricSdk35("org.robolectric:android-all-instrumented:15-robolectric-12650502-i7")
+}
+val robolectricDeps = tasks.register<Sync>("robolectricDeps") {
+    from(robolectricSdk34, robolectricSdk35)
+    into(layout.buildDirectory.dir("robolectric-deps"))
+}
+
 // -PshotsOnly="Title,Title" draws just those starters in StarterShots.
 tasks.withType<Test>().configureEach {
+    // Robolectric reads its system jars from there and never goes online.
+    dependsOn(robolectricDeps)
+    systemProperty("robolectric.offline", "true")
+    systemProperty("robolectric.dependency.dir", robolectricDeps.get().destinationDir.absolutePath)
     (project.findProperty("shotsOnly") as String?)?.let { systemProperty("shots.only", it) }
     // -PshotsThemes="expressive,material" draws just those themes.
     (project.findProperty("shotsThemes") as String?)?.let { systemProperty("shots.themes", it) }

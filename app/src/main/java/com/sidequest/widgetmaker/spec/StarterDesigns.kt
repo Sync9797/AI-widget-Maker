@@ -78,9 +78,9 @@ internal object StarterDesigns {
                 val e = "$d.$n"
                 items += """{"type":"column","show":{"ifSet":"{$e}"},"children":[{"type":"spacer","size":6},
                 {"type":"row","verticalAlign":"center","background":"$TILE","cornerRadius":16,"padding":8,"tap":"{$e.link}","children":[
-                 {"type":"text","text":"{$e.time}","size":11,"color":"$INK","weight":"bold","maxLines":1,"chip":true,"tone":"${if (k == 0 && n == 1) "pop" else "strong"}"},
-                 {"type":"spacer","size":8},
-                 {"type":"text","text":"{$e}","size":13,"color":"$INK","weight":"bold","maxLines":2,"grow":true}]}]}"""
+                 {"type":"text","text":"{$e.time}","size":10,"color":"$INK","weight":"bold","maxLines":1,"chip":true,"tone":"${if (k == 0 && n == 1) "pop" else "strong"}"},
+                 {"type":"spacer","size":6},
+                 {"type":"text","text":"{$e}","size":13,"color":"$INK","weight":"bold","maxLines":1,"grow":true}]}]}"""
             }
         }
         return items.joinToString(",")
@@ -229,12 +229,12 @@ internal object StarterDesigns {
                {"type":"column","grow":true,"background":"$TILE","cornerRadius":18,"padding":10,"tone":"pop","children":[
                 {"type":"column","show":{"ifSet":"{calendar.later}"},"children":[
                  {"type":"text","text":"Next","size":10,"color":"$INK","weight":"bold","maxLines":1},
-                 {"type":"text","text":"{calendar.1.time}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.1}"}},
+                 {"type":"text","text":"{calendar.1.time}","size":14,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.1}"}},
                  {"type":"text","text":"{calendar.1}","size":11,"color":"$INK","maxLines":2,"show":{"ifSet":"{calendar.1}"}},
                  {"type":"text","text":"Nothing planned","size":11,"color":"$INK","maxLines":1,"show":{"ifEmpty":"{calendar.1}"}}]},
                 {"type":"column","show":{"ifEmpty":"{calendar.later}"},"children":[
                  {"type":"text","text":"Tomorrow","size":10,"color":"$INK","weight":"bold","maxLines":1},
-                 {"type":"text","text":"{calendar.tomorrow.when}","size":16,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.tomorrow}"}},
+                 {"type":"text","text":"{calendar.tomorrow.when}","size":14,"color":"$INK","weight":"medium","maxLines":1,"show":{"ifSet":"{calendar.tomorrow}"}},
                  {"type":"text","text":"{calendar.tomorrow}","size":11,"color":"$INK","maxLines":2,"show":{"ifSet":"{calendar.tomorrow}"}},
                  {"type":"text","text":"Nothing planned","size":11,"color":"$INK","maxLines":1,"show":{"ifEmpty":"{calendar.tomorrow}"}}]},
                 {"type":"text","text":"{calendar.1.in}","size":12,"color":"$INK","weight":"bold","maxLines":1,"show":{"minHeight":150,"ifSet":"{calendar.later}"}},

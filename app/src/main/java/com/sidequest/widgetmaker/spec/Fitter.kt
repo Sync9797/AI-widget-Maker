@@ -38,6 +38,15 @@ object Fitter {
      * How wide text is, in dp, at a text size in sp. On the phone it's measured with the font the home screen
      * draws with, at the phone's font size setting; [Estimate] guesses from typical character widths (tests).
      */
+    /** How much taller than measured a scrolling list's rows are counted when working out which fit whole. */
+    const val ROW_ALLOWANCE = 1.08f
+
+    /** Room (dp, before scaling) a scrolling list's last whole row keeps below it, for text a touch taller than measured. */
+    const val FIT_SLACK = 6
+
+    /** How far (dp, before scaling) past the bottom edge a scrolling list's first hidden row starts. */
+    const val HIDE_MARGIN = 16
+
     /** Rows of a scrolling list the widget is sized to show at once (the rest scroll into view). */
     const val SCROLL_ROWS = 3
 
@@ -223,8 +232,10 @@ object Fitter {
             var used = 0f
             var whole = 0
             for (row in shown) {
-                val rowH = height(row, w, k)
-                if (used + rowH > h + 0.5f) break
+                // Counted a touch tall: real text runs a few percent taller or shorter than measured, and it adds up.
+                val rowH = height(row, w, k) * ROW_ALLOWANCE
+                // A row counts as whole only with a few dp to spare, in case it's a touch taller on the phone.
+                if (used + rowH > h - FIT_SLACK * k) break
                 used += rowH
                 whole++
             }
@@ -233,7 +244,9 @@ object Fitter {
             // The room left, in the design's units, shared by the gaps above rows 2 to whole + 1.
             val left = ((h - used) / k).toInt()
             if (left <= 0) return list
-            val gaps = List(whole) { left / whole + if (it < left % whole) 1 else 0 }
+            // The last gap (above the first row that doesn't fit) gets a little more, pushing that row past the edge,
+            // so text a few dp shorter on the phone than measured here doesn't let it peek in.
+            val gaps = List(whole) { left / whole + (if (it < left % whole) 1 else 0) + (if (it == whole - 1) HIDE_MARGIN else 0) }
             val out = mutableListOf<Node>()
             var seen = 0
             for (c in list.children) {

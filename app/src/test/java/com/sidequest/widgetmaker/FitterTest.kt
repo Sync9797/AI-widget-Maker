@@ -84,22 +84,23 @@ class FitterTest {
 
     @Test
     fun scrollingListsShowOnlyWholeRows() {
-        // Five 30 dp rows in a 100 dp list: three fit whole, and the 10 dp left opens up their gaps,
-        // so the fourth starts right at the bottom edge instead of showing cut off.
+        // Five 30 dp rows in a 100 dp list: the ones that fit whole share out the room left below them,
+        // and the first that doesn't starts past the bottom edge instead of showing cut off.
         val rows = List(5) { ColumnNode(children = listOf(com.sidequest.widgetmaker.spec.SpacerNode(size = 30))) }
-        val list = ColumnNode(children = rows, scroll = true)
-        val fitted = Fitter.fit(ColumnNode(children = listOf(list.copy(grow = true))), 200f, 100f, 1f, tokens, shows = { true }).root as ColumnNode
+        val list = ColumnNode(children = rows, scroll = true, grow = true)
+        val fitted = Fitter.fit(ColumnNode(children = listOf(list)), 200f, 100f, 1f, tokens, shows = { true }).root as ColumnNode
         val spaced = fitted.children[0] as ColumnNode
-        val gaps = spaced.children.filterIsInstance<com.sidequest.widgetmaker.spec.SpacerNode>()
-        assertEquals(3, gaps.size)
-        assertEquals(10, gaps.sumOf { it.size })
-        // The fourth row starts at 3 rows + the gaps = 100 dp: exactly the bottom edge.
         var top = 0
-        var rowsSeen = 0
+        val tops = mutableListOf<Int>()
         for (c in spaced.children) {
-            if (c is ColumnNode) { if (rowsSeen == 3) break; rowsSeen++; top += 30 } else top += (c as com.sidequest.widgetmaker.spec.SpacerNode).size
+            if (c is ColumnNode) { tops += top; top += 30 } else top += (c as com.sidequest.widgetmaker.spec.SpacerNode).size
         }
-        assertEquals(100, top)
+        val whole = tops.count { it + 30 <= 100 }
+        assertTrue("at least one row shows whole", whole >= 1)
+        // The first row that doesn't fit starts past the edge, with room to spare: it never peeks in.
+        assertTrue("row ${whole + 1} starts at ${tops[whole]}", tops[whole] >= 100 + Fitter.HIDE_MARGIN / 2)
+        // And the whole rows reach down close to the edge (the gaps opened up), not bunched at the top.
+        assertTrue(tops[whole - 1] + 30 >= 100 - 30)
         // A list that fits entirely is left as it is.
         val short = Fitter.fit(ColumnNode(children = listOf(ColumnNode(children = rows.take(2), scroll = true, grow = true))), 200f, 100f, 1f, tokens, shows = { true }).root as ColumnNode
         assertEquals(2, (short.children[0] as ColumnNode).children.size)

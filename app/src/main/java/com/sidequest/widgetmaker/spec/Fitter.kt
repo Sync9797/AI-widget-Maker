@@ -56,10 +56,10 @@ object Fitter {
         var scale = k
         repeat(3) {
             val natural = m.height(root, width, scale)
-            if (natural <= height + 0.5f) return Result(m.rows(root, width, scale), scale)
+            if (natural <= height + 0.5f) return Result(m.spaced(m.rows(root, width, scale), width, height, scale), scale)
             scale = max(k * MIN_SHRINK, scale * (height / natural))
         }
-        return Result(m.rows(root, width, scale), scale)
+        return Result(m.spaced(m.rows(root, width, scale), width, height, scale), scale)
     }
 
     /** How wide [text] is at [size] sp, in dp, roughly (from typical character widths). */
@@ -188,6 +188,62 @@ object Fitter {
             if (w <= avail + 0.5f || w <= 0f) return text
             val size = max(ceil(text.size * MIN_SHARED).toInt(), (text.size * avail / w).toInt())
             return if (size < text.size) text.copy(size = size) else text
+        }
+
+        /**
+         * [node] laid out in [w]×[h] dp, with each scrolling list's gaps opened up so it shows only whole rows: the
+         * rows that fit entirely share out the room left below them, and the next one starts right at the bottom
+         * edge, ready to scroll in, instead of showing cut in half. However many rows there are, it adapts.
+         */
+        fun spaced(node: Node, w: Float, h: Float, k: Float): Node = when (node) {
+            is ColumnNode -> {
+                val innerW = w - 2 * node.padding * k
+                val innerH = h - 2 * node.padding * k
+                if (node.scroll) spreadRows(node, innerW, innerH, k) else {
+                    val shown = kids(node)
+                    val fixed = shown.filter { !it.grow }.sumOf { height(it, innerW, k).toDouble() }.toFloat()
+                    val growH = max(0f, innerH - fixed) / max(1, shown.count { it.grow })
+                    node.copy(children = node.children.map { c ->
+                        if (!shows(c)) c else spaced(c, innerW, if (c.grow) growH else height(c, innerW, k), k)
+                    })
+                }
+            }
+            is RowNode -> {
+                val inner = w - 2 * node.padding * k
+                val innerH = h - 2 * node.padding * k
+                val widths = shares(node, inner, k)
+                var i = 0
+                node.copy(children = node.children.map { c -> if (!shows(c)) c else spaced(c, widths[i++], innerH, k) })
+            }
+            else -> node
+        }
+
+        private fun spreadRows(list: ColumnNode, w: Float, h: Float, k: Float): ColumnNode {
+            val shown = kids(list)
+            var used = 0f
+            var whole = 0
+            for (row in shown) {
+                val rowH = height(row, w, k)
+                if (used + rowH > h + 0.5f) break
+                used += rowH
+                whole++
+            }
+            // Everything fits (nothing to scroll), or not even one row does: leave it as it is.
+            if (whole == 0 || whole == shown.size) return list
+            // The room left, in the design's units, shared by the gaps above rows 2 to whole + 1.
+            val left = ((h - used) / k).toInt()
+            if (left <= 0) return list
+            val gaps = List(whole) { left / whole + if (it < left % whole) 1 else 0 }
+            val out = mutableListOf<Node>()
+            var seen = 0
+            for (c in list.children) {
+                if (shows(c)) {
+                    if (seen in 1..whole && gaps[seen - 1] > 0) out += SpacerNode(size = gaps[seen - 1])
+                    seen++
+                }
+                out += c
+            }
+            return list.copy(children = out)
         }
 
         fun rows(node: Node, avail: Float, k: Float): Node = when (node) {
